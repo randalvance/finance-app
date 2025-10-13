@@ -1,0 +1,39 @@
+{
+  "name": "Expense Tracker",
+  "short_name": "ExpenseApp",
+  "description": "Track your expenses easily with this progressive web app",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["finance", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Add Expense",
+      "short_name": "Add",
+      "description": "Quickly add a new expense",
+      "url": "/add",
+      "icons": [
+        {
+          "src": "/icons/add-icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

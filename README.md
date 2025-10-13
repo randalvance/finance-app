@@ -1,4 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Expense Tracker
+
+A modern expense tracking progressive web application built with Next.js, PostgreSQL, and Tailwind CSS.
+
+## Features
+
+- 📊 **Expense Tracking**: Add, edit, and delete expenses with categories
+- 💾 **PostgreSQL Database**: Reliable data storage with proper schema
+- 📱 **Progressive Web App**: Install on mobile devices and work offline
+- 🎨 **Modern UI**: Clean interface with Tailwind CSS
+- 📈 **Analytics**: View spending patterns and category breakdowns
+- 🔍 **Search & Filter**: Find expenses by category, date, or amount
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React, Tailwind CSS
+- **Backend**: Next.js API routes
+- **Database**: PostgreSQL with pg (node-postgres)
+- **PWA**: next-pwa for offline functionality
+- **TypeScript**: Full type safety
 
 ## Getting Started
 
