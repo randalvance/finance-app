@@ -1,6 +1,24 @@
+-- Create ledgers table
+CREATE TABLE IF NOT EXISTS ledgers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    color VARCHAR(7) DEFAULT '#6366f1',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default ledgers
+INSERT INTO ledgers (name, description, color) VALUES
+    ('Personal', 'Personal expenses and purchases', '#3b82f6'),
+    ('Business', 'Business-related expenses', '#10b981'),
+    ('Family', 'Family and household expenses', '#ec4899')
+ON CONFLICT (name) DO NOTHING;
+
 -- Create expenses table
 CREATE TABLE IF NOT EXISTS expenses (
     id SERIAL PRIMARY KEY,
+    ledger_id INTEGER NOT NULL REFERENCES ledgers(id) ON DELETE RESTRICT,
     description TEXT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     category VARCHAR(100) NOT NULL,
@@ -41,5 +59,10 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_expenses_updated_at 
     BEFORE UPDATE ON expenses 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_ledgers_updated_at 
+    BEFORE UPDATE ON ledgers 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();

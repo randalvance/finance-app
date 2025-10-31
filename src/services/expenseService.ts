@@ -28,10 +28,10 @@ export class ExpenseService {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        `INSERT INTO expenses (description, amount, category, date) 
-         VALUES ($1, $2, $3, $4) 
+        `INSERT INTO expenses (ledger_id, description, amount, category, date) 
+         VALUES ($1, $2, $3, $4, $5) 
          RETURNING *`,
-        [data.description, data.amount, data.category, data.date]
+        [data.ledger_id, data.description, data.amount, data.category, data.date]
       );
       return result.rows[0];
     } finally {
@@ -44,13 +44,14 @@ export class ExpenseService {
     try {
       const result = await client.query(
         `UPDATE expenses 
-         SET description = COALESCE($2, description),
-             amount = COALESCE($3, amount),
-             category = COALESCE($4, category),
-             date = COALESCE($5, date)
+         SET ledger_id = COALESCE($2, ledger_id),
+             description = COALESCE($3, description),
+             amount = COALESCE($4, amount),
+             category = COALESCE($5, category),
+             date = COALESCE($6, date)
          WHERE id = $1 
          RETURNING *`,
-        [data.id, data.description, data.amount, data.category, data.date]
+        [data.id, data.ledger_id, data.description, data.amount, data.category, data.date]
       );
       return result.rows[0];
     } finally {
