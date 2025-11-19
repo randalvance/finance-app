@@ -1,5 +1,5 @@
--- Create ledgers table
-CREATE TABLE IF NOT EXISTS ledgers (
+-- Create accounts table
+CREATE TABLE IF NOT EXISTS accounts (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS ledgers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default ledgers
-INSERT INTO ledgers (name, description, color) VALUES
+-- Insert default accounts
+INSERT INTO accounts (name, description, color) VALUES
     ('Personal', 'Personal expenses and purchases', '#3b82f6'),
     ('Business', 'Business-related expenses', '#10b981'),
     ('Family', 'Family and household expenses', '#ec4899')
@@ -18,7 +18,7 @@ ON CONFLICT (name) DO NOTHING;
 -- Create expenses table
 CREATE TABLE IF NOT EXISTS expenses (
     id SERIAL PRIMARY KEY,
-    ledger_id INTEGER NOT NULL REFERENCES ledgers(id) ON DELETE RESTRICT,
+    account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
     description TEXT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     category VARCHAR(100) NOT NULL,
@@ -62,7 +62,7 @@ CREATE TRIGGER update_expenses_updated_at
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_ledgers_updated_at 
-    BEFORE UPDATE ON ledgers 
+CREATE TRIGGER update_accounts_updated_at 
+    BEFORE UPDATE ON accounts 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();

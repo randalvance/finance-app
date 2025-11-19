@@ -1,12 +1,12 @@
 import pool from '@/lib/db';
-import { Ledger, CreateLedgerData, UpdateLedgerData } from '@/types/expense';
+import { Account, CreateAccountData, UpdateAccountData } from '@/types/expense';
 
-export class LedgerService {
-  static async getAllLedgers(): Promise<Ledger[]> {
+export class AccountService {
+  static async getAllAccounts(): Promise<Account[]> {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        'SELECT * FROM ledgers ORDER BY created_at DESC'
+        'SELECT * FROM accounts ORDER BY created_at DESC'
       );
       return result.rows;
     } finally {
@@ -14,21 +14,21 @@ export class LedgerService {
     }
   }
 
-  static async getLedgerById(id: number): Promise<Ledger | null> {
+  static async getAccountById(id: number): Promise<Account | null> {
     const client = await pool.connect();
     try {
-      const result = await client.query('SELECT * FROM ledgers WHERE id = $1', [id]);
+      const result = await client.query('SELECT * FROM accounts WHERE id = $1', [id]);
       return result.rows[0] || null;
     } finally {
       client.release();
     }
   }
 
-  static async createLedger(data: CreateLedgerData): Promise<Ledger> {
+  static async createAccount(data: CreateAccountData): Promise<Account> {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        `INSERT INTO ledgers (name, description, color) 
+        `INSERT INTO accounts (name, description, color) 
          VALUES ($1, $2, $3) 
          RETURNING *`,
         [data.name, data.description || null, data.color || '#6366f1']
@@ -39,11 +39,11 @@ export class LedgerService {
     }
   }
 
-  static async updateLedger(data: UpdateLedgerData): Promise<Ledger> {
+  static async updateAccount(data: UpdateAccountData): Promise<Account> {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        `UPDATE ledgers 
+        `UPDATE accounts 
          SET name = COALESCE($2, name),
              description = COALESCE($3, description),
              color = COALESCE($4, color)
@@ -57,22 +57,22 @@ export class LedgerService {
     }
   }
 
-  static async deleteLedger(id: number): Promise<boolean> {
+  static async deleteAccount(id: number): Promise<boolean> {
     const client = await pool.connect();
     try {
-      const result = await client.query('DELETE FROM ledgers WHERE id = $1', [id]);
+      const result = await client.query('DELETE FROM accounts WHERE id = $1', [id]);
       return (result.rowCount || 0) > 0;
     } finally {
       client.release();
     }
   }
 
-  static async getLedgerExpenseCount(ledgerId: number): Promise<number> {
+  static async getAccountExpenseCount(accountId: number): Promise<number> {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        'SELECT COUNT(*) as count FROM expenses WHERE ledger_id = $1',
-        [ledgerId]
+        'SELECT COUNT(*) as count FROM expenses WHERE account_id = $1',
+        [accountId]
       );
       return parseInt(result.rows[0].count);
     } finally {
@@ -80,12 +80,12 @@ export class LedgerService {
     }
   }
 
-  static async getLedgerTotalAmount(ledgerId: number): Promise<number> {
+  static async getAccountTotalAmount(accountId: number): Promise<number> {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        'SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE ledger_id = $1',
-        [ledgerId]
+        'SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE account_id = $1',
+        [accountId]
       );
       return parseFloat(result.rows[0].total);
     } finally {

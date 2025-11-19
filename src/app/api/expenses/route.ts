@@ -17,9 +17,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { ledger_id, description, amount, category, date } = body;
+    const { account_id, description, amount, category, date } = body;
 
-    if (!ledger_id || !description || !amount || !category || !date) {
+    if (!account_id || !description || !amount || !category || !date) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const expense = await ExpenseService.createExpense({
-      ledger_id: parseInt(ledger_id),
+      account_id: parseInt(account_id),
       description,
       amount: parseFloat(amount),
       category,

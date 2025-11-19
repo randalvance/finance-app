@@ -1,4 +1,4 @@
-export interface Ledger {
+export interface Account {
   id: number;
   name: string;
   description: string | null;
@@ -9,7 +9,7 @@ export interface Ledger {
 
 export interface Expense {
   id: number;
-  ledger_id: number;
+  account_id: number;
   description: string;
   amount: number;
   category: string;
@@ -25,18 +25,18 @@ export interface Category {
   created_at: string;
 }
 
-export interface CreateLedgerData {
+export interface CreateAccountData {
   name: string;
   description?: string;
   color?: string;
 }
 
-export interface UpdateLedgerData extends Partial<CreateLedgerData> {
+export interface UpdateAccountData extends Partial<CreateAccountData> {
   id: number;
 }
 
 export interface CreateExpenseData {
-  ledger_id: number;
+  account_id: number;
   description: string;
   amount: number;
   category: string;
