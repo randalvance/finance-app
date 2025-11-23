@@ -18,17 +18,24 @@ interface Category {
   color: string;
 }
 
+interface Expense {
+  id: number;
+  account_id: number;
+  description: string;
+  amount: number;
+  category: string;
+  date: string;
+  created_at: string;
+  account_name?: string;
+  account_color?: string;
+}
+
 export default function Home() {
   const [accounts, setAccounts] = useState<AccountWithStats[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    color: '#3b82f6'
-  });
   const [expenseFormData, setExpenseFormData] = useState({
     account_id: '',
     description: '',
@@ -41,6 +48,7 @@ export default function Home() {
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
+    fetchExpenses();
   }, []);
 
   const fetchAccounts = async () => {
@@ -69,23 +77,15 @@ export default function Home() {
     }
   };
 
-  const handleDeleteAccount = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this account?')) return;
-    
+  const fetchExpenses = async () => {
     try {
-      const response = await fetch(`/api/accounts/${id}`, {
-        method: 'DELETE',
-      });
-      
+      const response = await fetch('/api/expenses');
       if (response.ok) {
-        fetchAccounts();
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to delete account');
+        const data = await response.json();
+        setExpenses(data);
       }
     } catch (error) {
-      console.error('Error deleting account:', error);
-      alert('Failed to delete account');
+      console.error('Error fetching expenses:', error);
     }
   };
 
@@ -98,35 +98,6 @@ export default function Home() {
       });
     }
     setShowExpenseModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      const response = await fetch('/api/accounts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        setShowModal(false);
-        setFormData({ name: '', description: '', color: '#3b82f6' });
-        fetchAccounts();
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to create account');
-      }
-    } catch (error) {
-      console.error('Error creating account:', error);
-      alert('Failed to create account');
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const handleExpenseSubmit = async (e: React.FormEvent) => {
@@ -158,6 +129,7 @@ export default function Home() {
           date: new Date().toISOString().split('T')[0]
         });
         fetchAccounts(); // Refresh to update account totals
+        fetchExpenses(); // Refresh to show new expense
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to create expense');
@@ -253,162 +225,85 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Accounts Section */}
+          {/* Recent Transactions Section */}
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-100">Your Accounts</h2>
+              <h2 className="text-2xl font-bold text-gray-100">Recent Transactions</h2>
             </div>
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="text-gray-400">Loading accounts...</div>
+                <div className="text-gray-400">Loading transactions...</div>
               </div>
-            ) : accounts.length === 0 ? (
+            ) : expenses.length === 0 ? (
               <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-12 text-center">
-                <div className="text-gray-600 text-6xl mb-4">📒</div>
-                <h3 className="text-lg font-medium text-gray-200 mb-2">No accounts yet</h3>
-                <p className="text-gray-400 mb-4">Create your first account to start tracking transactions</p>
+                <div className="text-gray-600 text-6xl mb-4">�</div>
+                <h3 className="text-lg font-medium text-gray-200 mb-2">No transactions yet</h3>
+                <p className="text-gray-400 mb-4">Get started by adding your first expense</p>
                 <button 
-                  onClick={() => setShowModal(true)}
+                  onClick={openExpenseModal}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Create Your First Account
+                  Add Your First Expense
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {accounts.map((account) => (
-                  <div
-                    key={account.id}
-                    className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-6 hover:border-gray-700 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: account.color }}
-                        />
-                        <h3 className="text-lg font-semibold text-gray-100">{account.name}</h3>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteAccount(account.id)}
-                        className="text-gray-500 hover:text-red-500 transition-colors"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                    
-                    {account.description && (
-                      <p className="text-sm text-gray-400 mb-4">{account.description}</p>
-                    )}
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">Total Transactions</span>
-                        <span className="text-lg font-semibold text-gray-100">
-                          ${account.totalAmount.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-400">Count</span>
-                        <span className="text-sm text-gray-300">{account.expenseCount}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-800 flex space-x-2">
-                      <button className="flex-1 text-sm text-blue-400 hover:text-blue-300 transition-colors">
-                        View Details
-                      </button>
-                      <button className="flex-1 text-sm text-gray-400 hover:text-gray-300 transition-colors">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-800">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Account
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {expenses.slice(0, 20).map((expense) => (
+                      <tr key={expense.id} className="hover:bg-gray-800 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                          {new Date(expense.date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-100">{expense.description}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: expense.account_color || '#6366f1' }}
+                            />
+                            <span className="text-sm text-gray-300">{expense.account_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-400">{expense.category}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <span className="text-sm font-medium text-gray-100">
+                            ${parseFloat(expense.amount.toString()).toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
         </div>
       </main>
-
-      {/* Add Account Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-100">Create New Account</h3>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                  Account Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Personal, Business"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Optional description"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="color" className="block text-sm font-medium text-gray-300 mb-2">
-                  Color
-                </label>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="color"
-                    id="color"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="h-10 w-20 rounded cursor-pointer bg-gray-800 border border-gray-700"
-                  />
-                  <span className="text-sm text-gray-400">{formData.color}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setFormData({ name: '', description: '', color: '#3b82f6' });
-                  }}
-                  className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
-                  disabled={submitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Creating...' : 'Create Account'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Add Expense Modal */}
       {showExpenseModal && (

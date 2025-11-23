@@ -6,7 +6,10 @@ export class ExpenseService {
     const client = await pool.connect();
     try {
       const result = await client.query(
-        'SELECT * FROM expenses ORDER BY date DESC, created_at DESC'
+        `SELECT e.*, a.name as account_name, a.color as account_color 
+         FROM expenses e 
+         JOIN accounts a ON e.account_id = a.id 
+         ORDER BY e.date DESC, e.created_at DESC`
       );
       return result.rows;
     } finally {
