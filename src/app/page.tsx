@@ -11,19 +11,35 @@ interface AccountWithStats {
   totalAmount: number;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export default function Home() {
   const [accounts, setAccounts] = useState<AccountWithStats[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     color: '#3b82f6'
   });
+  const [expenseFormData, setExpenseFormData] = useState({
+    account_id: '',
+    description: '',
+    amount: '',
+    category: '',
+    date: new Date().toISOString().split('T')[0]
+  });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
+    fetchCategories();
   }, []);
 
   const fetchAccounts = async () => {
@@ -37,6 +53,18 @@ export default function Home() {
       console.error('Error fetching accounts:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
   };
 
@@ -58,6 +86,17 @@ export default function Home() {
       console.error('Error deleting account:', error);
       alert('Failed to delete account');
     }
+  };
+
+  const openExpenseModal = () => {
+    // Auto-select account if there's only one
+    if (accounts.length === 1) {
+      setExpenseFormData({
+        ...expenseFormData,
+        account_id: accounts[0].id.toString()
+      });
+    }
+    setShowExpenseModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,14 +128,66 @@ export default function Home() {
     }
   };
 
+  const handleExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          account_id: parseInt(expenseFormData.account_id),
+          description: expenseFormData.description,
+          amount: parseFloat(expenseFormData.amount),
+          category: expenseFormData.category,
+          date: expenseFormData.date,
+        }),
+      });
+
+      if (response.ok) {
+        setShowExpenseModal(false);
+        setExpenseFormData({
+          account_id: '',
+          description: '',
+          amount: '',
+          category: '',
+          date: new Date().toISOString().split('T')[0]
+        });
+        fetchAccounts(); // Refresh to update account totals
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to create expense');
+      }
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      alert('Failed to create expense');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950">
       <header className="bg-gray-900 shadow-sm border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-100">Expense Tracker</h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-400">Welcome back!</span>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={openExpenseModal}
+                className="bg-blue-600 text-white px-6 py-2.5 rounded-md hover:bg-blue-700 transition-colors font-medium shadow-lg"
+              >
+                + Add Expense
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                className="text-gray-400 hover:text-gray-200 px-4 py-2.5 rounded-md border border-gray-700 hover:border-gray-600 transition-colors text-sm"
+              >
+                + Account
+              </button>
             </div>
           </div>
         </div>
@@ -165,12 +256,6 @@ export default function Home() {
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-100">Your Accounts</h2>
-              <button 
-                onClick={() => setShowModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                + New Account
-              </button>
             </div>
 
             {loading ? (
@@ -317,6 +402,135 @@ export default function Home() {
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Creating...' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Expense Modal */}
+      {showExpenseModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-100">Add New Expense</h3>
+            </div>
+            
+            <form onSubmit={handleExpenseSubmit} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="account" className="block text-sm font-medium text-gray-300 mb-2">
+                  Account *
+                </label>
+                <select
+                  id="account"
+                  required
+                  value={expenseFormData.account_id}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, account_id: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select an account</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="expense-description" className="block text-sm font-medium text-gray-300 mb-2">
+                  Description *
+                </label>
+                <input
+                  type="text"
+                  id="expense-description"
+                  required
+                  value={expenseFormData.description}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Grocery shopping"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="amount" className="block text-sm font-medium text-gray-300 mb-2">
+                  Amount *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-gray-400">$</span>
+                  <input
+                    type="number"
+                    id="amount"
+                    required
+                    step="0.01"
+                    min="0"
+                    value={expenseFormData.amount}
+                    onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
+                    className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-2">
+                  Category *
+                </label>
+                <select
+                  id="category"
+                  required
+                  value={expenseFormData.category}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium text-gray-300 mb-2">
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  id="date"
+                  required
+                  value={expenseFormData.date}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, date: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowExpenseModal(false);
+                    setExpenseFormData({
+                      account_id: '',
+                      description: '',
+                      amount: '',
+                      category: '',
+                      date: new Date().toISOString().split('T')[0]
+                    });
+                  }}
+                  className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Adding...' : 'Add Expense'}
                 </button>
               </div>
             </form>
