@@ -1,0 +1,552 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+interface Account {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string;
+  created_at: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+export default function AdminPage() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'accounts' | 'categories'>('accounts');
+  
+  // Account modal state
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [accountFormData, setAccountFormData] = useState({
+    name: '',
+    description: '',
+    color: '#3b82f6'
+  });
+  
+  // Category modal state
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    color: '#3b82f6'
+  });
+  
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchAccounts();
+    fetchCategories();
+  }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      const response = await fetch('/api/accounts');
+      if (response.ok) {
+        const data = await response.json();
+        setAccounts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Account handlers
+  const openAccountModal = (account?: Account) => {
+    if (account) {
+      setEditingAccount(account);
+      setAccountFormData({
+        name: account.name,
+        description: account.description || '',
+        color: account.color
+      });
+    } else {
+      setEditingAccount(null);
+      setAccountFormData({ name: '', description: '', color: '#3b82f6' });
+    }
+    setShowAccountModal(true);
+  };
+
+  const handleAccountSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const url = editingAccount 
+        ? `/api/accounts/${editingAccount.id}`
+        : '/api/accounts';
+      
+      const response = await fetch(url, {
+        method: editingAccount ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(accountFormData),
+      });
+
+      if (response.ok) {
+        setShowAccountModal(false);
+        setEditingAccount(null);
+        setAccountFormData({ name: '', description: '', color: '#3b82f6' });
+        fetchAccounts();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to save account');
+      }
+    } catch (error) {
+      console.error('Error saving account:', error);
+      alert('Failed to save account');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this account? This will fail if there are expenses associated with it.')) return;
+    
+    try {
+      const response = await fetch(`/api/accounts/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        fetchAccounts();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account');
+    }
+  };
+
+  // Category handlers
+  const openCategoryModal = (category?: Category) => {
+    if (category) {
+      setEditingCategory(category);
+      setCategoryFormData({
+        name: category.name,
+        color: category.color
+      });
+    } else {
+      setEditingCategory(null);
+      setCategoryFormData({ name: '', color: '#3b82f6' });
+    }
+    setShowCategoryModal(true);
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const url = editingCategory 
+        ? `/api/categories/${editingCategory.id}`
+        : '/api/categories';
+      
+      const response = await fetch(url, {
+        method: editingCategory ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(categoryFormData),
+      });
+
+      if (response.ok) {
+        setShowCategoryModal(false);
+        setEditingCategory(null);
+        setCategoryFormData({ name: '', color: '#3b82f6' });
+        fetchCategories();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to save category');
+      }
+    } catch (error) {
+      console.error('Error saving category:', error);
+      alert('Failed to save category');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+    
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        fetchCategories();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete category');
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('Failed to delete category');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-950">
+      <header className="bg-gray-900 shadow-sm border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link href="/" className="text-gray-400 hover:text-gray-200">
+                ← Back
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-100">Admin</h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tabs */}
+        <div className="mb-8">
+          <div className="border-b border-gray-800">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('accounts')}
+                className={`${
+                  activeTab === 'accounts'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                Accounts ({accounts.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('categories')}
+                className={`${
+                  activeTab === 'categories'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                Categories ({categories.length})
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Accounts Tab */}
+        {activeTab === 'accounts' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-100">Manage Accounts</h2>
+              <button
+                onClick={() => openAccountModal()}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                + New Account
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12 text-gray-400">Loading...</div>
+            ) : (
+              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-800">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Color
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {accounts.map((account) => (
+                      <tr key={account.id} className="hover:bg-gray-800 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: account.color }}
+                            />
+                            <span className="text-sm font-medium text-gray-100">{account.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-400">{account.description || '—'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-400">{account.color}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <button
+                            onClick={() => openAccountModal(account)}
+                            className="text-blue-400 hover:text-blue-300 mr-4"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAccount(account.id)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Categories Tab */}
+        {activeTab === 'categories' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-100">Manage Categories</h2>
+              <button
+                onClick={() => openCategoryModal()}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                + New Category
+              </button>
+            </div>
+
+            <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-800">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Color
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {categories.map((category) => (
+                    <tr key={category.id} className="hover:bg-gray-800 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className="text-sm font-medium text-gray-100">{category.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-400">{category.color}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <button
+                          onClick={() => openCategoryModal(category)}
+                          className="text-blue-400 hover:text-blue-300 mr-4"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(category.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Account Modal */}
+      {showAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-100">
+                {editingAccount ? 'Edit Account' : 'Create New Account'}
+              </h3>
+            </div>
+            
+            <form onSubmit={handleAccountSubmit} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="account-name" className="block text-sm font-medium text-gray-300 mb-2">
+                  Account Name *
+                </label>
+                <input
+                  type="text"
+                  id="account-name"
+                  required
+                  value={accountFormData.name}
+                  onChange={(e) => setAccountFormData({ ...accountFormData, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Personal, Business"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="account-description" className="block text-sm font-medium text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="account-description"
+                  value={accountFormData.description}
+                  onChange={(e) => setAccountFormData({ ...accountFormData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Optional description"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="account-color" className="block text-sm font-medium text-gray-300 mb-2">
+                  Color
+                </label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="color"
+                    id="account-color"
+                    value={accountFormData.color}
+                    onChange={(e) => setAccountFormData({ ...accountFormData, color: e.target.value })}
+                    className="h-10 w-20 rounded cursor-pointer bg-gray-800 border border-gray-700"
+                  />
+                  <span className="text-sm text-gray-400">{accountFormData.color}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAccountModal(false);
+                    setEditingAccount(null);
+                    setAccountFormData({ name: '', description: '', color: '#3b82f6' });
+                  }}
+                  className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Saving...' : editingAccount ? 'Update Account' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-100">
+                {editingCategory ? 'Edit Category' : 'Create New Category'}
+              </h3>
+            </div>
+            
+            <form onSubmit={handleCategorySubmit} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="category-name" className="block text-sm font-medium text-gray-300 mb-2">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  id="category-name"
+                  required
+                  value={categoryFormData.name}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Food & Dining, Transportation"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="category-color" className="block text-sm font-medium text-gray-300 mb-2">
+                  Color
+                </label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="color"
+                    id="category-color"
+                    value={categoryFormData.color}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, color: e.target.value })}
+                    className="h-10 w-20 rounded cursor-pointer bg-gray-800 border border-gray-700"
+                  />
+                  <span className="text-sm text-gray-400">{categoryFormData.color}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCategoryModal(false);
+                    setEditingCategory(null);
+                    setCategoryFormData({ name: '', color: '#3b82f6' });
+                  }}
+                  className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Saving...' : editingCategory ? 'Update Category' : 'Create Category'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
