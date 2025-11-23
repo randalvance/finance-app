@@ -14,6 +14,13 @@ interface AccountWithStats {
 export default function Home() {
   const [accounts, setAccounts] = useState<AccountWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    color: '#3b82f6'
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
@@ -50,6 +57,35 @@ export default function Home() {
     } catch (error) {
       console.error('Error deleting account:', error);
       alert('Failed to delete account');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/accounts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setShowModal(false);
+        setFormData({ name: '', description: '', color: '#3b82f6' });
+        fetchAccounts();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to create account');
+      }
+    } catch (error) {
+      console.error('Error creating account:', error);
+      alert('Failed to create account');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -129,7 +165,10 @@ export default function Home() {
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-100">Your Accounts</h2>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => setShowModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
                 + New Account
               </button>
             </div>
@@ -143,7 +182,10 @@ export default function Home() {
                 <div className="text-gray-600 text-6xl mb-4">📒</div>
                 <h3 className="text-lg font-medium text-gray-200 mb-2">No accounts yet</h3>
                 <p className="text-gray-400 mb-4">Create your first account to start tracking transactions</p>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                <button 
+                  onClick={() => setShowModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                >
                   Create Your First Account
                 </button>
               </div>
@@ -202,6 +244,85 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Add Account Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-100">Create New Account</h3>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                  Account Name *
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Personal, Business"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Optional description"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="color" className="block text-sm font-medium text-gray-300 mb-2">
+                  Color
+                </label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="color"
+                    id="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    className="h-10 w-20 rounded cursor-pointer bg-gray-800 border border-gray-700"
+                  />
+                  <span className="text-sm text-gray-400">{formData.color}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setFormData({ name: '', description: '', color: '#3b82f6' });
+                  }}
+                  className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Creating...' : 'Create Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
