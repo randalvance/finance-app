@@ -2,14 +2,14 @@
 
 ## Project Overview
 
-Expense Tracker is a Next.js 15 application for tracking expenses across multiple accounts with categorization and analytics. Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
+Expense Tracker is a Next.js 15 application for tracking financial transactions across multiple accounts with categorization and analytics. Supports three transaction types: **Debit** (money out), **Credit** (money in), and **Transfer** (between accounts). Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
 
 ## Project Structure & Module Organization
 - `src/app/` hosts the Next.js 15 App Router pages and route handlers; API routes live under `src/app/api/`.
-- `src/db/schema.ts` defines the database schema using Drizzle ORM (accounts, expenses, categories).
-- `src/services/` contains database-facing service classes (ExpenseService, AccountService, CategoryService, UserService).
+- `src/db/schema.ts` defines the database schema using Drizzle ORM (users, accounts, transactions, categories).
+- `src/services/` contains database-facing service classes (TransactionService, AccountService, CategoryService, UserService).
 - `src/lib/db.ts` holds the Drizzle database instance using postgres-js driver.
-- `src/types/expense.ts` defines TypeScript models and DTOs for expenses, accounts, and categories (inferred from Drizzle schema).
+- `src/types/transaction.ts` defines TypeScript models and DTOs for transactions, accounts, and categories (inferred from Drizzle schema).
 - `drizzle/` contains database migrations managed by Drizzle Kit.
 - `public/` stores static assets; `docker-compose.yml` provisions local PostgreSQL.
 
@@ -29,20 +29,31 @@ Expense Tracker is a Next.js 15 application for tracking expenses across multipl
 ## Architecture
 
 ### Database Layer (Drizzle ORM + PostgreSQL)
-- **Schema**: `src/db/schema.ts` defines three main tables using Drizzle ORM with camelCase field names that map to snake_case in the database.
+- **Schema**: `src/db/schema.ts` defines four main tables using Drizzle ORM with camelCase field names that map to snake_case in the database:
+  - `users` - User accounts managed by Clerk authentication
+  - `accounts` - Financial accounts with colors and descriptions
+  - `transactions` - Individual financial transactions with source/target accounts and type
+  - `categories` - Predefined categories with color coding and default transaction types
 - **Connection**: Drizzle instance in `src/lib/db.ts` using postgres-js driver (auto-managed, no manual connection handling needed).
 - **Migrations**: Managed via Drizzle Kit in the `drizzle/` directory.
 - **Custom Types**: Uses custom `numericDecimal` type to return amounts as numbers instead of strings.
+- **Field Naming**: Schema uses camelCase (e.g., `accountId`, `createdAt`) which Drizzle maps to snake_case in the database.
 
 ### Service Layer Pattern
-- All database operations encapsulated in service classes (`src/services/`).
+- All database operations encapsulated in service classes (`src/services/`):
+  - `TransactionService` - CRUD for transactions with validation, filtering, includes joins with accounts table
+  - `AccountService` - Account management with net balance calculations (credits - debits)
+  - `CategoryService` - Category operations including default transaction types
+  - `UserService` - User management for Clerk integration
 - Services use static methods with Drizzle query builder.
-- Return typed results based on types inferred from Drizzle schema.
+- Return typed results based on types inferred from Drizzle schema in `src/types/transaction.ts`.
 
 ### Type System
-- Database entities: `Account`, `Expense`, `Category` (inferred from Drizzle schema using `InferSelectModel`).
-- Create/Update DTOs: `CreateExpenseData`, `UpdateExpenseData`, etc.
-- Types use camelCase to match Drizzle schema (e.g., `accountId` instead of `account_id`).
+- Database entities: `Account`, `Transaction`, `Category`, `User` (inferred from Drizzle schema using `InferSelectModel`).
+- Transaction types: `TransactionType` = 'Debit' | 'Credit' | 'Transfer'
+- Create DTOs use discriminated unions: `CreateDebitData`, `CreateCreditData`, `CreateTransferData`
+- Update DTOs: `UpdateTransactionData`, `UpdateAccountData`, `UpdateCategoryData`
+- Types use camelCase to match Drizzle schema (e.g., `sourceAccountId` instead of `source_account_id`).
 
 ## Coding Style & Naming Conventions
 - TypeScript + React; 2-space indentation and single quotes are the prevailing style.
