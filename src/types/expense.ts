@@ -1,29 +1,9 @@
-export interface Account {
-  id: number;
-  name: string;
-  description: string | null;
-  color: string;
-  created_at: string;
-  updated_at: string;
-}
+import { accounts, expenses, categories } from '@/db/schema';
+import type { InferSelectModel } from 'drizzle-orm';
 
-export interface Expense {
-  id: number;
-  account_id: number;
-  description: string;
-  amount: number;
-  category: string;
-  date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  color: string;
-  created_at: string;
-}
+export type Account = InferSelectModel<typeof accounts>;
+export type Expense = InferSelectModel<typeof expenses>;
+export type Category = InferSelectModel<typeof categories>;
 
 export interface CreateAccountData {
   name: string;
@@ -36,7 +16,7 @@ export interface UpdateAccountData extends Partial<CreateAccountData> {
 }
 
 export interface CreateExpenseData {
-  account_id: number;
+  accountId: number;
   description: string;
   amount: number;
   category: string;

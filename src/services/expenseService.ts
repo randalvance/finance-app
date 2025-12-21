@@ -1,110 +1,86 @@
-import pool from '@/lib/db';
+import { db } from '@/lib/db';
+import { expenses, categories, accounts } from '@/db/schema';
 import { Expense, CreateExpenseData, UpdateExpenseData, Category } from '@/types/expense';
+import { eq, desc, between } from 'drizzle-orm';
 
 export class ExpenseService {
-  static async getAllExpenses(): Promise<Expense[]> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        `SELECT e.*, a.name as account_name, a.color as account_color 
-         FROM expenses e 
-         JOIN accounts a ON e.account_id = a.id 
-         ORDER BY e.date DESC, e.created_at DESC`
-      );
-      return result.rows;
-    } finally {
-      client.release();
-    }
+  static async getAllExpenses(): Promise<any[]> {
+    const result = await db
+      .select({
+        id: expenses.id,
+        accountId: expenses.accountId,
+        description: expenses.description,
+        amount: expenses.amount,
+        category: expenses.category,
+        date: expenses.date,
+        createdAt: expenses.createdAt,
+        updatedAt: expenses.updatedAt,
+        account_name: accounts.name,
+        account_color: accounts.color,
+      })
+      .from(expenses)
+      .innerJoin(accounts, eq(expenses.accountId, accounts.id))
+      .orderBy(desc(expenses.date), desc(expenses.createdAt));
+
+    return result;
   }
 
   static async getExpenseById(id: number): Promise<Expense | null> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query('SELECT * FROM expenses WHERE id = $1', [id]);
-      return result.rows[0] || null;
-    } finally {
-      client.release();
-    }
+    const result = await db.select().from(expenses).where(eq(expenses.id, id));
+    return result[0] || null;
   }
 
   static async createExpense(data: CreateExpenseData): Promise<Expense> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        `INSERT INTO expenses (account_id, description, amount, category, date) 
-         VALUES ($1, $2, $3, $4, $5) 
-         RETURNING *`,
-        [data.account_id, data.description, data.amount, data.category, data.date]
-      );
-      return result.rows[0];
-    } finally {
-      client.release();
-    }
+    const result = await db.insert(expenses).values({
+      accountId: data.accountId,
+      description: data.description,
+      amount: data.amount,
+      category: data.category,
+      date: data.date,
+    }).returning();
+    return result[0];
   }
 
   static async updateExpense(data: UpdateExpenseData): Promise<Expense> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        `UPDATE expenses 
-         SET account_id = COALESCE($2, account_id),
-             description = COALESCE($3, description),
-             amount = COALESCE($4, amount),
-             category = COALESCE($5, category),
-             date = COALESCE($6, date)
-         WHERE id = $1 
-         RETURNING *`,
-        [data.id, data.account_id, data.description, data.amount, data.category, data.date]
-      );
-      return result.rows[0];
-    } finally {
-      client.release();
-    }
+    const updateData: any = {};
+    if (data.accountId !== undefined) updateData.accountId = data.accountId;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.date !== undefined) updateData.date = data.date;
+
+    const result = await db.update(expenses)
+      .set(updateData)
+      .where(eq(expenses.id, data.id))
+      .returning();
+    return result[0];
   }
 
   static async deleteExpense(id: number): Promise<boolean> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query('DELETE FROM expenses WHERE id = $1', [id]);
-      return (result.rowCount || 0) > 0;
-    } finally {
-      client.release();
-    }
+    const result = await db.delete(expenses).where(eq(expenses.id, id)).returning();
+    return result.length > 0;
   }
 
   static async getCategories(): Promise<Category[]> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query('SELECT * FROM categories ORDER BY name');
-      return result.rows;
-    } finally {
-      client.release();
-    }
+    const result = await db.select().from(categories).orderBy(categories.name);
+    return result;
   }
 
   static async getExpensesByDateRange(startDate: string, endDate: string): Promise<Expense[]> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        'SELECT * FROM expenses WHERE date BETWEEN $1 AND $2 ORDER BY date DESC',
-        [startDate, endDate]
-      );
-      return result.rows;
-    } finally {
-      client.release();
-    }
+    const result = await db
+      .select()
+      .from(expenses)
+      .where(between(expenses.date, startDate, endDate))
+      .orderBy(desc(expenses.date));
+    return result;
   }
 
   static async getExpensesByCategory(category: string): Promise<Expense[]> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        'SELECT * FROM expenses WHERE category = $1 ORDER BY date DESC',
-        [category]
-      );
-      return result.rows;
-    } finally {
-      client.release();
-    }
+    const result = await db
+      .select()
+      .from(expenses)
+      .where(eq(expenses.category, category))
+      .orderBy(desc(expenses.date));
+    return result;
   }
 }

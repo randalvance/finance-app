@@ -1,5 +1,7 @@
-import pool from '@/lib/db';
+import { db } from '@/lib/db';
+import { categories } from '@/db/schema';
 import { Category } from '@/types/expense';
+import { eq, asc } from 'drizzle-orm';
 
 interface CreateCategoryData {
   name: string;
@@ -14,64 +16,37 @@ interface UpdateCategoryData {
 
 export class CategoryService {
   static async getAllCategories(): Promise<Category[]> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query('SELECT * FROM categories ORDER BY name');
-      return result.rows;
-    } finally {
-      client.release();
-    }
+    const result = await db.select().from(categories).orderBy(asc(categories.name));
+    return result;
   }
 
   static async getCategoryById(id: number): Promise<Category | null> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query('SELECT * FROM categories WHERE id = $1', [id]);
-      return result.rows[0] || null;
-    } finally {
-      client.release();
-    }
+    const result = await db.select().from(categories).where(eq(categories.id, id));
+    return result[0] || null;
   }
 
   static async createCategory(data: CreateCategoryData): Promise<Category> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        `INSERT INTO categories (name, color) 
-         VALUES ($1, $2) 
-         RETURNING *`,
-        [data.name, data.color || '#6366f1']
-      );
-      return result.rows[0];
-    } finally {
-      client.release();
-    }
+    const result = await db.insert(categories).values({
+      name: data.name,
+      color: data.color || '#6366f1',
+    }).returning();
+    return result[0];
   }
 
   static async updateCategory(data: UpdateCategoryData): Promise<Category> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(
-        `UPDATE categories 
-         SET name = COALESCE($2, name),
-             color = COALESCE($3, color)
-         WHERE id = $1 
-         RETURNING *`,
-        [data.id, data.name, data.color]
-      );
-      return result.rows[0];
-    } finally {
-      client.release();
-    }
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.color !== undefined) updateData.color = data.color;
+
+    const result = await db.update(categories)
+      .set(updateData)
+      .where(eq(categories.id, data.id))
+      .returning();
+    return result[0];
   }
 
   static async deleteCategory(id: number): Promise<boolean> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query('DELETE FROM categories WHERE id = $1', [id]);
-      return (result.rowCount || 0) > 0;
-    } finally {
-      client.release();
-    }
+    const result = await db.delete(categories).where(eq(categories.id, id)).returning();
+    return result.length > 0;
   }
 }
