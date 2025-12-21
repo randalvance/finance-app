@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { UserButton } from '@clerk/nextjs';
 
 interface AccountWithStats {
   id: number;
@@ -161,6 +162,13 @@ export default function Home() {
               >
                 ⚙️ Admin
               </Link>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-10 h-10",
+                  },
+                }}
+              />
             </div>
           </div>
         </div>

@@ -14,17 +14,17 @@
     "db:seed": "tsx src/db/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.36.5",
     "@hookform/resolvers": "^5.2.2",
-    "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.545.0",
     "next": "15.5.9",
-    "next-auth": "^4.24.11",
     "postgres": "^3.4.7",
     "react": "19.1.2",
     "react-dom": "19.1.2",
     "react-hook-form": "^7.65.0",
+    "svix": "^1.82.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {

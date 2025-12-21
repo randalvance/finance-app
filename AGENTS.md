@@ -11,12 +11,11 @@ Expense Tracker is a Next.js 15 application for tracking expenses across multipl
 - `src/lib/db.ts` holds the Drizzle database instance using postgres-js driver.
 - `src/types/expense.ts` defines TypeScript models and DTOs for expenses, accounts, and categories (inferred from Drizzle schema).
 - `drizzle/` contains database migrations managed by Drizzle Kit.
-- `database/schema.sql` is the legacy schema file (migrations now managed via Drizzle).
 - `public/` stores static assets; `docker-compose.yml` provisions local PostgreSQL.
 
 ## Build, Test, and Development Commands
 - `npm install` installs dependencies.
-- `docker-compose up -d` starts PostgreSQL (database auto-initializes with schema from database/schema.sql).
+- `docker-compose up -d` starts PostgreSQL (run `npm run db:push` after to initialize schema).
 - `npm run dev` runs the app with Turbopack at `http://localhost:3000`.
 - `npm run build` creates a production build; `npm start` serves it.
 - `npm run lint` runs ESLint (Next.js + TypeScript rules).
@@ -25,6 +24,7 @@ Expense Tracker is a Next.js 15 application for tracking expenses across multipl
 - `npm run db:migrate` runs migrations (for production).
 - `npm run db:seed` seeds database with default data.
 - `npm run db:studio` opens Drizzle Studio (visual database browser).
+- `ngrok http --domain=your-static-domain.ngrok-free.dev 3000` exposes localhost for Clerk webhooks (development only, requires free ngrok account with static domain).
 
 ## Architecture
 
@@ -61,8 +61,9 @@ Expense Tracker is a Next.js 15 application for tracking expenses across multipl
 - Link relevant issues and call out any schema or migration changes.
 
 ## Configuration & Secrets
-- Copy `.env.example` to `.env.local` and set `DATABASE_URL`, `NODE_ENV`, `NEXTAUTH_SECRET`, and `NEXTAUTH_URL`.
+- Copy `.env.example` to `.env.local` and set `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `CLERK_WEBHOOK_SECRET`.
 - Local database defaults (user/password/db) are defined in `docker-compose.yml`.
+- For Clerk webhooks in development: use `ngrok http --domain=your-static-domain.ngrok-free.dev 3000` (requires free account) and configure webhook endpoint in Clerk Dashboard.
 
 ## Important Notes
 - Drizzle ORM manages all database connections automatically (no manual connection management needed).
@@ -72,3 +73,4 @@ Expense Tracker is a Next.js 15 application for tracking expenses across multipl
 - Schema changes require running `npm run db:generate` to create migrations.
 - Use `npm run db:push` for quick schema updates during development.
 - Decimal amounts are automatically converted to numbers via custom `numericDecimal` type.
+- Clerk webhooks require tunneling in development (ngrok recommended); `src/lib/auth.ts` has a fallback that auto-creates users if webhooks aren't configured.

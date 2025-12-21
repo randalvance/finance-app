@@ -16,7 +16,8 @@ npm install
 # Start PostgreSQL database (Docker required)
 docker-compose up -d
 
-# Database will auto-initialize with schema from database/schema.sql
+# Initialize database schema with Drizzle
+npm run db:push
 ```
 
 ### Running the Application
@@ -60,6 +61,35 @@ docker-compose logs -f postgres
 # Stop database
 docker-compose down
 ```
+
+### Clerk Webhook Setup (Development)
+For Clerk webhooks to work in development, you need to expose localhost using a tunneling service:
+
+```bash
+# Install ngrok
+brew install ngrok
+
+# Sign up for free account at https://ngrok.com and get auth token
+# Add your auth token (one-time setup)
+ngrok config add-authtoken <your-token>
+
+# Get a static domain from https://dashboard.ngrok.com/domains
+# Free accounts get 1 static domain (e.g., your-name-12345.ngrok-free.dev)
+
+# Start tunnel with your static domain
+ngrok http --domain=your-static-domain.ngrok-free.dev 3000
+```
+
+**Steps to configure Clerk webhooks:**
+1. Start ngrok with your static domain and copy the URL (e.g., `https://your-static-domain.ngrok-free.dev`)
+2. Go to [Clerk Dashboard](https://dashboard.clerk.com) → Your App → Webhooks
+3. Click "Add Endpoint"
+4. Enter webhook URL: `https://your-static-domain.ngrok-free.dev/api/webhooks/clerk`
+5. Subscribe to events: `user.created`, `user.updated`, `user.deleted`
+6. Copy the "Signing Secret" and add to `.env.local` as `CLERK_WEBHOOK_SECRET`
+7. Test by signing up a new user - they should be auto-created in the database
+
+**Note:** The `src/lib/auth.ts` file includes a fallback that auto-creates users if webhooks aren't configured, so the app works without webhooks (but webhooks are recommended for production). Using a static domain means the webhook URL persists across ngrok restarts.
 
 ## Architecture
 
@@ -107,9 +137,9 @@ All database models and DTOs are defined in `src/types/expense.ts`:
 ### Environment Variables
 Copy `.env.example` to `.env.local` and configure:
 - `DATABASE_URL` - PostgreSQL connection string
-- `NODE_ENV` - development/production
-- `NEXTAUTH_SECRET` - Authentication secret
-- `NEXTAUTH_URL` - Application URL
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk publishable key (from Clerk Dashboard)
+- `CLERK_SECRET_KEY` - Clerk secret key (from Clerk Dashboard)
+- `CLERK_WEBHOOK_SECRET` - Webhook signing secret (from Clerk Webhook settings, optional for dev)
 
 ### Path Aliases
 - `@/*` maps to `src/*` (configured in tsconfig.json)

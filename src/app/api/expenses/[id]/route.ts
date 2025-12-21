@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ExpenseService } from '@/services/expenseService';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await requireAuth();
     const { id: idParam } = await params;
     const id = parseInt(idParam);
     if (isNaN(id)) {
@@ -15,7 +17,7 @@ export async function GET(
       );
     }
 
-    const expense = await ExpenseService.getExpenseById(id);
+    const expense = await ExpenseService.getExpenseById(id, userId);
     if (!expense) {
       return NextResponse.json(
         { error: 'Expense not found' },
@@ -25,6 +27,9 @@ export async function GET(
 
     return NextResponse.json(expense);
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error fetching expense:', error);
     return NextResponse.json(
       { error: 'Failed to fetch expense' },
@@ -38,6 +43,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await requireAuth();
     const { id: idParam } = await params;
     const id = parseInt(idParam);
     if (isNaN(id)) {
@@ -48,10 +54,20 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const expense = await ExpenseService.updateExpense({ id, ...body });
+    const expense = await ExpenseService.updateExpense({ id, ...body }, userId);
+
+    if (!expense) {
+      return NextResponse.json(
+        { error: 'Expense not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json(expense);
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error updating expense:', error);
     return NextResponse.json(
       { error: 'Failed to update expense' },
@@ -65,6 +81,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await requireAuth();
     const { id: idParam } = await params;
     const id = parseInt(idParam);
     if (isNaN(id)) {
@@ -74,7 +91,7 @@ export async function DELETE(
       );
     }
 
-    const deleted = await ExpenseService.deleteExpense(id);
+    const deleted = await ExpenseService.deleteExpense(id, userId);
     if (!deleted) {
       return NextResponse.json(
         { error: 'Expense not found' },
@@ -84,6 +101,9 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Expense deleted successfully' });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error deleting expense:', error);
     return NextResponse.json(
       { error: 'Failed to delete expense' },

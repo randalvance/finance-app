@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AccountService } from '@/services/accountService';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
-    const accounts = await AccountService.getAllAccounts();
-    
+    const userId = await requireAuth();
+    const accounts = await AccountService.getAllAccounts(userId);
+
     // Enrich accounts with expense counts and totals
     const enrichedAccounts = await Promise.all(
       accounts.map(async (account) => {
-        const expenseCount = await AccountService.getAccountExpenseCount(account.id);
-        const totalAmount = await AccountService.getAccountTotalAmount(account.id);
+        const expenseCount = await AccountService.getAccountExpenseCount(account.id, userId);
+        const totalAmount = await AccountService.getAccountTotalAmount(account.id, userId);
         return {
           ...account,
           expenseCount,
@@ -17,9 +19,12 @@ export async function GET() {
         };
       })
     );
-    
+
     return NextResponse.json(enrichedAccounts);
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error fetching accounts:', error);
     return NextResponse.json(
       { error: 'Failed to fetch accounts' },
@@ -30,6 +35,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = await requireAuth();
     const body = await request.json();
     const { name, description, color } = body;
 
@@ -41,6 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const account = await AccountService.createAccount({
+      userId,
       name,
       description,
       color,
@@ -48,6 +55,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(account, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error creating account:', error);
     return NextResponse.json(
       { error: 'Failed to create account' },
