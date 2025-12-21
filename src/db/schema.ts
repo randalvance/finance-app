@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, date, timestamp, integer, customType, unique, check } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, date, timestamp, integer, customType, unique, check, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // Custom decimal type that returns numbers instead of strings
@@ -64,7 +64,12 @@ export const transactions = pgTable('transactions', {
       (${table.transactionType} = 'Credit' AND ${table.targetAccountId} IS NOT NULL) OR
       (${table.transactionType} = 'Transfer' AND ${table.sourceAccountId} IS NOT NULL AND ${table.targetAccountId} IS NOT NULL AND ${table.sourceAccountId} != ${table.targetAccountId})
     `
-  )
+  ),
+  // Indexes for performance
+  sourceAccountIdx: index('idx_transactions_source_account').on(table.sourceAccountId),
+  targetAccountIdx: index('idx_transactions_target_account').on(table.targetAccountId),
+  typeIdx: index('idx_transactions_type').on(table.transactionType),
+  userTypeIdx: index('idx_transactions_user_type').on(table.userId, table.transactionType)
 }));
 
 export const categories = pgTable('categories', {
