@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "concurrently \"next dev --turbopack\" \"npm run ngrok\"",
+    "ngrok": "dotenv -e .env.local -- bash -c 'ngrok http --domain=$(echo $NGROK_DOMAIN | sed \"s|https://||\") 3000'",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
@@ -33,6 +34,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
+    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9",
     "eslint-config-next": "15.5.9",
