@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AccountService } from '@/services/accountService';
+import { requireAuth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await requireAuth();
     const { id } = await params;
     const accountId = parseInt(id);
     
@@ -16,7 +18,7 @@ export async function GET(
       );
     }
 
-    const account = await AccountService.getAccountById(accountId);
+    const account = await AccountService.getAccountById(accountId, userId);
     if (!account) {
       return NextResponse.json(
         { error: 'Account not found' },
@@ -26,6 +28,9 @@ export async function GET(
 
     return NextResponse.json(account);
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error fetching account:', error);
     return NextResponse.json(
       { error: 'Failed to fetch account' },
@@ -39,6 +44,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await requireAuth();
     const { id } = await params;
     const accountId = parseInt(id);
     
@@ -50,10 +56,20 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const account = await AccountService.updateAccount({ id: accountId, ...body });
+    const account = await AccountService.updateAccount({ id: accountId, ...body }, userId);
+
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Account not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json(account);
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error updating account:', error);
     return NextResponse.json(
       { error: 'Failed to update account' },
@@ -67,6 +83,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await requireAuth();
     const { id } = await params;
     const accountId = parseInt(id);
     
@@ -77,7 +94,7 @@ export async function DELETE(
       );
     }
 
-    const deleted = await AccountService.deleteAccount(accountId);
+    const deleted = await AccountService.deleteAccount(accountId, userId);
     if (!deleted) {
       return NextResponse.json(
         { error: 'Account not found' },
@@ -87,6 +104,9 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Account deleted successfully' });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error deleting account:', error);
     return NextResponse.json(
       { error: 'Failed to delete account. Make sure there are no transactions associated with it.' },

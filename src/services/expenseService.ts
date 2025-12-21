@@ -5,7 +5,7 @@ import { eq, desc, between, and } from 'drizzle-orm';
 
 type ExpenseWithAccount = Expense & {
   account_name: string;
-  account_color: string;
+  account_color: string | null;
 };
 
 export class ExpenseService {
@@ -13,6 +13,7 @@ export class ExpenseService {
     const result = await db
       .select({
         id: expenses.id,
+        userId: expenses.userId,
         accountId: expenses.accountId,
         description: expenses.description,
         amount: expenses.amount,

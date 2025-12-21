@@ -1,38 +1,52 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
-
-// Load environment variables BEFORE any other imports
-config({ path: resolve(process.cwd(), '.env.local') });
-config({ path: resolve(process.cwd(), '.env') });
+// Environment variables are automatically loaded by Next.js
+// or can be loaded via: tsx --env-file=.env.local src/db/seed.ts
 
 async function seed() {
   console.log('Seeding database...');
 
   // Import db and schema after env vars are loaded
   const { db } = await import('@/lib/db');
-  const { accounts, categories } = await import('./schema');
+  const { users, accounts, categories } = await import('./schema');
+
+  // Create a demo user for seeding (you can update this with your Clerk user ID)
+  const [demoUser] = await db.insert(users)
+    .values({
+      clerkId: 'seed_demo_user',
+      email: 'demo@example.com',
+      firstName: 'Demo',
+      lastName: 'User'
+    })
+    .onConflictDoNothing()
+    .returning();
+
+  if (!demoUser) {
+    console.log('Demo user already exists, skipping seed');
+    return;
+  }
+
+  const userId = demoUser.id;
 
   // Insert default accounts
   await db.insert(accounts)
     .values([
-      { name: 'Personal', description: 'Personal expenses and purchases', color: '#3b82f6' },
-      { name: 'Business', description: 'Business-related expenses', color: '#10b981' },
-      { name: 'Family', description: 'Family and household expenses', color: '#ec4899' },
+      { userId, name: 'Personal', description: 'Personal expenses and purchases', color: '#3b82f6' },
+      { userId, name: 'Business', description: 'Business-related expenses', color: '#10b981' },
+      { userId, name: 'Family', description: 'Family and household expenses', color: '#ec4899' },
     ])
     .onConflictDoNothing();
 
   // Insert default categories
   await db.insert(categories)
     .values([
-      { name: 'Food & Dining', color: '#ef4444' },
-      { name: 'Transportation', color: '#3b82f6' },
-      { name: 'Shopping', color: '#8b5cf6' },
-      { name: 'Entertainment', color: '#f59e0b' },
-      { name: 'Bills & Utilities', color: '#10b981' },
-      { name: 'Healthcare', color: '#ec4899' },
-      { name: 'Travel', color: '#14b8a6' },
-      { name: 'Education', color: '#6366f1' },
-      { name: 'Other', color: '#6b7280' },
+      { userId, name: 'Food & Dining', color: '#ef4444' },
+      { userId, name: 'Transportation', color: '#3b82f6' },
+      { userId, name: 'Shopping', color: '#8b5cf6' },
+      { userId, name: 'Entertainment', color: '#f59e0b' },
+      { userId, name: 'Bills & Utilities', color: '#10b981' },
+      { userId, name: 'Healthcare', color: '#ec4899' },
+      { userId, name: 'Travel', color: '#14b8a6' },
+      { userId, name: 'Education', color: '#6366f1' },
+      { userId, name: 'Other', color: '#6b7280' },
     ])
     .onConflictDoNothing();
 

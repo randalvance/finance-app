@@ -11,7 +11,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx --env-file=.env.local src/db/seed.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
@@ -21,8 +21,8 @@
     "lucide-react": "^0.545.0",
     "next": "15.5.9",
     "postgres": "^3.4.7",
-    "react": "19.1.2",
-    "react-dom": "19.1.2",
+    "react": "~19.1.4",
+    "react-dom": "~19.1.4",
     "react-hook-form": "^7.65.0",
     "svix": "^1.82.0",
     "zod": "^4.1.12"
