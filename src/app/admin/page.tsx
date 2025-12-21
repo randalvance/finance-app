@@ -15,6 +15,7 @@ interface Category {
   id: number;
   name: string;
   color: string;
+  default_transaction_type?: string;
   created_at: string;
 }
 
@@ -38,7 +39,8 @@ export default function AdminPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    default_transaction_type: 'Debit' as 'Debit' | 'Credit' | 'Transfer'
   });
   
   const [submitting, setSubmitting] = useState(false);
@@ -150,11 +152,12 @@ export default function AdminPage() {
       setEditingCategory(category);
       setCategoryFormData({
         name: category.name,
-        color: category.color
+        color: category.color,
+        default_transaction_type: (category.default_transaction_type as 'Debit' | 'Credit' | 'Transfer') || 'Debit'
       });
     } else {
       setEditingCategory(null);
-      setCategoryFormData({ name: '', color: '#3b82f6' });
+      setCategoryFormData({ name: '', color: '#3b82f6', default_transaction_type: 'Debit' });
     }
     setShowCategoryModal(true);
   };
@@ -179,7 +182,7 @@ export default function AdminPage() {
       if (response.ok) {
         setShowCategoryModal(false);
         setEditingCategory(null);
-        setCategoryFormData({ name: '', color: '#3b82f6' });
+        setCategoryFormData({ name: '', color: '#3b82f6', default_transaction_type: 'Debit' });
         fetchCategories();
       } else {
         const error = await response.json();
@@ -355,6 +358,9 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Color
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Default Type
+                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
@@ -374,6 +380,9 @@ export default function AdminPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-400">{category.color}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-300">{category.default_transaction_type || 'Debit'}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                         <button
@@ -522,13 +531,32 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <div>
+                <label htmlFor="default-transaction-type" className="block text-sm font-medium text-gray-300 mb-2">
+                  Default Transaction Type
+                </label>
+                <select
+                  id="default-transaction-type"
+                  value={categoryFormData.default_transaction_type}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, default_transaction_type: e.target.value as 'Debit' | 'Credit' | 'Transfer' })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Debit">Debit (Spending)</option>
+                  <option value="Credit">Credit (Income)</option>
+                  <option value="Transfer">Transfer</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-400">
+                  This will be pre-selected when creating transactions with this category
+                </p>
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCategoryModal(false);
                     setEditingCategory(null);
-                    setCategoryFormData({ name: '', color: '#3b82f6' });
+                    setCategoryFormData({ name: '', color: '#3b82f6', default_transaction_type: 'Debit' });
                   }}
                   className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
                   disabled={submitting}

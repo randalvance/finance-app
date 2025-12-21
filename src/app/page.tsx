@@ -9,7 +9,7 @@ interface AccountWithStats {
   name: string;
   description: string | null;
   color: string;
-  expenseCount: number;
+  transactionCount: number;
   totalAmount: number;
 }
 
@@ -17,28 +17,41 @@ interface Category {
   id: number;
   name: string;
   color: string;
+  defaultTransactionType?: 'Debit' | 'Credit' | 'Transfer';
 }
 
-interface Expense {
+interface Transaction {
   id: number;
-  account_id: number;
+  transaction_type: 'Debit' | 'Credit' | 'Transfer';
+  source_account_id: number | null;
+  target_account_id: number | null;
   description: string;
   amount: number;
   category: string;
   date: string;
   created_at: string;
-  account_name?: string;
-  account_color?: string;
+  source_account?: {
+    id: number;
+    name: string;
+    color: string;
+  };
+  target_account?: {
+    id: number;
+    name: string;
+    color: string;
+  };
 }
 
 export default function Home() {
   const [accounts, setAccounts] = useState<AccountWithStats[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [expenseFormData, setExpenseFormData] = useState({
-    account_id: '',
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [transactionFormData, setTransactionFormData] = useState({
+    transaction_type: 'Debit' as 'Debit' | 'Credit' | 'Transfer',
+    source_account_id: '',
+    target_account_id: '',
     description: '',
     amount: '',
     category: '',
@@ -49,7 +62,7 @@ export default function Home() {
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
-    fetchExpenses();
+    fetchTransactions();
   }, []);
 
   const fetchAccounts = async () => {
@@ -78,69 +91,126 @@ export default function Home() {
     }
   };
 
-  const fetchExpenses = async () => {
+  const fetchTransactions = async () => {
     try {
-      const response = await fetch('/api/expenses');
+      const response = await fetch('/api/transactions');
       if (response.ok) {
         const data = await response.json();
-        setExpenses(data);
+        setTransactions(data);
       }
     } catch (error) {
-      console.error('Error fetching expenses:', error);
+      console.error('Error fetching transactions:', error);
     }
   };
 
-  const openExpenseModal = () => {
+  const openTransactionModal = () => {
     // Auto-select account if there's only one
     if (accounts.length === 1) {
-      setExpenseFormData({
-        ...expenseFormData,
-        account_id: accounts[0].id.toString()
+      setTransactionFormData({
+        ...transactionFormData,
+        source_account_id: accounts[0].id.toString()
       });
     }
-    setShowExpenseModal(true);
+    setShowTransactionModal(true);
   };
 
-  const handleExpenseSubmit = async (e: React.FormEvent) => {
+  const handleCategoryChange = (categoryName: string) => {
+    const selectedCategory = categories.find(c => c.name === categoryName);
+    if (selectedCategory && selectedCategory.defaultTransactionType) {
+      setTransactionFormData({
+        ...transactionFormData,
+        category: categoryName,
+        transaction_type: selectedCategory.defaultTransactionType
+      });
+    } else {
+      setTransactionFormData({
+        ...transactionFormData,
+        category: categoryName
+      });
+    }
+  };
+
+  const handleTransactionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/expenses', {
+      // Validate based on transaction type
+      if (transactionFormData.transaction_type === 'Debit' && !transactionFormData.source_account_id) {
+        alert('Debit transactions require a source account');
+        setSubmitting(false);
+        return;
+      }
+      if (transactionFormData.transaction_type === 'Credit' && !transactionFormData.target_account_id) {
+        alert('Credit transactions require a target account');
+        setSubmitting(false);
+        return;
+      }
+      if (transactionFormData.transaction_type === 'Transfer') {
+        if (!transactionFormData.source_account_id || !transactionFormData.target_account_id) {
+          alert('Transfer transactions require both source and target accounts');
+          setSubmitting(false);
+          return;
+        }
+        if (transactionFormData.source_account_id === transactionFormData.target_account_id) {
+          alert('Source and target accounts must be different for transfers');
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const response = await fetch('/api/transactions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          account_id: parseInt(expenseFormData.account_id),
-          description: expenseFormData.description,
-          amount: parseFloat(expenseFormData.amount),
-          category: expenseFormData.category,
-          date: expenseFormData.date,
+          transaction_type: transactionFormData.transaction_type,
+          source_account_id: transactionFormData.source_account_id ? parseInt(transactionFormData.source_account_id) : null,
+          target_account_id: transactionFormData.target_account_id ? parseInt(transactionFormData.target_account_id) : null,
+          description: transactionFormData.description,
+          amount: parseFloat(transactionFormData.amount),
+          category: transactionFormData.category,
+          date: transactionFormData.date,
         }),
       });
 
       if (response.ok) {
-        setShowExpenseModal(false);
-        setExpenseFormData({
-          account_id: '',
+        setShowTransactionModal(false);
+        setTransactionFormData({
+          transaction_type: 'Debit',
+          source_account_id: '',
+          target_account_id: '',
           description: '',
           amount: '',
           category: '',
           date: new Date().toISOString().split('T')[0]
         });
         fetchAccounts(); // Refresh to update account totals
-        fetchExpenses(); // Refresh to show new expense
+        fetchTransactions(); // Refresh to show new transaction
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create expense');
+        alert(error.error || 'Failed to create transaction');
       }
     } catch (error) {
-      console.error('Error creating expense:', error);
-      alert('Failed to create expense');
+      console.error('Error creating transaction:', error);
+      alert('Failed to create transaction');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const getTransactionTypeBadge = (type: 'Debit' | 'Credit' | 'Transfer') => {
+    const styles = {
+      Debit: 'bg-red-900 text-red-200 border-red-700',
+      Credit: 'bg-green-900 text-green-200 border-green-700',
+      Transfer: 'bg-blue-900 text-blue-200 border-blue-700'
+    };
+    return (
+      <span className={`px-2 py-1 text-xs rounded border ${styles[type]}`}>
+        {type}
+      </span>
+    );
   };
 
   return (
@@ -148,13 +218,13 @@ export default function Home() {
       <header className="bg-gray-900 shadow-sm border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-100">Expense Tracker</h1>
+            <h1 className="text-2xl font-bold text-gray-100">Transaction Tracker</h1>
             <div className="flex items-center space-x-3">
               <button
-                onClick={openExpenseModal}
+                onClick={openTransactionModal}
                 className="bg-blue-600 text-white px-6 py-2.5 rounded-md hover:bg-blue-700 transition-colors font-medium shadow-lg"
               >
-                + Add Expense
+                + Add Transaction
               </button>
               <Link
                 href="/admin"
@@ -188,7 +258,7 @@ export default function Home() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-400 truncate">Total Transactions</dt>
+                      <dt className="text-sm font-medium text-gray-400 truncate">Total Net Balance</dt>
                       <dd className="text-lg font-medium text-gray-100">
                         ${accounts.reduce((sum, a) => sum + a.totalAmount, 0).toFixed(2)}
                       </dd>
@@ -208,7 +278,7 @@ export default function Home() {
                     <dl>
                       <dt className="text-sm font-medium text-gray-400 truncate">Transaction Count</dt>
                       <dd className="text-lg font-medium text-gray-100">
-                        {accounts.reduce((sum, a) => sum + a.expenseCount, 0)}
+                        {accounts.reduce((sum, a) => sum + a.transactionCount, 0)}
                       </dd>
                     </dl>
                   </div>
@@ -243,16 +313,16 @@ export default function Home() {
               <div className="text-center py-12">
                 <div className="text-gray-400">Loading transactions...</div>
               </div>
-            ) : expenses.length === 0 ? (
+            ) : transactions.length === 0 ? (
               <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-12 text-center">
-                <div className="text-gray-600 text-6xl mb-4">�</div>
+                <div className="text-gray-600 text-6xl mb-4">💰</div>
                 <h3 className="text-lg font-medium text-gray-200 mb-2">No transactions yet</h3>
-                <p className="text-gray-400 mb-4">Get started by adding your first expense</p>
-                <button 
-                  onClick={openExpenseModal}
+                <p className="text-gray-400 mb-4">Get started by adding your first transaction</p>
+                <button
+                  onClick={openTransactionModal}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Add Your First Expense
+                  Add Your First Transaction
                 </button>
               </div>
             ) : (
@@ -264,10 +334,13 @@ export default function Home() {
                         Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Description
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Account
+                        Accounts
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Category
@@ -278,29 +351,67 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
-                    {expenses.slice(0, 20).map((expense) => (
-                      <tr key={expense.id} className="hover:bg-gray-800 transition-colors">
+                    {transactions.slice(0, 20).map((transaction) => (
+                      <tr key={transaction.id} className="hover:bg-gray-800 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                          {new Date(expense.date).toLocaleDateString()}
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getTransactionTypeBadge(transaction.transaction_type)}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-100">{expense.description}</div>
+                          <div className="text-sm text-gray-100">{transaction.description}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: expense.account_color || '#6366f1' }}
-                            />
-                            <span className="text-sm text-gray-300">{expense.account_name}</span>
-                          </div>
+                          {transaction.transaction_type === 'Debit' && transaction.source_account && (
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: transaction.source_account.color }}
+                              />
+                              <span className="text-sm text-gray-300">{transaction.source_account.name}</span>
+                            </div>
+                          )}
+                          {transaction.transaction_type === 'Credit' && transaction.target_account && (
+                            <div className="flex items-center space-x-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: transaction.target_account.color }}
+                              />
+                              <span className="text-sm text-gray-300">{transaction.target_account.name}</span>
+                            </div>
+                          )}
+                          {transaction.transaction_type === 'Transfer' && transaction.source_account && transaction.target_account && (
+                            <div className="flex items-center space-x-1 text-sm">
+                              <div className="flex items-center space-x-1">
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: transaction.source_account.color }}
+                                />
+                                <span className="text-gray-300">{transaction.source_account.name}</span>
+                              </div>
+                              <span className="text-gray-500">→</span>
+                              <div className="flex items-center space-x-1">
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: transaction.target_account.color }}
+                                />
+                                <span className="text-gray-300">{transaction.target_account.name}</span>
+                              </div>
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-400">{expense.category}</span>
+                          <span className="text-sm text-gray-400">{transaction.category}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <span className="text-sm font-medium text-gray-100">
-                            ${parseFloat(expense.amount.toString()).toFixed(2)}
+                          <span className={`text-sm font-medium ${
+                            transaction.transaction_type === 'Credit' ? 'text-green-400' :
+                            transaction.transaction_type === 'Debit' ? 'text-red-400' :
+                            'text-blue-400'
+                          }`}>
+                            {transaction.transaction_type === 'Credit' ? '+' : transaction.transaction_type === 'Debit' ? '-' : ''}
+                            ${parseFloat(transaction.amount.toString()).toFixed(2)}
                           </span>
                         </td>
                       </tr>
@@ -313,45 +424,141 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Add Expense Modal */}
-      {showExpenseModal && (
+      {/* Add Transaction Modal */}
+      {showTransactionModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
             <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-100">Add New Expense</h3>
+              <h3 className="text-lg font-semibold text-gray-100">Add New Transaction</h3>
             </div>
-            
-            <form onSubmit={handleExpenseSubmit} className="p-6 space-y-4">
+
+            <form onSubmit={handleTransactionSubmit} className="p-6 space-y-4">
+              {/* Transaction Type Selector */}
               <div>
-                <label htmlFor="account" className="block text-sm font-medium text-gray-300 mb-2">
-                  Account *
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Transaction Type *
                 </label>
-                <select
-                  id="account"
-                  required
-                  value={expenseFormData.account_id}
-                  onChange={(e) => setExpenseFormData({ ...expenseFormData, account_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select an account</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Debit' })}
+                    className={`px-4 py-2 rounded-md border transition-colors ${
+                      transactionFormData.transaction_type === 'Debit'
+                        ? 'bg-red-900 border-red-700 text-red-200'
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    Debit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Credit' })}
+                    className={`px-4 py-2 rounded-md border transition-colors ${
+                      transactionFormData.transaction_type === 'Credit'
+                        ? 'bg-green-900 border-green-700 text-green-200'
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    Credit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Transfer' })}
+                    className={`px-4 py-2 rounded-md border transition-colors ${
+                      transactionFormData.transaction_type === 'Transfer'
+                        ? 'bg-blue-900 border-blue-700 text-blue-200'
+                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                    }`}
+                  >
+                    Transfer
+                  </button>
+                </div>
               </div>
 
+              {/* Conditional Account Fields */}
+              {transactionFormData.transaction_type === 'Transfer' ? (
+                <>
+                  {/* Source Account for Transfer */}
+                  <div>
+                    <label htmlFor="source-account" className="block text-sm font-medium text-gray-300 mb-2">
+                      Source Account *
+                    </label>
+                    <select
+                      id="source-account"
+                      required
+                      value={transactionFormData.source_account_id}
+                      onChange={(e) => setTransactionFormData({ ...transactionFormData, source_account_id: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select source account</option>
+                      {accounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Target Account for Transfer */}
+                  <div>
+                    <label htmlFor="target-account" className="block text-sm font-medium text-gray-300 mb-2">
+                      Target Account *
+                    </label>
+                    <select
+                      id="target-account"
+                      required
+                      value={transactionFormData.target_account_id}
+                      onChange={(e) => setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select target account</option>
+                      {accounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                /* Single Account field for Debit/Credit */
+                <div>
+                  <label htmlFor="account" className="block text-sm font-medium text-gray-300 mb-2">
+                    Account *
+                  </label>
+                  <select
+                    id="account"
+                    required
+                    value={transactionFormData.transaction_type === 'Debit' ? transactionFormData.source_account_id : transactionFormData.target_account_id}
+                    onChange={(e) => {
+                      if (transactionFormData.transaction_type === 'Debit') {
+                        setTransactionFormData({ ...transactionFormData, source_account_id: e.target.value });
+                      } else {
+                        setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value });
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select an account</option>
+                    {accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
-                <label htmlFor="expense-description" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="transaction-description" className="block text-sm font-medium text-gray-300 mb-2">
                   Description *
                 </label>
                 <input
                   type="text"
-                  id="expense-description"
+                  id="transaction-description"
                   required
-                  value={expenseFormData.description}
-                  onChange={(e) => setExpenseFormData({ ...expenseFormData, description: e.target.value })}
+                  value={transactionFormData.description}
+                  onChange={(e) => setTransactionFormData({ ...transactionFormData, description: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Grocery shopping"
                 />
@@ -369,8 +576,8 @@ export default function Home() {
                     required
                     step="0.01"
                     min="0"
-                    value={expenseFormData.amount}
-                    onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
+                    value={transactionFormData.amount}
+                    onChange={(e) => setTransactionFormData({ ...transactionFormData, amount: e.target.value })}
                     className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0.00"
                   />
@@ -384,8 +591,8 @@ export default function Home() {
                 <select
                   id="category"
                   required
-                  value={expenseFormData.category}
-                  onChange={(e) => setExpenseFormData({ ...expenseFormData, category: e.target.value })}
+                  value={transactionFormData.category}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a category</option>
@@ -405,8 +612,8 @@ export default function Home() {
                   type="date"
                   id="date"
                   required
-                  value={expenseFormData.date}
-                  onChange={(e) => setExpenseFormData({ ...expenseFormData, date: e.target.value })}
+                  value={transactionFormData.date}
+                  onChange={(e) => setTransactionFormData({ ...transactionFormData, date: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -415,9 +622,11 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowExpenseModal(false);
-                    setExpenseFormData({
-                      account_id: '',
+                    setShowTransactionModal(false);
+                    setTransactionFormData({
+                      transaction_type: 'Debit',
+                      source_account_id: '',
+                      target_account_id: '',
                       description: '',
                       amount: '',
                       category: '',
@@ -434,7 +643,7 @@ export default function Home() {
                   disabled={submitting}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Adding...' : 'Add Expense'}
+                  {submitting ? 'Adding...' : 'Add Transaction'}
                 </button>
               </div>
             </form>

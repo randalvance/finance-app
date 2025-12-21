@@ -7,14 +7,14 @@ export async function GET() {
     const userId = await requireAuth();
     const accounts = await AccountService.getAllAccounts(userId);
 
-    // Enrich accounts with expense counts and totals
+    // Enrich accounts with transaction counts and totals
     const enrichedAccounts = await Promise.all(
       accounts.map(async (account) => {
-        const expenseCount = await AccountService.getAccountExpenseCount(account.id, userId);
+        const transactionCount = await AccountService.getAccountTransactionCount(account.id, userId);
         const totalAmount = await AccountService.getAccountTotalAmount(account.id, userId);
         return {
           ...account,
-          expenseCount,
+          transactionCount,
           totalAmount,
         };
       })

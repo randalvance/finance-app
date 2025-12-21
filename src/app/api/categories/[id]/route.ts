@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { CategoryService } from '@/services/categoryService';
 import { requireAuth } from '@/lib/auth';
+import { TransactionType } from '@/types/transaction';
 
 export async function GET(
   request: Request,
@@ -39,11 +40,23 @@ export async function PUT(
     const userId = await requireAuth();
     const { id } = await context.params;
     const body = await request.json();
-    
-    const category = await CategoryService.updateCategory({
+
+    const updateData: {
+      id: number;
+      name?: string;
+      color?: string;
+      defaultTransactionType?: TransactionType;
+    } = {
       id: parseInt(id),
-      ...body
-    }, userId);
+    };
+
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.color !== undefined) updateData.color = body.color;
+    if (body.default_transaction_type !== undefined || body.defaultTransactionType !== undefined) {
+      updateData.defaultTransactionType = (body.default_transaction_type || body.defaultTransactionType) as TransactionType;
+    }
+
+    const category = await CategoryService.updateCategory(updateData, userId);
 
     if (!category) {
       return NextResponse.json(

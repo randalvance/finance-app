@@ -43,3 +43,6 @@ next-env.d.ts
 
 # temp files
 temp
+
+# agent logs
+.agent_log

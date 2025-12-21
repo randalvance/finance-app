@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { categories } from '@/db/schema';
-import { Category, CreateCategoryData, UpdateCategoryData } from '@/types/expense';
+import { Category, CreateCategoryData, UpdateCategoryData } from '@/types/transaction';
 import { eq, asc, and } from 'drizzle-orm';
 
 export class CategoryService {
@@ -24,6 +24,7 @@ export class CategoryService {
       userId: data.userId,
       name: data.name,
       color: data.color || '#6366f1',
+      defaultTransactionType: data.defaultTransactionType || 'Debit',
     }).returning();
     return result[0];
   }
@@ -32,6 +33,7 @@ export class CategoryService {
     const updateData: Partial<typeof categories.$inferInsert> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.color !== undefined) updateData.color = data.color;
+    if (data.defaultTransactionType !== undefined) updateData.defaultTransactionType = data.defaultTransactionType;
 
     const result = await db.update(categories)
       .set(updateData)

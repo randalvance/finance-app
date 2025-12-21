@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
-import { accounts, expenses } from '@/db/schema';
-import { Account, CreateAccountData, UpdateAccountData } from '@/types/expense';
-import { eq, sql, and } from 'drizzle-orm';
+import { accounts, transactions } from '@/db/schema';
+import { Account, CreateAccountData, UpdateAccountData } from '@/types/transaction';
+import { eq, sql, and, or } from 'drizzle-orm';
 
 export class AccountService {
   static async getAllAccounts(userId: number): Promise<Account[]> {
@@ -49,19 +49,57 @@ export class AccountService {
     return result.length > 0;
   }
 
-  static async getAccountExpenseCount(accountId: number, userId: number): Promise<number> {
+  static async getAccountTransactionCount(accountId: number, userId: number): Promise<number> {
     const result = await db
       .select({ count: sql<number>`count(*)` })
-      .from(expenses)
-      .where(and(eq(expenses.accountId, accountId), eq(expenses.userId, userId)));
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          or(
+            eq(transactions.sourceAccountId, accountId),
+            eq(transactions.targetAccountId, accountId)
+          )
+        )
+      );
     return Number(result[0]?.count || 0);
   }
 
   static async getAccountTotalAmount(accountId: number, userId: number): Promise<number> {
-    const result = await db
-      .select({ total: sql<string>`COALESCE(SUM(${expenses.amount}), 0)` })
-      .from(expenses)
-      .where(and(eq(expenses.accountId, accountId), eq(expenses.userId, userId)));
-    return parseFloat(result[0]?.total || '0');
+    // Credits (money in) - increases account balance
+    const credits = await db
+      .select({ total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.targetAccountId, accountId),
+          or(
+            eq(transactions.transactionType, 'Credit'),
+            eq(transactions.transactionType, 'Transfer')
+          )
+        )
+      );
+
+    // Debits (money out) - decreases account balance
+    const debits = await db
+      .select({ total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.sourceAccountId, accountId),
+          or(
+            eq(transactions.transactionType, 'Debit'),
+            eq(transactions.transactionType, 'Transfer')
+          )
+        )
+      );
+
+    const creditAmount = parseFloat(credits[0]?.total || '0');
+    const debitAmount = parseFloat(debits[0]?.total || '0');
+
+    // Net balance = credits - debits
+    return creditAmount - debitAmount;
   }
 }

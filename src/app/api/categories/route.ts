@@ -33,7 +33,9 @@ export async function POST(request: Request) {
 
     const category = await CategoryService.createCategory({
       userId,
-      ...body
+      name: body.name,
+      color: body.color,
+      defaultTransactionType: body.default_transaction_type || body.defaultTransactionType,
     });
     return NextResponse.json(category, { status: 201 });
   } catch (error) {

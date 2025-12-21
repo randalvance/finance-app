@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Expense Tracker is a Next.js 15 application for tracking expenses across multiple accounts with categorization and analytics. Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
+Expense Tracker is a Next.js 15 application for tracking financial transactions across multiple accounts with categorization and analytics. Supports three transaction types: **Debit** (money out), **Credit** (money in), and **Transfer** (between accounts). Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
 
 ## Development Commands
 
@@ -94,10 +94,11 @@ ngrok http --domain=your-static-domain.ngrok-free.dev 3000
 ## Architecture
 
 ### Database Layer (Drizzle ORM + PostgreSQL)
-- **Schema**: `src/db/schema.ts` defines three main tables using Drizzle ORM:
-  - `accounts` - Spending accounts with colors and descriptions
-  - `expenses` - Individual transactions linked to accounts and categories
-  - `categories` - Predefined categories with color coding
+- **Schema**: `src/db/schema.ts` defines four main tables using Drizzle ORM:
+  - `users` - User accounts managed by Clerk authentication
+  - `accounts` - Financial accounts with colors and descriptions
+  - `transactions` - Individual financial transactions with source/target accounts and type
+  - `categories` - Predefined categories with color coding and default transaction types
 - **Connection**: Drizzle instance in `src/lib/db.ts` using postgres-js driver
 - **Migrations**: Managed via Drizzle Kit in the `drizzle/` directory
 - **Custom Types**: Uses custom `numericDecimal` type to return amounts as numbers instead of strings
@@ -105,20 +106,20 @@ ngrok http --domain=your-static-domain.ngrok-free.dev 3000
 
 ### Service Layer Pattern
 All database operations are encapsulated in service classes (`src/services/`):
-- `ExpenseService` - CRUD for expenses, filtering by date/category, includes joins with accounts table
-- `AccountService` - Account management with expense aggregation queries
-- `CategoryService` - Category operations
+- `TransactionService` - CRUD for transactions with validation, filtering, includes joins with accounts table
+- `AccountService` - Account management with net balance calculations (credits - debits)
+- `CategoryService` - Category operations including default transaction types
 
-Services use static methods with Drizzle query builder. They return typed results based on types inferred from the Drizzle schema in `src/types/expense.ts`.
+Services use static methods with Drizzle query builder. They return typed results based on types inferred from the Drizzle schema in `src/types/transaction.ts`.
 
 ### API Routes (Next.js App Router)
 REST API follows Next.js 15 route handler conventions in `src/app/api/`:
-- `/api/expenses` - GET all, POST new expense
-- `/api/expenses/[id]` - GET, PUT, DELETE specific expense
-- `/api/accounts` - Account endpoints (same pattern)
-- `/api/categories` - Category endpoints (same pattern)
+- `/api/transactions` - GET all, POST new transaction
+- `/api/transactions/[id]` - GET, PUT, DELETE specific transaction
+- `/api/accounts` - Account endpoints (CRUD operations)
+- `/api/categories` - Category endpoints (CRUD operations with default transaction types)
 
-All routes call service layer methods and return JSON with appropriate HTTP status codes.
+All routes call service layer methods and return JSON with appropriate HTTP status codes. Transaction endpoints validate transaction type rules (Debit requires source account, Credit requires target account, Transfer requires both).
 
 ### Frontend Structure
 - **App Router**: `src/app/` uses Next.js 15 App Router with Server Components
@@ -127,10 +128,12 @@ All routes call service layer methods and return JSON with appropriate HTTP stat
 - **Styling**: Tailwind CSS 4 with global styles in `src/app/globals.css`
 
 ### Type System
-All database models and DTOs are defined in `src/types/expense.ts`:
-- Database entities: `Account`, `Expense`, `Category` (inferred from Drizzle schema using `InferSelectModel`)
-- Create/Update DTOs: `CreateExpenseData`, `UpdateExpenseData`, etc.
-- Types use camelCase to match Drizzle schema (e.g., `accountId` instead of `account_id`)
+All database models and DTOs are defined in `src/types/transaction.ts`:
+- Database entities: `Account`, `Transaction`, `Category`, `User` (inferred from Drizzle schema using `InferSelectModel`)
+- Transaction types: `TransactionType` = 'Debit' | 'Credit' | 'Transfer'
+- Create DTOs use discriminated unions: `CreateDebitData`, `CreateCreditData`, `CreateTransferData`
+- Update DTOs: `UpdateTransactionData`, `UpdateAccountData`, `UpdateCategoryData`
+- Types use camelCase to match Drizzle schema (e.g., `sourceAccountId` instead of `source_account_id`)
 
 ## Configuration
 
@@ -144,13 +147,111 @@ Copy `.env.example` to `.env.local` and configure:
 ### Path Aliases
 - `@/*` maps to `src/*` (configured in tsconfig.json)
 
+## Transaction System
+
+### Transaction Types
+
+The application supports three types of financial transactions:
+
+1. **Debit (Money Out)**
+   - Represents spending or money leaving an account
+   - **Required**: `sourceAccountId` (where money comes from)
+   - **Optional**: `targetAccountId`
+   - Examples: Groceries, gas, bills, purchases
+
+2. **Credit (Money In)**
+   - Represents income or money entering an account
+   - **Required**: `targetAccountId` (where money goes to)
+   - **Optional**: `sourceAccountId`
+   - Examples: Salary, freelance income, refunds
+
+3. **Transfer (Between Accounts)**
+   - Represents money moving between your accounts
+   - **Required**: Both `sourceAccountId` and `targetAccountId`
+   - **Validation**: Source and target must be different accounts
+   - Examples: Moving money to savings, transferring between checking accounts
+
+### Transaction Validation Rules
+
+Enforced at both database level (check constraints) and application level (TransactionService):
+
+```typescript
+// Debit: source required
+if (type === 'Debit' && !sourceAccountId) throw Error
+
+// Credit: target required
+if (type === 'Credit' && !targetAccountId) throw Error
+
+// Transfer: both required, must be different
+if (type === 'Transfer' && (!sourceAccountId || !targetAccountId)) throw Error
+if (type === 'Transfer' && sourceAccountId === targetAccountId) throw Error
+```
+
+### Category Default Transaction Types
+
+Categories have a `defaultTransactionType` field that:
+- Pre-selects the expected transaction type when creating transactions
+- Can be overridden by the user during transaction entry
+- Examples:
+  - "Food & Dining" → defaults to Debit
+  - "Salary" → defaults to Credit
+  - "Savings Transfer" → defaults to Transfer
+
+### Account Balance Calculation
+
+Account balances are calculated as net values:
+
+```
+Net Balance = Credits - Debits ± Transfers
+
+Credits (money in):
+- Credit transactions where targetAccountId = account
+- Transfer transactions where targetAccountId = account
+
+Debits (money out):
+- Debit transactions where sourceAccountId = account
+- Transfer transactions where sourceAccountId = account
+```
+
+This is implemented in `AccountService.getAccountTotalAmount()`.
+
+## Development Best Practices
+
+### Code Quality Checks
+
+**ALWAYS run these commands before committing changes:**
+
+```bash
+# Run ESLint to check for code quality issues
+npm run lint
+
+# Verify production build succeeds
+npm run build
+```
+
+**What to check:**
+- No ESLint errors or warnings
+- No unused imports or variables
+- No `any` types (use proper TypeScript types)
+- No TypeScript compilation errors
+- Production build completes successfully
+- All type annotations are explicit and correct
+
+**Common issues to fix:**
+- Remove unused imports: `import { unused } from 'package'`
+- Replace `any` with proper types: Use discriminated unions, interfaces, or specific types
+- Add missing return types to functions
+- Ensure all async operations are properly awaited
+- Fix TypeScript errors before running build
+
 ## Important Notes
 
 - Drizzle ORM manages all database connections automatically (no manual connection management needed)
-- All expenses queries can be joined with accounts using Drizzle's query builder
-- Default accounts and categories can be seeded using `npm run db:seed`
+- All transaction queries can be joined with accounts using Drizzle's query builder
+- Default accounts, categories, and sample transactions can be seeded using `npm run db:seed`
 - The app uses Turbopack for faster development builds
 - Schema changes require running `npm run db:generate` to create migrations
 - Use `npm run db:push` for quick schema updates during development
 - Decimal amounts are automatically converted to numbers via custom `numericDecimal` type
 - Field names in code use camelCase but map to snake_case in the database
+- Transaction type validation occurs at three levels: TypeScript types, service layer, and database constraints
