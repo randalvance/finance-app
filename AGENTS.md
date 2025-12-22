@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Expense Tracker is a Next.js 15 application for tracking financial transactions across multiple accounts with categorization and analytics. Supports three transaction types: **Debit** (money out), **Credit** (money in), and **Transfer** (between accounts). Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
+Finance App is a Next.js 15 application for tracking financial transactions across multiple accounts with categorization and analytics. Supports three transaction types: **Debit** (money out), **Credit** (money in), and **Transfer** (between accounts). Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
 
 ## Project Structure & Module Organization
 - `src/app/` hosts the Next.js 15 App Router pages and route handlers; API routes live under `src/app/api/`.

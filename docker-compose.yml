@@ -3,18 +3,18 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: expense_tracker_db
+    container_name: finance_app_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: expense_user
-      POSTGRES_PASSWORD: expense_password
-      POSTGRES_DB: expense_tracker
+      POSTGRES_USER: finance_user
+      POSTGRES_PASSWORD: finance_password
+      POSTGRES_DB: finance_app
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U expense_user -d expense_tracker"]
+      test: ["CMD-SHELL", "pg_isready -U finance_user -d finance_app"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Expense Tracker is a Next.js 15 application for tracking financial transactions across multiple accounts with categorization and analytics. Supports three transaction types: **Debit** (money out), **Credit** (money in), and **Transfer** (between accounts). Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
+Finance App is a Next.js 15 application for tracking financial transactions across multiple accounts with categorization and analytics. Supports three transaction types: **Debit** (money out), **Credit** (money in), and **Transfer** (between accounts). Built with TypeScript, PostgreSQL, React, and Tailwind CSS.
 
 ## Development Commands
 
@@ -53,7 +53,7 @@ npm run db:seed
 npm run db:studio
 
 # Connect to PostgreSQL directly
-docker exec -it expense_tracker_db psql -U expense_user -d expense_tracker
+docker exec -it finance_app_db psql -U finance_user -d finance_app
 
 # View logs
 docker-compose logs -f postgres

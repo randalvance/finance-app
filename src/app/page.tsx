@@ -218,7 +218,7 @@ export default function Home() {
       <header className="bg-gray-900 shadow-sm border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-100">Transaction Tracker</h1>
+            <h1 className="text-2xl font-bold text-gray-100">Randal&apos;s Finance App</h1>
             <div className="flex items-center space-x-3">
               <button
                 onClick={openTransactionModal}

@@ -1,7 +1,7 @@
 {
-  "name": "Expense Tracker",
-  "short_name": "ExpenseApp",
-  "description": "Track your expenses easily with this progressive web app",
+  "name": "Finance App",
+  "short_name": "FinanceApp",
+  "description": "Track your transactions easily with this progressive web app",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -24,9 +24,9 @@
   "categories": ["finance", "productivity", "utilities"],
   "shortcuts": [
     {
-      "name": "Add Expense",
+      "name": "Add Transaction",
       "short_name": "Add",
-      "description": "Quickly add a new expense",
+      "description": "Quickly add a new transaction",
       "url": "/add",
       "icons": [
         {

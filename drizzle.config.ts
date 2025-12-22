@@ -1,10 +1,23 @@
 import { defineConfig } from 'drizzle-kit';
 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
+
+let databaseUrl = process.env.DATABASE_URL;
+
+// Strip client_min_messages for Neon pooled connections (not supported)
+if (databaseUrl.includes('neon.tech') && databaseUrl.includes('pooler')) {
+  databaseUrl = databaseUrl.replace(/[?&]options=-c%20client_min_messages%3D\w+/g, '');
+}
+
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/db/schema.ts',
   out: './drizzle',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'postgresql://expense_user:expense_password@localhost:5432/expense_tracker',
+    url: databaseUrl,
   },
+  verbose: false,
+  strict: true,
 });

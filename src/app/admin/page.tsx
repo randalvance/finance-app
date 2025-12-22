@@ -127,7 +127,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteAccount = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this account? This will fail if there are expenses associated with it.')) return;
+    if (!confirm('Are you sure you want to delete this account? This will fail if there are transactions associated with it.')) return;
     
     try {
       const response = await fetch(`/api/accounts/${id}`, {
