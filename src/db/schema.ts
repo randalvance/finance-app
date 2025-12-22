@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, date, timestamp, integer, customType, unique, check, index, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, date, timestamp, integer, customType, unique, check, index, jsonb, primaryKey } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // Custom decimal type that returns numbers instead of strings
@@ -101,6 +101,21 @@ export const importSources = pgTable('import_sources', {
   updatedAt: timestamp('updated_at').defaultNow()
 }, (table) => ({
   uniqueUserSource: unique().on(table.userId, table.name)
+}));
+
+// Junction table for import source to account associations (many-to-many)
+export const importSourceAccounts = pgTable('import_source_accounts', {
+  importSourceId: integer('import_source_id')
+    .notNull()
+    .references(() => importSources.id, { onDelete: 'cascade' }),
+  accountId: integer('account_id')
+    .notNull()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow()
+}, (table) => ({
+  pk: primaryKey({ columns: [table.importSourceId, table.accountId] }),
+  importSourceIdx: index('idx_import_source_accounts_source').on(table.importSourceId),
+  accountIdx: index('idx_import_source_accounts_account').on(table.accountId)
 }));
 
 // Imports for tracking CSV import batches

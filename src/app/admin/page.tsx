@@ -35,6 +35,7 @@ interface ImportSource {
     };
   };
   created_at: string;
+  associatedAccounts?: Account[];
 }
 
 export default function AdminPage() {
@@ -68,7 +69,8 @@ export default function AdminPage() {
   const [importSourceFormData, setImportSourceFormData] = useState({
     name: '',
     description: '',
-    config: ''
+    config: '',
+    accountIds: [] as number[]
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -264,7 +266,8 @@ export default function AdminPage() {
       setImportSourceFormData({
         name: source.name,
         description: source.description || '',
-        config: JSON.stringify(source.config, null, 2)
+        config: JSON.stringify(source.config, null, 2),
+        accountIds: source.associatedAccounts?.map(a => a.id) || []
       });
     } else {
       setEditingImportSource(null);
@@ -280,7 +283,8 @@ export default function AdminPage() {
             { sourceColumn: '', transactionField: 'credit', dataType: 'number', required: false },
             { sourceColumn: '', transactionField: 'reference', dataType: 'string', required: false }
           ]
-        }, null, 2)
+        }, null, 2),
+        accountIds: []
       });
     }
     setShowImportSourceModal(true);
@@ -313,14 +317,15 @@ export default function AdminPage() {
         body: JSON.stringify({
           name: importSourceFormData.name,
           description: importSourceFormData.description,
-          config
+          config,
+          account_ids: importSourceFormData.accountIds
         }),
       });
 
       if (response.ok) {
         setShowImportSourceModal(false);
         setEditingImportSource(null);
-        setImportSourceFormData({ name: '', description: '', config: '' });
+        setImportSourceFormData({ name: '', description: '', config: '', accountIds: [] });
         fetchImportSources();
       } else {
         const error = await response.json();
@@ -824,6 +829,48 @@ export default function AdminPage() {
               </div>
 
               <div>
+                <label htmlFor="associated-accounts" className="block text-sm font-medium text-gray-300 mb-2">
+                  Associated Accounts (Optional)
+                </label>
+                <div className="bg-gray-800 border border-gray-700 rounded-md p-3 max-h-48 overflow-y-auto">
+                  {accounts.length === 0 ? (
+                    <p className="text-sm text-gray-400">No accounts available</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {accounts.map(account => (
+                        <label key={account.id} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-750 p-2 rounded">
+                          <input
+                            type="checkbox"
+                            checked={importSourceFormData.accountIds.includes(account.id)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setImportSourceFormData(prev => ({
+                                ...prev,
+                                accountIds: checked
+                                  ? [...prev.accountIds, account.id]
+                                  : prev.accountIds.filter(id => id !== account.id)
+                              }));
+                            }}
+                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                          />
+                          <div className="flex items-center space-x-2 flex-1">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: account.color }}
+                            />
+                            <span className="text-sm text-gray-200">{account.name}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-gray-400">
+                  When selected, only these accounts will appear in the import page. Leave empty to allow all accounts.
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="source-config" className="block text-sm font-medium text-gray-300 mb-2">
                   Configuration (JSON) *
                 </label>
@@ -847,7 +894,7 @@ export default function AdminPage() {
                   onClick={() => {
                     setShowImportSourceModal(false);
                     setEditingImportSource(null);
-                    setImportSourceFormData({ name: '', description: '', config: '' });
+                    setImportSourceFormData({ name: '', description: '', config: '', accountIds: [] });
                   }}
                   className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
                   disabled={submitting}

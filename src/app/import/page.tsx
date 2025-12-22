@@ -8,6 +8,7 @@ interface ImportSource {
   name: string;
   description: string | null;
   config: unknown;
+  associatedAccounts?: Account[];
 }
 
 interface Account {
@@ -358,6 +359,25 @@ export default function ImportPage() {
     return Object.values(categoryMappings).filter(v => v > 0).length;
   };
 
+  const getSelectableAccounts = (): Account[] => {
+    if (!selectedSourceId) {
+      return accounts; // No source selected, show all
+    }
+
+    const selectedSource = importSources.find(s => s.id === selectedSourceId);
+    if (!selectedSource) {
+      return accounts; // Source not found, show all
+    }
+
+    // If source has associated accounts, filter to those only
+    if (selectedSource.associatedAccounts && selectedSource.associatedAccounts.length > 0) {
+      return selectedSource.associatedAccounts;
+    }
+
+    // No associations (backward compatibility), show all accounts
+    return accounts;
+  };
+
   return (
     <div className="min-h-screen bg-gray-950">
       <header className="bg-gray-900 shadow-sm border-b border-gray-800">
@@ -411,12 +431,22 @@ export default function ImportPage() {
                     className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select account...</option>
-                    {accounts.map(account => (
+                    {getSelectableAccounts().map(account => (
                       <option key={account.id} value={account.id}>
                         {account.name}
                       </option>
                     ))}
                   </select>
+                  {selectedSourceId && (() => {
+                    const selectedSource = importSources.find(s => s.id === selectedSourceId);
+                    const hasAssociations = selectedSource?.associatedAccounts && selectedSource.associatedAccounts.length > 0;
+
+                    return hasAssociations && selectedSource?.associatedAccounts ? (
+                      <p className="mt-1 text-xs text-gray-400">
+                        Showing {selectedSource.associatedAccounts.length} account(s) associated with this import source
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
 
                 <div>
