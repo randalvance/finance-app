@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/auth';
 export async function GET() {
   try {
     const userId = await requireAuth();
-    const sources = await ImportSourceService.getAllImportSources(userId);
+    const sources = await ImportSourceService.getAllImportSourcesWithAccounts(userId);
     return NextResponse.json(sources);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const userId = await requireAuth();
     const body = await request.json();
-    const { name, description, config } = body;
+    const { name, description, config, account_ids } = body;
 
     if (!name || !config) {
       return NextResponse.json(
@@ -54,11 +54,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate account_ids if provided
+    let accountIds: number[] | undefined;
+    if (account_ids !== undefined) {
+      if (!Array.isArray(account_ids)) {
+        return NextResponse.json(
+          { error: 'account_ids must be an array' },
+          { status: 400 }
+        );
+      }
+      accountIds = account_ids.map((id: unknown) => {
+        const parsed = parseInt(String(id));
+        if (isNaN(parsed)) {
+          throw new Error('Invalid account ID');
+        }
+        return parsed;
+      });
+    }
+
     const source = await ImportSourceService.createImportSource({
       userId,
       name,
       description,
       config,
+      accountIds,
     });
 
     return NextResponse.json(source, { status: 201 });

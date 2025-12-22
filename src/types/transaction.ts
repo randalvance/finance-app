@@ -1,4 +1,4 @@
-import { accounts, transactions, categories, users, importSources, imports } from '@/db/schema';
+import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts } from '@/db/schema';
 import type { InferSelectModel } from 'drizzle-orm';
 
 // Base types inferred from schema
@@ -8,6 +8,7 @@ export type Category = InferSelectModel<typeof categories>;
 export type User = InferSelectModel<typeof users>;
 export type ImportSource = InferSelectModel<typeof importSources>;
 export type Import = InferSelectModel<typeof imports>;
+export type ImportSourceAccount = InferSelectModel<typeof importSourceAccounts>;
 
 // Transaction type enum
 export type TransactionType = 'Debit' | 'Credit' | 'Transfer';
@@ -126,15 +127,22 @@ export interface ImportSourceConfig {
   fieldMappings: FieldMapping[];  // Array of field mappings
 }
 
+// Enhanced import source with account associations
+export type ImportSourceWithAccounts = ImportSource & {
+  associatedAccounts: Account[];
+};
+
 export interface CreateImportSourceData {
   userId: number;
   name: string;
   description?: string;
   config: ImportSourceConfig;
+  accountIds?: number[];  // Account IDs to associate with this import source
 }
 
 export interface UpdateImportSourceData extends Partial<Omit<CreateImportSourceData, 'userId'>> {
   id: number;
+  accountIds?: number[];  // Account IDs to associate with this import source
 }
 
 // Preview transaction type (before import)
