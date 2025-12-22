@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import ConfirmButton from '@/components/ConfirmButton';
 
 interface ImportSource {
   id: number;
@@ -152,29 +153,32 @@ export default function ImportPage() {
 
     // Populate accounts based on category's defaultTransactionType
     const category = categories.find(c => c.id === categoryId);
-    if (!category || !selectedAccountId) return;
+    if (!category) return;
 
     setPreviewTransactions(prev => prev.map(tx => {
       if (tx.tempId !== tempId) return tx;
 
       const defaultType = category.defaultTransactionType as 'Debit' | 'Credit' | 'Transfer';
-      let newSourceAccountId: number | null = null;
-      let newTargetAccountId: number | null = null;
+      let newSourceAccountId: number | null = tx.sourceAccountId;
+      let newTargetAccountId: number | null = tx.targetAccountId;
 
-      if (defaultType === 'Debit') {
-        newSourceAccountId = selectedAccountId;
-        newTargetAccountId = null;
-      } else if (defaultType === 'Credit') {
-        newSourceAccountId = null;
-        newTargetAccountId = selectedAccountId;
-      } else if (defaultType === 'Transfer') {
-        // For transfers, populate based on original debit/credit from CSV
-        if (tx.transactionType === 'Debit') {
+      // Only auto-populate accounts if selectedAccountId is available
+      if (selectedAccountId) {
+        if (defaultType === 'Debit') {
           newSourceAccountId = selectedAccountId;
           newTargetAccountId = null;
-        } else {
+        } else if (defaultType === 'Credit') {
           newSourceAccountId = null;
           newTargetAccountId = selectedAccountId;
+        } else if (defaultType === 'Transfer') {
+          // For transfers, populate based on original debit/credit from CSV
+          if (tx.transactionType === 'Debit') {
+            newSourceAccountId = selectedAccountId;
+            newTargetAccountId = null;
+          } else {
+            newSourceAccountId = null;
+            newTargetAccountId = selectedAccountId;
+          }
         }
       }
 
@@ -198,6 +202,18 @@ export default function ImportPage() {
         return { ...tx, targetAccountId: accountId };
       }
     }));
+  };
+
+  const handleDeletePreviewRow = (tempId: string) => {
+    // Remove transaction from preview array
+    setPreviewTransactions(prev => prev.filter(tx => tx.tempId !== tempId));
+
+    // Clean up category mapping for this row
+    setCategoryMappings(prev => {
+      const updated = { ...prev };
+      delete updated[tempId];
+      return updated;
+    });
   };
 
   const handleSaveDraft = async () => {
@@ -502,12 +518,11 @@ export default function ImportPage() {
                           >
                             Resume
                           </button>
-                          <button
-                            onClick={() => handleDeleteDraft(imp.id)}
-                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
-                          >
-                            Delete
-                          </button>
+                          <ConfirmButton
+                            buttonText="Delete"
+                            onConfirm={() => handleDeleteDraft(imp.id)}
+                            buttonClassName="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                          />
                         </div>
                       </div>
                     );
@@ -574,6 +589,9 @@ export default function ImportPage() {
                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
                           Raw
                         </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800">
@@ -582,8 +600,8 @@ export default function ImportPage() {
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
                             {tx.date}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-300 max-w-md truncate">
-                            {tx.description}
+                          <td className="px-4 py-3 text-sm text-gray-300 max-w-xs">
+                            <div className="line-clamp-2">{tx.description}</div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span
@@ -668,6 +686,13 @@ export default function ImportPage() {
                             >
                               📄 View
                             </button>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <ConfirmButton
+                              buttonText="Delete"
+                              onConfirm={() => handleDeletePreviewRow(tx.tempId)}
+                              buttonClassName="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                            />
                           </td>
                         </tr>
                       ))}
