@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Expense Tracker",
-  description: "Track your expenses easily with this progressive web app",
+  title: "Finance App",
+  description: "Track your transactions easily with this progressive web app",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Expense Tracker",
+    title: "Finance App",
   },
 };
 
@@ -44,7 +44,7 @@ export default function RootLayout({
           <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          <meta name="apple-mobile-web-app-title" content="Expense Tracker" />
+          <meta name="apple-mobile-web-app-title" content="Finance App" />
         </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}

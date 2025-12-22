@@ -29,9 +29,9 @@ async function seed() {
   // Insert default accounts
   await db.insert(accounts)
     .values([
-      { userId, name: 'Personal', description: 'Personal expenses and purchases', color: '#3b82f6' },
-      { userId, name: 'Business', description: 'Business-related expenses', color: '#10b981' },
-      { userId, name: 'Family', description: 'Family and household expenses', color: '#ec4899' },
+      { userId, name: 'Personal', description: 'Personal transactions and purchases', color: '#3b82f6' },
+      { userId, name: 'Business', description: 'Business-related transactions', color: '#10b981' },
+      { userId, name: 'Family', description: 'Family and household transactions', color: '#ec4899' },
     ])
     .onConflictDoNothing();
 

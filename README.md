@@ -1,15 +1,15 @@
-# Expense Tracker
+# Finance App
 
-A modern expense tracking application for managing expenses across multiple accounts with categorization and analytics. Built with Next.js 15, PostgreSQL, Drizzle ORM, and Clerk authentication.
+A modern financial transaction tracking application for managing transactions across multiple accounts with categorization and analytics. Built with Next.js 15, PostgreSQL, Drizzle ORM, and Clerk authentication.
 
 ## Features
 
-- 📊 **Multi-Account Tracking**: Track expenses across multiple accounts with custom colors
+- 📊 **Multi-Account Tracking**: Track transactions across multiple accounts with custom colors
 - 💾 **Drizzle ORM**: Type-safe database operations with automatic migrations
 - 🔐 **Clerk Authentication**: Secure user authentication with webhooks
 - 🎨 **Modern UI**: Clean, responsive interface with Tailwind CSS 4
 - 📈 **Analytics**: View spending patterns and category breakdowns
-- 🏷️ **Categories**: Organize expenses with predefined categories
+- 🏷️ **Categories**: Organize transactions with predefined categories
 - ⚡ **Turbopack**: Lightning-fast development with Next.js 15
 
 ## Tech Stack
@@ -33,7 +33,7 @@ A modern expense tracking application for managing expenses across multiple acco
 1. **Clone the repository**
 ```bash
 git clone <repository-url>
-cd expense-system
+cd finance-app
 ```
 
 2. **Install dependencies**
