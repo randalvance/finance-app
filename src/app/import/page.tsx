@@ -217,10 +217,9 @@ export default function ImportPage() {
     });
   };
 
-  const handleSaveDraft = async () => {
-    if (!currentImportId) return;
+  const saveDraftData = async (showSuccessAlert = true) => {
+    if (!currentImportId) return false;
 
-    setSaving(true);
     try {
       const response = await fetch(`/api/imports/${currentImportId}`, {
         method: 'PUT',
@@ -235,18 +234,27 @@ export default function ImportPage() {
       });
 
       if (response.ok) {
-        alert('Progress saved!');
-        fetchData();
+        if (showSuccessAlert) {
+          alert('Progress saved!');
+          fetchData();
+        }
+        return true;
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to save progress');
+        return false;
       }
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Failed to save progress');
-    } finally {
-      setSaving(false);
+      return false;
     }
+  };
+
+  const handleSaveDraft = async () => {
+    setSaving(true);
+    await saveDraftData(true);
+    setSaving(false);
   };
 
   const handleResumeDraft = async (importRecord: Import) => {
@@ -346,6 +354,14 @@ export default function ImportPage() {
 
     setImporting(true);
     try {
+      // First, save the current draft state
+      const saved = await saveDraftData(false);
+      if (!saved) {
+        setImporting(false);
+        return;
+      }
+
+      // Then complete the import
       const response = await fetch(`/api/imports/${currentImportId}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
