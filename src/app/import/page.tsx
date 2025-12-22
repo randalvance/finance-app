@@ -20,6 +20,7 @@ interface Category {
   id: number;
   name: string;
   color: string;
+  defaultTransactionType: string;
 }
 
 interface PreviewTransaction {
@@ -27,9 +28,10 @@ interface PreviewTransaction {
   date: string;
   description: string;
   amount: number;
-  transactionType: 'Debit' | 'Credit';
+  transactionType: 'Debit' | 'Credit' | 'Transfer';
   sourceAccountId: number | null;
   targetAccountId: number | null;
+  categoryId?: number | null;
   rawCsvRow?: Record<string, string>;
 }
 
@@ -146,6 +148,55 @@ export default function ImportPage() {
       ...prev,
       [tempId]: categoryId,
     }));
+
+    // Populate accounts based on category's defaultTransactionType
+    const category = categories.find(c => c.id === categoryId);
+    if (!category || !selectedAccountId) return;
+
+    setPreviewTransactions(prev => prev.map(tx => {
+      if (tx.tempId !== tempId) return tx;
+
+      const defaultType = category.defaultTransactionType as 'Debit' | 'Credit' | 'Transfer';
+      let newSourceAccountId: number | null = null;
+      let newTargetAccountId: number | null = null;
+
+      if (defaultType === 'Debit') {
+        newSourceAccountId = selectedAccountId;
+        newTargetAccountId = null;
+      } else if (defaultType === 'Credit') {
+        newSourceAccountId = null;
+        newTargetAccountId = selectedAccountId;
+      } else if (defaultType === 'Transfer') {
+        // For transfers, populate based on original debit/credit from CSV
+        if (tx.transactionType === 'Debit') {
+          newSourceAccountId = selectedAccountId;
+          newTargetAccountId = null;
+        } else {
+          newSourceAccountId = null;
+          newTargetAccountId = selectedAccountId;
+        }
+      }
+
+      return {
+        ...tx,
+        transactionType: defaultType,
+        sourceAccountId: newSourceAccountId,
+        targetAccountId: newTargetAccountId,
+        categoryId,
+      };
+    }));
+  };
+
+  const handleAccountChange = (tempId: string, field: 'source' | 'target', accountId: number | null) => {
+    setPreviewTransactions(prev => prev.map(tx => {
+      if (tx.tempId !== tempId) return tx;
+
+      if (field === 'source') {
+        return { ...tx, sourceAccountId: accountId };
+      } else {
+        return { ...tx, targetAccountId: accountId };
+      }
+    }));
   };
 
   const handleSaveDraft = async () => {
@@ -234,6 +285,38 @@ export default function ImportPage() {
     const unmappedCount = previewTransactions.filter(tx => !categoryMappings[tx.tempId] || categoryMappings[tx.tempId] === 0).length;
     if (unmappedCount > 0) {
       alert(`Please select categories for all ${unmappedCount} unmapped transactions`);
+      return;
+    }
+
+    // Validate account assignments based on transaction type
+    const invalidTransactions = previewTransactions.filter(tx => {
+      if (tx.transactionType === 'Debit') {
+        return !tx.sourceAccountId;
+      } else if (tx.transactionType === 'Credit') {
+        return !tx.targetAccountId;
+      } else if (tx.transactionType === 'Transfer') {
+        return !tx.sourceAccountId || !tx.targetAccountId || tx.sourceAccountId === tx.targetAccountId;
+      }
+      return false;
+    });
+
+    if (invalidTransactions.length > 0) {
+      const errorMessages = invalidTransactions.map(tx => {
+        if (tx.transactionType === 'Debit' && !tx.sourceAccountId) {
+          return `Debit transaction "${tx.description}" missing source account`;
+        } else if (tx.transactionType === 'Credit' && !tx.targetAccountId) {
+          return `Credit transaction "${tx.description}" missing target account`;
+        } else if (tx.transactionType === 'Transfer') {
+          if (!tx.sourceAccountId || !tx.targetAccountId) {
+            return `Transfer transaction "${tx.description}" missing source or target account`;
+          } else if (tx.sourceAccountId === tx.targetAccountId) {
+            return `Transfer transaction "${tx.description}" has same source and target account`;
+          }
+        }
+        return '';
+      }).filter(msg => msg);
+
+      alert(`Invalid account assignments:\n\n${errorMessages.join('\n')}`);
       return;
     }
 
@@ -452,6 +535,12 @@ export default function ImportPage() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                           Category
                         </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Source Account
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Target Account
+                        </th>
                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
                           Raw
                         </th>
@@ -471,7 +560,9 @@ export default function ImportPage() {
                               className={`px-2 py-1 rounded text-xs font-medium ${
                                 tx.transactionType === 'Debit'
                                   ? 'bg-red-900 text-red-200'
-                                  : 'bg-green-900 text-green-200'
+                                  : tx.transactionType === 'Credit'
+                                  ? 'bg-green-900 text-green-200'
+                                  : 'bg-blue-900 text-blue-200'
                               }`}
                             >
                               {tx.transactionType}
@@ -494,6 +585,44 @@ export default function ImportPage() {
                               {categories.map(cat => (
                                 <option key={cat.id} value={cat.id}>
                                   {cat.name}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <select
+                              value={tx.sourceAccountId || ''}
+                              onChange={(e) => handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null)}
+                              className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                (tx.transactionType === 'Debit' || tx.transactionType === 'Transfer') && !tx.sourceAccountId
+                                  ? 'border-red-500'
+                                  : 'border-gray-700'
+                              }`}
+                              disabled={tx.transactionType === 'Credit'}
+                            >
+                              <option value="">None</option>
+                              {accounts.map(acc => (
+                                <option key={acc.id} value={acc.id}>
+                                  {acc.name}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <select
+                              value={tx.targetAccountId || ''}
+                              onChange={(e) => handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null)}
+                              className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                (tx.transactionType === 'Credit' || tx.transactionType === 'Transfer') && !tx.targetAccountId
+                                  ? 'border-red-500'
+                                  : 'border-gray-700'
+                              }`}
+                              disabled={tx.transactionType === 'Debit'}
+                            >
+                              <option value="">None</option>
+                              {accounts.map(acc => (
+                                <option key={acc.id} value={acc.id}>
+                                  {acc.name}
                                 </option>
                               ))}
                             </select>

@@ -310,6 +310,32 @@ export class ImportService {
     const previewData = importRecord.previewData as ImportPreviewData;
     const previewTransactions = previewData.transactions;
 
+    // Validate all transactions before inserting
+    const errors: string[] = [];
+    previewTransactions.forEach(preview => {
+      // Validate category
+      if (!categoryMappings[preview.tempId]) {
+        errors.push(`Transaction "${preview.description}" is missing a category`);
+      }
+
+      // Validate account assignments based on transaction type
+      if (preview.transactionType === 'Debit' && !preview.sourceAccountId) {
+        errors.push(`Debit transaction "${preview.description}" is missing source account`);
+      } else if (preview.transactionType === 'Credit' && !preview.targetAccountId) {
+        errors.push(`Credit transaction "${preview.description}" is missing target account`);
+      } else if (preview.transactionType === 'Transfer') {
+        if (!preview.sourceAccountId || !preview.targetAccountId) {
+          errors.push(`Transfer transaction "${preview.description}" is missing source or target account`);
+        } else if (preview.sourceAccountId === preview.targetAccountId) {
+          errors.push(`Transfer transaction "${preview.description}" has same source and target account`);
+        }
+      }
+    });
+
+    if (errors.length > 0) {
+      throw new Error(`Validation errors:\n${errors.join('\n')}`);
+    }
+
     // Prepare transaction data
     const transactionValues = previewTransactions.map(preview => ({
       userId,

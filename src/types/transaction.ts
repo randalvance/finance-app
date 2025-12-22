@@ -146,6 +146,7 @@ export interface PreviewTransaction {
   transactionType: TransactionType;
   sourceAccountId: number | null;
   targetAccountId: number | null;
+  categoryId?: number | null; // Category ID selected during preview
   rawCsvRow?: Record<string, string>; // Original CSV row data
 }
 
