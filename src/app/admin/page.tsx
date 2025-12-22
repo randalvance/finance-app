@@ -15,8 +15,8 @@ interface Category {
   id: number;
   name: string;
   color: string;
-  default_transaction_type?: string;
-  created_at: string;
+  defaultTransactionType?: string;
+  createdAt: string;
 }
 
 interface ImportSource {
@@ -196,7 +196,7 @@ export default function AdminPage() {
       setCategoryFormData({
         name: category.name,
         color: category.color,
-        default_transaction_type: (category.default_transaction_type as 'Debit' | 'Credit' | 'Transfer') || 'Debit'
+        default_transaction_type: (category.defaultTransactionType as 'Debit' | 'Credit' | 'Transfer') || 'Debit'
       });
     } else {
       setEditingCategory(null);
@@ -535,7 +535,7 @@ export default function AdminPage() {
                         <span className="text-sm text-gray-400">{category.color}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-300">{category.default_transaction_type || 'Debit'}</span>
+                        <span className="text-sm text-gray-300">{category.defaultTransactionType || 'Debit'}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                         <button
