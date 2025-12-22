@@ -61,6 +61,7 @@ export default function ImportPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
 
   const [currentImportId, setCurrentImportId] = useState<number | null>(null);
+  const [currentImportRecord, setCurrentImportRecord] = useState<Import | null>(null);
   const [previewTransactions, setPreviewTransactions] = useState<PreviewTransaction[]>([]);
   const [categoryMappings, setCategoryMappings] = useState<Record<string, number>>({});
   const [filename, setFilename] = useState<string>('');
@@ -90,7 +91,7 @@ export default function ImportPage() {
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (importsRes.ok) {
         const imports = await importsRes.json();
-        setDraftImports(imports.filter((imp: Import) => imp.status === 'draft'));
+        setDraftImports(imports.filter((imp: Import) => imp.status === 'draft' || imp.status === 'completed'));
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -255,6 +256,7 @@ export default function ImportPage() {
     }
 
     setCurrentImportId(importRecord.id);
+    setCurrentImportRecord(importRecord);
     setFilename(importRecord.filename);
     setPreviewTransactions(importRecord.previewData.transactions);
     setCategoryMappings(importRecord.previewData.categoryMappings);
@@ -268,8 +270,12 @@ export default function ImportPage() {
     }, 100);
   };
 
-  const handleDeleteDraft = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this draft import?')) return;
+  const handleDeleteDraft = async (id: number, status: string) => {
+    const message = status === 'completed'
+      ? 'Are you sure you want to delete this completed import? This will also delete all associated transactions.'
+      : 'Are you sure you want to delete this draft import?';
+    
+    if (!confirm(message)) return;
 
     try {
       const response = await fetch(`/api/imports/${id}`, {
@@ -280,6 +286,7 @@ export default function ImportPage() {
         // Clear preview if deleting current import
         if (id === currentImportId) {
           setCurrentImportId(null);
+          setCurrentImportRecord(null);
           setPreviewTransactions([]);
           setCategoryMappings({});
           setFilename('');
@@ -287,11 +294,11 @@ export default function ImportPage() {
         fetchData();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to delete draft');
+        alert(error.error || 'Failed to delete import');
       }
     } catch (error) {
-      console.error('Error deleting draft:', error);
-      alert('Failed to delete draft');
+      console.error('Error deleting import:', error);
+      alert('Failed to delete import');
     }
   };
 
@@ -489,10 +496,10 @@ export default function ImportPage() {
               </div>
             </div>
 
-            {/* Draft Imports */}
+            {/* Saved Imports */}
             {draftImports.length > 0 && (
               <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-6">
-                <h2 className="text-xl font-bold text-gray-100 mb-4">Draft Imports</h2>
+                <h2 className="text-xl font-bold text-gray-100 mb-4">Saved Imports</h2>
                 <div className="space-y-2">
                   {draftImports.map((imp) => {
                     const mapped = imp.previewData
@@ -506,7 +513,14 @@ export default function ImportPage() {
                         className="flex items-center justify-between p-4 bg-gray-800 rounded-md border border-gray-700 hover:border-gray-600 transition-colors"
                       >
                         <div className="flex-1">
-                          <div className="font-medium text-gray-100">{imp.filename}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-gray-100">{imp.filename}</div>
+                            {imp.status === 'completed' && (
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-900 text-green-200">
+                                Completed
+                              </span>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-400">
                             {mapped} of {total} categories mapped • Created {new Date(imp.createdAt).toLocaleDateString()}
                           </div>
@@ -516,11 +530,11 @@ export default function ImportPage() {
                             onClick={() => handleResumeDraft(imp)}
                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
                           >
-                            Resume
+                            {imp.status === 'completed' ? 'View' : 'Resume'}
                           </button>
                           <ConfirmButton
                             buttonText="Delete"
-                            onConfirm={() => handleDeleteDraft(imp.id)}
+                            onConfirm={() => handleDeleteDraft(imp.id, imp.status)}
                             buttonClassName="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
                           />
                         </div>
@@ -536,29 +550,38 @@ export default function ImportPage() {
               <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-100">
-                      Preview: {filename}
-                    </h2>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-bold text-gray-100">
+                        Preview: {filename}
+                      </h2>
+                      {currentImportRecord?.status === 'completed' && (
+                        <span className="px-3 py-1 rounded-md text-sm font-medium bg-green-900 text-green-200">
+                          Viewing Completed Import (Read-Only)
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-400 mt-1">
                       {getMappedCount()} of {previewTransactions.length} categories mapped
                     </p>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={handleSaveDraft}
-                      disabled={saving}
-                      className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors disabled:opacity-50"
-                    >
-                      {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    <button
-                      onClick={handleImport}
-                      disabled={importing || getMappedCount() < previewTransactions.length}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {importing ? 'Importing...' : 'Confirm Import'}
-                    </button>
-                  </div>
+                  {currentImportRecord?.status !== 'completed' && (
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={handleSaveDraft}
+                        disabled={saving}
+                        className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save Draft'}
+                      </button>
+                      <button
+                        onClick={handleImport}
+                        disabled={importing || getMappedCount() < previewTransactions.length}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {importing ? 'Importing...' : 'Confirm Import'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="overflow-x-auto">
@@ -620,60 +643,78 @@ export default function ImportPage() {
                             ${tx.amount.toFixed(2)}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <select
-                              value={categoryMappings[tx.tempId] || ''}
-                              onChange={(e) => handleCategoryChange(tx.tempId, parseInt(e.target.value))}
-                              className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                !categoryMappings[tx.tempId] || categoryMappings[tx.tempId] === 0
-                                  ? 'border-red-500'
-                                  : 'border-gray-700'
-                              }`}
-                            >
-                              <option value="">Select category...</option>
-                              {categories.map(cat => (
-                                <option key={cat.id} value={cat.id}>
-                                  {cat.name}
-                                </option>
-                              ))}
-                            </select>
+                            {currentImportRecord?.status === 'completed' ? (
+                              <span className="text-sm text-gray-300">
+                                {categories.find(cat => cat.id === categoryMappings[tx.tempId])?.name || 'None'}
+                              </span>
+                            ) : (
+                              <select
+                                value={categoryMappings[tx.tempId] || ''}
+                                onChange={(e) => handleCategoryChange(tx.tempId, parseInt(e.target.value))}
+                                className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                  !categoryMappings[tx.tempId] || categoryMappings[tx.tempId] === 0
+                                    ? 'border-red-500'
+                                    : 'border-gray-700'
+                                }`}
+                              >
+                                <option value="">Select category...</option>
+                                {categories.map(cat => (
+                                  <option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <select
-                              value={tx.sourceAccountId || ''}
-                              onChange={(e) => handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null)}
-                              className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                (tx.transactionType === 'Debit' || tx.transactionType === 'Transfer') && !tx.sourceAccountId
-                                  ? 'border-red-500'
-                                  : 'border-gray-700'
-                              }`}
-                              disabled={tx.transactionType === 'Credit'}
-                            >
-                              <option value="">None</option>
-                              {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id}>
-                                  {acc.name}
-                                </option>
-                              ))}
-                            </select>
+                            {currentImportRecord?.status === 'completed' ? (
+                              <span className="text-sm text-gray-300">
+                                {accounts.find(acc => acc.id === tx.sourceAccountId)?.name || 'None'}
+                              </span>
+                            ) : (
+                              <select
+                                value={tx.sourceAccountId || ''}
+                                onChange={(e) => handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null)}
+                                className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                  (tx.transactionType === 'Debit' || tx.transactionType === 'Transfer') && !tx.sourceAccountId
+                                    ? 'border-red-500'
+                                    : 'border-gray-700'
+                                }`}
+                                disabled={tx.transactionType === 'Credit'}
+                              >
+                                <option value="">None</option>
+                                {accounts.map(acc => (
+                                  <option key={acc.id} value={acc.id}>
+                                    {acc.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <select
-                              value={tx.targetAccountId || ''}
-                              onChange={(e) => handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null)}
-                              className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                (tx.transactionType === 'Credit' || tx.transactionType === 'Transfer') && !tx.targetAccountId
-                                  ? 'border-red-500'
-                                  : 'border-gray-700'
-                              }`}
-                              disabled={tx.transactionType === 'Debit'}
-                            >
-                              <option value="">None</option>
-                              {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id}>
-                                  {acc.name}
-                                </option>
-                              ))}
-                            </select>
+                            {currentImportRecord?.status === 'completed' ? (
+                              <span className="text-sm text-gray-300">
+                                {accounts.find(acc => acc.id === tx.targetAccountId)?.name || 'None'}
+                              </span>
+                            ) : (
+                              <select
+                                value={tx.targetAccountId || ''}
+                                onChange={(e) => handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null)}
+                                className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                  (tx.transactionType === 'Credit' || tx.transactionType === 'Transfer') && !tx.targetAccountId
+                                    ? 'border-red-500'
+                                    : 'border-gray-700'
+                                }`}
+                                disabled={tx.transactionType === 'Debit'}
+                              >
+                                <option value="">None</option>
+                                {accounts.map(acc => (
+                                  <option key={acc.id} value={acc.id}>
+                                    {acc.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
                             <button
@@ -688,11 +729,13 @@ export default function ImportPage() {
                             </button>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
-                            <ConfirmButton
-                              buttonText="Delete"
-                              onConfirm={() => handleDeletePreviewRow(tx.tempId)}
-                              buttonClassName="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
-                            />
+                            {currentImportRecord?.status !== 'completed' && (
+                              <ConfirmButton
+                                buttonText="Delete"
+                                onConfirm={() => handleDeletePreviewRow(tx.tempId)}
+                                buttonClassName="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                              />
+                            )}
                           </td>
                         </tr>
                       ))}

@@ -48,7 +48,7 @@ export const transactions = pgTable('transactions', {
   amount: numericDecimal('amount').notNull(),
   category: varchar('category', { length: 100 }).notNull(),
   date: date('date').notNull().default(sql`CURRENT_DATE`),
-  importId: integer('import_id').references(() => imports.id, { onDelete: 'set null' }),
+  importId: integer('import_id').references(() => imports.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 }, (table) => ({
