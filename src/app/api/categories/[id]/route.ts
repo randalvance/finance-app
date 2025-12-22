@@ -52,8 +52,10 @@ export async function PUT(
 
     if (body.name !== undefined) updateData.name = body.name;
     if (body.color !== undefined) updateData.color = body.color;
-    if (body.default_transaction_type !== undefined || body.defaultTransactionType !== undefined) {
-      updateData.defaultTransactionType = (body.default_transaction_type || body.defaultTransactionType) as TransactionType;
+    if (body.default_transaction_type !== undefined) {
+      updateData.defaultTransactionType = body.default_transaction_type as TransactionType;
+    } else if (body.defaultTransactionType !== undefined) {
+      updateData.defaultTransactionType = body.defaultTransactionType as TransactionType;
     }
 
     const category = await CategoryService.updateCategory(updateData, userId);
