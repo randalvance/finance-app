@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ImportSourceService } from '@/services/ImportSourceService';
+import { ImportService } from '@/services/ImportService';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
@@ -33,6 +34,22 @@ export async function POST(request: NextRequest) {
     if (!config.startingLine || !config.fieldMappings) {
       return NextResponse.json(
         { error: 'Invalid config structure. Must include startingLine and fieldMappings' },
+        { status: 400 }
+      );
+    }
+
+    // Validate field mappings using ImportService
+    if (!Array.isArray(config.fieldMappings)) {
+      return NextResponse.json(
+        { error: 'fieldMappings must be an array' },
+        { status: 400 }
+      );
+    }
+
+    const validation = ImportService.validateFieldMappings(config.fieldMappings);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: `Invalid field mappings: ${validation.errors.join(', ')}` },
         { status: 400 }
       );
     }

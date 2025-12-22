@@ -7,12 +7,83 @@ import {
   ParsedCSVRow,
   ImportSourceConfig,
   PreviewTransaction,
-  ImportPreviewData
+  ImportPreviewData,
+  FieldMapping,
+  TransactionFieldType
 } from '@/types/transaction';
 import { eq, and, desc } from 'drizzle-orm';
 import { parse as parseDate, format } from 'date-fns';
 
 export class ImportService {
+  /**
+   * Validate field mappings configuration
+   */
+  static validateFieldMappings(mappings: FieldMapping[]): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // 1. Check for required fields
+    const hasDate = mappings.some(m => m.transactionField === 'date');
+    const hasDescription = mappings.some(m => m.transactionField === 'description');
+
+    if (!hasDate) errors.push('date field mapping is required');
+    if (!hasDescription) errors.push('description field mapping is required');
+
+    // 2. Check for amount fields (must have debit/credit fields)
+    const hasDebit = mappings.some(m => m.transactionField === 'debit');
+    const hasCredit = mappings.some(m => m.transactionField === 'credit');
+
+    if (!hasDebit && !hasCredit) {
+      errors.push('Must have at least one of debit or credit field mappings');
+    }
+
+    // 3. Check date field has format
+    const dateMapping = mappings.find(m => m.transactionField === 'date');
+    if (dateMapping && !dateMapping.format) {
+      errors.push('date field must have format specified');
+    }
+
+    // 4. Check for duplicate mappings (same transactionField mapped twice)
+    const fieldCounts = new Map<TransactionFieldType, number>();
+    mappings.forEach(m => {
+      fieldCounts.set(m.transactionField, (fieldCounts.get(m.transactionField) || 0) + 1);
+    });
+
+    fieldCounts.forEach((count, field) => {
+      if (count > 1) {
+        errors.push(`${field} field is mapped multiple times`);
+      }
+    });
+
+    // 5. Check for duplicate source columns
+    const sourceCounts = new Map<string, number>();
+    mappings.forEach(m => {
+      sourceCounts.set(m.sourceColumn, (sourceCounts.get(m.sourceColumn) || 0) + 1);
+    });
+
+    sourceCounts.forEach((count, source) => {
+      if (count > 1) {
+        errors.push(`Source column "${source}" is mapped multiple times`);
+      }
+    });
+
+    // 6. Validate data types match fields
+    mappings.forEach(m => {
+      if (m.transactionField === 'date' && m.dataType !== 'date') {
+        errors.push('date field must have dataType "date"');
+      }
+      if ((m.transactionField === 'debit' || m.transactionField === 'credit') && m.dataType !== 'number') {
+        errors.push(`${m.transactionField} field must have dataType "number"`);
+      }
+      if ((m.transactionField === 'description' || m.transactionField === 'reference') && m.dataType !== 'string') {
+        errors.push(`${m.transactionField} field must have dataType "string"`);
+      }
+    });
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
   /**
    * Parse CSV content based on import source config
    */
@@ -28,16 +99,32 @@ export class ImportService {
     const headerLine = dataLines[0];
     const headers = this.parseCSVLine(headerLine);
 
-    // Find column indexes
-    const { fieldMappings } = config;
-    const dateIdx = headers.indexOf(fieldMappings.dateColumn);
-    const descIdx = headers.indexOf(fieldMappings.descriptionColumn);
-    const debitIdx = fieldMappings.debitColumn ? headers.indexOf(fieldMappings.debitColumn) : -1;
-    const creditIdx = fieldMappings.creditColumn ? headers.indexOf(fieldMappings.creditColumn) : -1;
-    const refIdx = fieldMappings.referenceColumn ? headers.indexOf(fieldMappings.referenceColumn) : -1;
+    // Build mapping index: transactionField -> { columnIndex, format?, dataType }
+    const mappingIndex = new Map<TransactionFieldType, { idx: number; format?: string; dataType: string }>();
 
-    if (dateIdx === -1 || descIdx === -1) {
-      throw new Error('Required columns not found in CSV');
+    config.fieldMappings.forEach(mapping => {
+      const idx = headers.indexOf(mapping.sourceColumn);
+      if (idx === -1 && mapping.required) {
+        throw new Error(`Required column "${mapping.sourceColumn}" not found in CSV`);
+      }
+      if (idx !== -1) {
+        mappingIndex.set(mapping.transactionField, {
+          idx,
+          format: mapping.format,
+          dataType: mapping.dataType
+        });
+      }
+    });
+
+    // Verify required mappings exist
+    const dateMapping = mappingIndex.get('date');
+    const descMapping = mappingIndex.get('description');
+
+    if (!dateMapping) {
+      throw new Error('date field mapping is required');
+    }
+    if (!descMapping) {
+      throw new Error('description field mapping is required');
     }
 
     // Parse data rows
@@ -56,23 +143,33 @@ export class ImportService {
       });
 
       // Parse date
-      const dateStr = values[dateIdx]?.trim();
+      const dateStr = values[dateMapping.idx]?.trim();
       if (!dateStr) continue;
 
       let parsedDateObj: Date;
       try {
-        parsedDateObj = parseDate(dateStr, fieldMappings.dateFormat, new Date());
+        parsedDateObj = parseDate(dateStr, dateMapping.format!, new Date());
       } catch {
         console.warn(`Failed to parse date: ${dateStr}`);
         continue;
       }
 
       // Parse amounts
-      const debitStr = debitIdx >= 0 ? values[debitIdx]?.trim() : '';
-      const creditStr = creditIdx >= 0 ? values[creditIdx]?.trim() : '';
+      const debitMapping = mappingIndex.get('debit');
+      const creditMapping = mappingIndex.get('credit');
 
-      const debitAmount = debitStr ? this.parseAmount(debitStr) : null;
-      const creditAmount = creditStr ? this.parseAmount(creditStr) : null;
+      let debitAmount: number | null = null;
+      let creditAmount: number | null = null;
+
+      if (debitMapping) {
+        const debitStr = values[debitMapping.idx]?.trim();
+        debitAmount = debitStr ? this.parseAmount(debitStr) : null;
+      }
+
+      if (creditMapping) {
+        const creditStr = values[creditMapping.idx]?.trim();
+        creditAmount = creditStr ? this.parseAmount(creditStr) : null;
+      }
 
       // Skip if both amounts are null or both are present
       if ((!debitAmount && !creditAmount) || (debitAmount && creditAmount)) {
@@ -80,8 +177,9 @@ export class ImportService {
       }
 
       // Build description from available fields
-      const descValue = values[descIdx]?.trim();
-      const refValue = refIdx >= 0 ? values[refIdx]?.trim() : '';
+      const descValue = values[descMapping.idx]?.trim() || '';
+      const refMapping = mappingIndex.get('reference');
+      const refValue = refMapping ? values[refMapping.idx]?.trim() : '';
 
       let description = '';
       if (descValue && refValue) {
@@ -91,14 +189,7 @@ export class ImportService {
       } else if (descValue) {
         description = descValue;
       } else {
-        // Fallback to Statement Code or Reference if both description fields are empty
-        const statementCode = rawRow['Statement Code']?.trim();
-        const reference = rawRow['Reference']?.trim();
-        if (statementCode && reference) {
-          description = `${statementCode} - ${reference}`;
-        } else {
-          description = statementCode || reference || 'NULL';
-        }
+        description = 'NULL';
       }
 
       parsedRows.push({

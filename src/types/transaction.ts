@@ -103,16 +103,27 @@ export interface UpdateCategoryData extends Partial<Omit<CreateCategoryData, 'us
 // Import Source types
 export type ImportStatus = 'draft' | 'completed' | 'failed';
 
+// Field mapping types for CSV import
+export type TransactionFieldType =
+  | 'date'
+  | 'debit'
+  | 'credit'
+  | 'description'
+  | 'reference';
+
+export type FieldDataType = 'string' | 'date' | 'number';
+
+export interface FieldMapping {
+  sourceColumn: string;           // CSV header name
+  transactionField: TransactionFieldType;  // Which transaction field it maps to
+  dataType: FieldDataType;        // Type of data
+  required: boolean;              // Whether this mapping is required
+  format?: string;                // Optional format (e.g., date format "dd MMM yyyy")
+}
+
 export interface ImportSourceConfig {
   startingLine: number;
-  fieldMappings: {
-    dateColumn: string;
-    dateFormat: string;
-    descriptionColumn: string;
-    debitColumn: string | null;
-    creditColumn: string | null;
-    referenceColumn?: string;
-  };
+  fieldMappings: FieldMapping[];  // Array of field mappings
 }
 
 export interface CreateImportSourceData {

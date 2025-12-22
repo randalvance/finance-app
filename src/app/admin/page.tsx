@@ -273,14 +273,13 @@ export default function AdminPage() {
         description: '',
         config: JSON.stringify({
           startingLine: 1,
-          fieldMappings: {
-            dateColumn: '',
-            dateFormat: 'dd MMM yyyy',
-            descriptionColumn: '',
-            debitColumn: null,
-            creditColumn: null,
-            referenceColumn: ''
-          }
+          fieldMappings: [
+            { sourceColumn: '', transactionField: 'date', dataType: 'date', required: true, format: 'dd MMM yyyy' },
+            { sourceColumn: '', transactionField: 'description', dataType: 'string', required: true },
+            { sourceColumn: '', transactionField: 'debit', dataType: 'number', required: false },
+            { sourceColumn: '', transactionField: 'credit', dataType: 'number', required: false },
+            { sourceColumn: '', transactionField: 'reference', dataType: 'string', required: false }
+          ]
         }, null, 2)
       });
     }
