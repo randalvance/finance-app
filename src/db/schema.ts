@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, date, timestamp, integer, customType, unique, check, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, date, timestamp, integer, customType, unique, check, index, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // Custom decimal type that returns numbers instead of strings
@@ -48,6 +48,7 @@ export const transactions = pgTable('transactions', {
   amount: numericDecimal('amount').notNull(),
   category: varchar('category', { length: 100 }).notNull(),
   date: date('date').notNull().default(sql`CURRENT_DATE`),
+  importId: integer('import_id').references(() => imports.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 }, (table) => ({
@@ -69,7 +70,8 @@ export const transactions = pgTable('transactions', {
   sourceAccountIdx: index('idx_transactions_source_account').on(table.sourceAccountId),
   targetAccountIdx: index('idx_transactions_target_account').on(table.targetAccountId),
   typeIdx: index('idx_transactions_type').on(table.transactionType),
-  userTypeIdx: index('idx_transactions_user_type').on(table.userId, table.transactionType)
+  userTypeIdx: index('idx_transactions_user_type').on(table.userId, table.transactionType),
+  importIdIdx: index('idx_transactions_import_id').on(table.importId)
 }));
 
 export const categories = pgTable('categories', {
@@ -86,4 +88,37 @@ export const categories = pgTable('categories', {
     'categories_transaction_type_check',
     sql`${table.defaultTransactionType} IN ('Debit', 'Credit', 'Transfer')`
   )
+}));
+
+// Import sources for CSV configurations
+export const importSources = pgTable('import_sources', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  config: jsonb('config').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+}, (table) => ({
+  uniqueUserSource: unique().on(table.userId, table.name)
+}));
+
+// Imports for tracking CSV import batches
+export const imports = pgTable('imports', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  importSourceId: integer('import_source_id').references(() => importSources.id, { onDelete: 'set null' }),
+  filename: varchar('filename', { length: 255 }).notNull(),
+  defaultAccountId: integer('default_account_id').references(() => accounts.id, { onDelete: 'set null' }),
+  status: varchar('status', { length: 20 }).notNull().default('draft'),
+  previewData: jsonb('preview_data'),
+  totalRows: integer('total_rows').notNull().default(0),
+  importedRows: integer('imported_rows').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+  completedAt: timestamp('completed_at')
+}, (table) => ({
+  userIdIdx: index('idx_imports_user_id').on(table.userId),
+  sourceIdIdx: index('idx_imports_source_id').on(table.importSourceId),
+  statusIdx: index('idx_imports_status').on(table.status),
+  createdAtIdx: index('idx_imports_created_at').on(table.createdAt)
 }));

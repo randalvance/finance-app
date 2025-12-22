@@ -1,4 +1,4 @@
-import { accounts, transactions, categories, users } from '@/db/schema';
+import { accounts, transactions, categories, users, importSources, imports } from '@/db/schema';
 import type { InferSelectModel } from 'drizzle-orm';
 
 // Base types inferred from schema
@@ -6,6 +6,8 @@ export type Account = InferSelectModel<typeof accounts>;
 export type Transaction = InferSelectModel<typeof transactions>;
 export type Category = InferSelectModel<typeof categories>;
 export type User = InferSelectModel<typeof users>;
+export type ImportSource = InferSelectModel<typeof importSources>;
+export type Import = InferSelectModel<typeof imports>;
 
 // Transaction type enum
 export type TransactionType = 'Debit' | 'Credit' | 'Transfer';
@@ -96,4 +98,77 @@ export interface CreateCategoryData {
 
 export interface UpdateCategoryData extends Partial<Omit<CreateCategoryData, 'userId'>> {
   id: number;
+}
+
+// Import Source types
+export type ImportStatus = 'draft' | 'completed' | 'failed';
+
+export interface ImportSourceConfig {
+  startingLine: number;
+  fieldMappings: {
+    dateColumn: string;
+    dateFormat: string;
+    descriptionColumn: string;
+    debitColumn: string | null;
+    creditColumn: string | null;
+    referenceColumn?: string;
+  };
+}
+
+export interface CreateImportSourceData {
+  userId: number;
+  name: string;
+  description?: string;
+  config: ImportSourceConfig;
+}
+
+export interface UpdateImportSourceData extends Partial<Omit<CreateImportSourceData, 'userId'>> {
+  id: number;
+}
+
+// Preview transaction type (before import)
+export interface PreviewTransaction {
+  tempId: string;
+  date: string;
+  description: string;
+  amount: number;
+  transactionType: TransactionType;
+  sourceAccountId: number | null;
+  targetAccountId: number | null;
+  rawCsvRow?: Record<string, string>; // Original CSV row data
+}
+
+// Preview data stored in imports table
+export interface ImportPreviewData {
+  transactions: PreviewTransaction[];
+  categoryMappings: Record<string, number>; // tempId -> categoryId
+}
+
+// Import DTOs
+export interface CreateImportData {
+  userId: number;
+  importSourceId: number | null;
+  filename: string;
+  defaultAccountId: number | null;
+  status: ImportStatus;
+  previewData?: ImportPreviewData;
+  totalRows: number;
+  importedRows: number;
+}
+
+export interface UpdateImportData {
+  id: number;
+  status?: ImportStatus;
+  previewData?: ImportPreviewData;
+  importedRows?: number;
+  completedAt?: Date;
+}
+
+// CSV parsing types
+export interface ParsedCSVRow {
+  date: string;
+  description: string;
+  debitAmount: number | null;
+  creditAmount: number | null;
+  rawRow: Record<string, string>;
 }

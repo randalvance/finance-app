@@ -52,6 +52,7 @@ export class TransactionService {
         amount: transactions.amount,
         category: transactions.category,
         date: transactions.date,
+        importId: transactions.importId,
         createdAt: transactions.createdAt,
         updatedAt: transactions.updatedAt,
       })

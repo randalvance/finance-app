@@ -19,11 +19,30 @@ interface Category {
   created_at: string;
 }
 
+interface ImportSource {
+  id: number;
+  name: string;
+  description: string | null;
+  config: {
+    startingLine: number;
+    fieldMappings: {
+      dateColumn: string;
+      dateFormat: string;
+      descriptionColumn: string;
+      debitColumn: string | null;
+      creditColumn: string | null;
+      referenceColumn?: string;
+    };
+  };
+  created_at: string;
+}
+
 export default function AdminPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [importSources, setImportSources] = useState<ImportSource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'accounts' | 'categories'>('accounts');
+  const [activeTab, setActiveTab] = useState<'accounts' | 'categories' | 'import-sources'>('accounts');
   
   // Account modal state
   const [showAccountModal, setShowAccountModal] = useState(false);
@@ -42,12 +61,22 @@ export default function AdminPage() {
     color: '#3b82f6',
     default_transaction_type: 'Debit' as 'Debit' | 'Credit' | 'Transfer'
   });
-  
+
+  // Import source modal state
+  const [showImportSourceModal, setShowImportSourceModal] = useState(false);
+  const [editingImportSource, setEditingImportSource] = useState<ImportSource | null>(null);
+  const [importSourceFormData, setImportSourceFormData] = useState({
+    name: '',
+    description: '',
+    config: ''
+  });
+
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
+    fetchImportSources();
   }, []);
 
   const fetchAccounts = async () => {
@@ -73,6 +102,18 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchImportSources = async () => {
+    try {
+      const response = await fetch('/api/import-sources');
+      if (response.ok) {
+        const data = await response.json();
+        setImportSources(data);
+      }
+    } catch (error) {
+      console.error('Error fetching import sources:', error);
     }
   };
 
@@ -198,12 +239,12 @@ export default function AdminPage() {
 
   const handleDeleteCategory = async (id: number) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
-    
+
     try {
       const response = await fetch(`/api/categories/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         fetchCategories();
       } else {
@@ -213,6 +254,104 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error deleting category:', error);
       alert('Failed to delete category');
+    }
+  };
+
+  // Import source handlers
+  const openImportSourceModal = (source?: ImportSource) => {
+    if (source) {
+      setEditingImportSource(source);
+      setImportSourceFormData({
+        name: source.name,
+        description: source.description || '',
+        config: JSON.stringify(source.config, null, 2)
+      });
+    } else {
+      setEditingImportSource(null);
+      setImportSourceFormData({
+        name: '',
+        description: '',
+        config: JSON.stringify({
+          startingLine: 1,
+          fieldMappings: {
+            dateColumn: '',
+            dateFormat: 'dd MMM yyyy',
+            descriptionColumn: '',
+            debitColumn: null,
+            creditColumn: null,
+            referenceColumn: ''
+          }
+        }, null, 2)
+      });
+    }
+    setShowImportSourceModal(true);
+  };
+
+  const handleImportSourceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      // Parse and validate config JSON
+      let config;
+      try {
+        config = JSON.parse(importSourceFormData.config);
+      } catch {
+        alert('Invalid JSON in config field');
+        setSubmitting(false);
+        return;
+      }
+
+      const url = editingImportSource
+        ? `/api/import-sources/${editingImportSource.id}`
+        : '/api/import-sources';
+
+      const response = await fetch(url, {
+        method: editingImportSource ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: importSourceFormData.name,
+          description: importSourceFormData.description,
+          config
+        }),
+      });
+
+      if (response.ok) {
+        setShowImportSourceModal(false);
+        setEditingImportSource(null);
+        setImportSourceFormData({ name: '', description: '', config: '' });
+        fetchImportSources();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to save import source');
+      }
+    } catch (error) {
+      console.error('Error saving import source:', error);
+      alert('Failed to save import source');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteImportSource = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this import source?')) return;
+
+    try {
+      const response = await fetch(`/api/import-sources/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchImportSources();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete import source');
+      }
+    } catch (error) {
+      console.error('Error deleting import source:', error);
+      alert('Failed to delete import source');
     }
   };
 
@@ -255,6 +394,16 @@ export default function AdminPage() {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
                 Categories ({categories.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('import-sources')}
+                className={`${
+                  activeTab === 'import-sources'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+              >
+                Import Sources ({importSources.length})
               </button>
             </nav>
           </div>
@@ -393,6 +542,65 @@ export default function AdminPage() {
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(category.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Import Sources Tab */}
+        {activeTab === 'import-sources' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-100">Manage Import Sources</h2>
+              <button
+                onClick={() => openImportSourceModal()}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                + New Import Source
+              </button>
+            </div>
+
+            <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-800">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {importSources.map((source) => (
+                    <tr key={source.id} className="hover:bg-gray-800 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-100">{source.name}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-gray-400">{source.description || '—'}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <button
+                          onClick={() => openImportSourceModal(source)}
+                          className="text-blue-400 hover:text-blue-300 mr-4"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteImportSource(source.id)}
                           className="text-red-400 hover:text-red-300"
                         >
                           Delete
@@ -569,6 +777,90 @@ export default function AdminPage() {
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Saving...' : editingCategory ? 'Update Category' : 'Create Category'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Source Modal */}
+      {showImportSourceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-2xl w-full">
+            <div className="px-6 py-4 border-b border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-100">
+                {editingImportSource ? 'Edit Import Source' : 'Create New Import Source'}
+              </h3>
+            </div>
+
+            <form onSubmit={handleImportSourceSubmit} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="source-name" className="block text-sm font-medium text-gray-300 mb-2">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  id="source-name"
+                  required
+                  value={importSourceFormData.name}
+                  onChange={(e) => setImportSourceFormData({ ...importSourceFormData, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., DBS Bank Statement"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="source-description" className="block text-sm font-medium text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="source-description"
+                  value={importSourceFormData.description}
+                  onChange={(e) => setImportSourceFormData({ ...importSourceFormData, description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Optional description"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="source-config" className="block text-sm font-medium text-gray-300 mb-2">
+                  Configuration (JSON) *
+                </label>
+                <textarea
+                  id="source-config"
+                  required
+                  value={importSourceFormData.config}
+                  onChange={(e) => setImportSourceFormData({ ...importSourceFormData, config: e.target.value })}
+                  rows={12}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  placeholder="{...}"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  JSON configuration for CSV field mappings. Must include startingLine and fieldMappings.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImportSourceModal(false);
+                    setEditingImportSource(null);
+                    setImportSourceFormData({ name: '', description: '', config: '' });
+                  }}
+                  className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Saving...' : editingImportSource ? 'Update Import Source' : 'Create Import Source'}
                 </button>
               </div>
             </form>
