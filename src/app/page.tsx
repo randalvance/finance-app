@@ -227,6 +227,12 @@ export default function Home() {
                 + Add Transaction
               </button>
               <Link
+                href="/import"
+                className="text-gray-400 hover:text-gray-200 px-4 py-2.5 rounded-md border border-gray-700 hover:border-gray-600 transition-colors text-sm"
+              >
+                📁 Import
+              </Link>
+              <Link
                 href="/admin"
                 className="text-gray-400 hover:text-gray-200 px-4 py-2.5 rounded-md border border-gray-700 hover:border-gray-600 transition-colors text-sm"
               >

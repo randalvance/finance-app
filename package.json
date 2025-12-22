@@ -6,6 +6,7 @@
     "dev": "concurrently \"next dev --turbopack\" \"npm run ngrok\"",
     "ngrok": "dotenv -e .env.local -- bash -c 'ngrok http --domain=$(echo $NGROK_DOMAIN | sed \"s|https://||\") 3000'",
     "build": "npm run db:migrate && next build --turbopack",
+    "build:dev": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate",
