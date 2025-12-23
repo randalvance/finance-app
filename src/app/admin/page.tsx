@@ -434,6 +434,7 @@ export default function AdminPage() {
               <h2 className="text-xl font-bold text-gray-100">Manage Accounts</h2>
               <Button
                 onClick={() => openAccountModal()}
+                className="shadow-lg"
               >
                 + New Account
               </Button>
@@ -508,6 +509,7 @@ export default function AdminPage() {
               <h2 className="text-xl font-bold text-gray-100">Manage Categories</h2>
               <Button
                 onClick={() => openCategoryModal()}
+                className="shadow-lg"
               >
                 + New Category
               </Button>
@@ -574,6 +576,7 @@ export default function AdminPage() {
               <h2 className="text-xl font-bold text-gray-100">Manage Import Sources</h2>
               <Button
                 onClick={() => openImportSourceModal()}
+                className="shadow-lg"
               >
                 + New Import Source
               </Button>

@@ -186,14 +186,14 @@ export default function TransactionTable({
           {/* Account Filter */}
           {showAccountFilter && onAccountFilterChange && (
             <div className="flex-1">
-              <label htmlFor="account-filter" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="account-filter" className="block text-sm font-medium text-muted-foreground mb-2">
                 Filter by Account
               </label>
               <select
                 id="account-filter"
                 value={selectedAccountFilter ?? ''}
                 onChange={(e) => onAccountFilterChange(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">All Accounts</option>
                 {accounts.map((account) => (
@@ -208,7 +208,7 @@ export default function TransactionTable({
           {/* Search Filter */}
           {showSearchFilter && onSearchChange && (
             <div className="flex-1">
-              <label htmlFor="search-filter" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="search-filter" className="block text-sm font-medium text-muted-foreground mb-2">
                 Search
               </label>
               <input
@@ -217,7 +217,7 @@ export default function TransactionTable({
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Search by description..."
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           )}
@@ -226,67 +226,67 @@ export default function TransactionTable({
 
       {/* Table or Empty State */}
       {filteredTransactions.length === 0 ? (
-        <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-12 text-center">
+        <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border p-12 text-center">
           {transactions.length === 0 && !searchQuery && !selectedAccountFilter ? (
             // Completely empty - no transactions at all
             <>
-              <div className="text-gray-600 text-6xl mb-4">💰</div>
-              <h3 className="text-lg font-medium text-gray-200 mb-2">No transactions yet</h3>
-              <p className="text-gray-400">{emptyStateMessage}</p>
+              <div className="text-muted-foreground text-6xl mb-4">💰</div>
+              <h3 className="text-lg font-medium text-foreground mb-2">No transactions yet</h3>
+              <p className="text-muted-foreground">{emptyStateMessage}</p>
             </>
           ) : (
             // Filtered results are empty
-            <p className="text-gray-400">{emptyStateMessage}</p>
+            <p className="text-muted-foreground">{emptyStateMessage}</p>
           )}
         </div>
       ) : (
-        <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-800">
-            <thead className="bg-gray-800">
+        <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border overflow-hidden">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Description
                 </th>
                 {showAccountsColumn && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Accounts
                   </th>
                 )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Category
                 </th>
                 {showLinkColumn && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Link
                   </th>
                 )}
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Amount
                 </th>
                 {(actionType !== 'none' || editable) && (
-                  <th className="px-6 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Action
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-border">
               {filteredTransactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-gray-800 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                <tr key={transaction.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {new Date(transaction.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getTransactionTypeBadge(transaction.transactionType)}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-100">{transaction.description}</div>
+                    <div className="text-sm text-foreground">{transaction.description}</div>
                   </td>
                   {showAccountsColumn && (
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -296,7 +296,7 @@ export default function TransactionTable({
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: transaction.sourceAccount.color }}
                           />
-                          <span className="text-sm text-gray-300">{transaction.sourceAccount.name}</span>
+                          <span className="text-sm text-muted-foreground">{transaction.sourceAccount.name}</span>
                         </div>
                       )}
                       {transaction.transactionType === 'Credit' && transaction.targetAccount && (
@@ -305,7 +305,7 @@ export default function TransactionTable({
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: transaction.targetAccount.color }}
                           />
-                          <span className="text-sm text-gray-300">{transaction.targetAccount.name}</span>
+                          <span className="text-sm text-muted-foreground">{transaction.targetAccount.name}</span>
                         </div>
                       )}
                       {transaction.transactionType === 'Transfer' && transaction.sourceAccount && transaction.targetAccount && (
@@ -315,29 +315,29 @@ export default function TransactionTable({
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: transaction.sourceAccount.color }}
                             />
-                            <span className="text-gray-300">{transaction.sourceAccount.name}</span>
+                            <span className="text-muted-foreground">{transaction.sourceAccount.name}</span>
                           </div>
-                          <span className="text-gray-500">→</span>
+                          <span className="text-muted-foreground">→</span>
                           <div className="flex items-center space-x-1">
                             <div
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: transaction.targetAccount.color }}
                             />
-                            <span className="text-gray-300">{transaction.targetAccount.name}</span>
+                            <span className="text-muted-foreground">{transaction.targetAccount.name}</span>
                           </div>
                         </div>
                       )}
                     </td>
                   )}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-muted-foreground">
                       {transaction.category?.name || 'Uncategorized'}
                     </span>
                   </td>
                   {showLinkColumn && (
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       {transaction.link && (
-                        <span className="text-blue-400 cursor-help" title="Linked transaction">
+                        <span className="text-primary cursor-help" title="Linked transaction">
                           🔗
                         </span>
                       )}
@@ -347,10 +347,10 @@ export default function TransactionTable({
                     <span
                       className={`text-sm font-medium ${
                         transaction.transactionType === 'Credit'
-                          ? 'text-green-400'
+                          ? 'text-transaction-credit-text'
                           : transaction.transactionType === 'Debit'
-                          ? 'text-red-400'
-                          : 'text-blue-400'
+                          ? 'text-transaction-debit-text'
+                          : 'text-transaction-transfer-text'
                       }`}
                     >
                       {formatCurrency(
@@ -365,7 +365,7 @@ export default function TransactionTable({
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => onSelectTransaction(transaction.id)}
-                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        className="text-xs px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                       >
                         Select
                       </button>
@@ -375,13 +375,13 @@ export default function TransactionTable({
                     <td className="px-6 py-4 text-right text-sm">
                       <button
                         onClick={() => onEditRequested?.(transaction)}
-                        className="text-blue-400 hover:text-blue-300 mr-4"
+                        className="text-primary hover:text-primary/80 mr-4"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(transaction)}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-destructive hover:text-destructive/80"
                       >
                         Delete
                       </button>
