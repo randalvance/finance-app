@@ -23,20 +23,20 @@ interface Category {
 
 interface Transaction {
   id: number;
-  transaction_type: 'Debit' | 'Credit' | 'Transfer';
-  source_account_id: number | null;
-  target_account_id: number | null;
+  transactionType: 'Debit' | 'Credit' | 'Transfer';
+  sourceAccountId: number | null;
+  targetAccountId: number | null;
   description: string;
   amount: number;
   category: string;
   date: string;
-  created_at: string;
-  source_account?: {
+  createdAt: string;
+  sourceAccount?: {
     id: number;
     name: string;
     color: string;
   };
-  target_account?: {
+  targetAccount?: {
     id: number;
     name: string;
     color: string;
@@ -59,6 +59,7 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [transactionFormData, setTransactionFormData] = useState({
     transaction_type: 'Debit' as 'Debit' | 'Credit' | 'Transfer',
@@ -149,6 +150,27 @@ export default function Home() {
     setShowTransactionModal(true);
   };
 
+  const openEditModal = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setTransactionFormData({
+      transaction_type: transaction.transactionType,
+      source_account_id: transaction.sourceAccountId?.toString() || '',
+      target_account_id: transaction.targetAccountId?.toString() || '',
+      description: transaction.description,
+      amount: transaction.amount.toString(),
+      category: transaction.category,
+      date: transaction.date
+    });
+    setSelectedLinkTransactionId(transaction.link?.linkedTransactionId || null);
+    setShowTransactionModal(true);
+  };
+
+  const handleDataChanged = () => {
+    fetchTransactions(selectedAccountFilter);
+    fetchAccounts();
+    fetchUnlinkedTransferCount();
+  };
+
   const handleCategoryChange = (categoryName: string) => {
     const selectedCategory = categories.find(c => c.name === categoryName);
     if (selectedCategory && selectedCategory.defaultTransactionType) {
@@ -194,8 +216,13 @@ export default function Home() {
         }
       }
 
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
+      // Determine if we're editing or creating
+      const isEditing = editingTransaction !== null;
+      const url = isEditing ? `/api/transactions/${editingTransaction.id}` : '/api/transactions';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -211,33 +238,51 @@ export default function Home() {
       });
 
       if (response.ok) {
-        const createdTransaction = await response.json();
+        const savedTransaction = await response.json();
 
-        // If a link transaction was selected, create the link
-        if (selectedLinkTransactionId) {
-          try {
-            const linkResponse = await fetch('/api/transactions/links', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                transaction_1_id: createdTransaction.id,
-                transaction_2_id: selectedLinkTransactionId,
-              }),
-            });
+        // Handle linking (only for create or if link changed during edit)
+        const originalLinkId = editingTransaction?.link?.linkedTransactionId;
+        const linkChanged = originalLinkId !== selectedLinkTransactionId;
 
-            if (!linkResponse.ok) {
-              const linkError = await linkResponse.json();
-              alert(`Transaction created but linking failed: ${linkError.error}`);
+        if (!isEditing || linkChanged) {
+          // Delete old link if editing and link was removed or changed
+          if (isEditing && editingTransaction.link && linkChanged) {
+            try {
+              await fetch(`/api/transactions/links/${editingTransaction.link.id}`, {
+                method: 'DELETE',
+              });
+            } catch (linkErr) {
+              console.error('Error removing old link:', linkErr);
             }
-          } catch (linkErr) {
-            console.error('Error creating link:', linkErr);
-            alert('Transaction created but linking failed');
+          }
+
+          // Create new link if one was selected
+          if (selectedLinkTransactionId) {
+            try {
+              const linkResponse = await fetch('/api/transactions/links', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  transaction_1_id: savedTransaction.id,
+                  transaction_2_id: selectedLinkTransactionId,
+                }),
+              });
+
+              if (!linkResponse.ok) {
+                const linkError = await linkResponse.json();
+                alert(`Transaction ${isEditing ? 'updated' : 'created'} but linking failed: ${linkError.error}`);
+              }
+            } catch (linkErr) {
+              console.error('Error creating link:', linkErr);
+              alert(`Transaction ${isEditing ? 'updated' : 'created'} but linking failed`);
+            }
           }
         }
 
         setShowTransactionModal(false);
+        setEditingTransaction(null);
         setTransactionFormData({
           transaction_type: 'Debit',
           source_account_id: '',
@@ -249,15 +294,15 @@ export default function Home() {
         });
         setSelectedLinkTransactionId(null);
         fetchAccounts(); // Refresh to update account totals
-        fetchTransactions(); // Refresh to show new transaction
+        fetchTransactions(selectedAccountFilter); // Refresh to show updated/new transaction
         fetchUnlinkedTransferCount(); // Refresh unlinked count
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to create transaction');
+        alert(error.error || `Failed to ${isEditing ? 'update' : 'create'} transaction`);
       }
     } catch (error) {
-      console.error('Error creating transaction:', error);
-      alert('Failed to create transaction');
+      console.error('Error saving transaction:', error);
+      alert(`Failed to ${editingTransaction ? 'update' : 'create'} transaction`);
     } finally {
       setSubmitting(false);
     }
@@ -401,6 +446,9 @@ export default function Home() {
                 showAccountsColumn={true}
                 maxRows={20}
                 emptyStateMessage={transactions.length === 0 ? "Get started by adding your first transaction" : "No transactions found matching your filters"}
+                editable={true}
+                onEditRequested={openEditModal}
+                onDataChanged={handleDataChanged}
               />
             )}
           </div>
@@ -412,7 +460,9 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
             <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-100">Add New Transaction</h3>
+              <h3 className="text-lg font-semibold text-gray-100">
+                {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
+              </h3>
             </div>
 
             <form onSubmit={handleTransactionSubmit} className="p-6 space-y-4">
@@ -644,6 +694,7 @@ export default function Home() {
                   type="button"
                   onClick={() => {
                     setShowTransactionModal(false);
+                    setEditingTransaction(null);
                     setTransactionFormData({
                       transaction_type: 'Debit',
                       source_account_id: '',
@@ -665,7 +716,7 @@ export default function Home() {
                   disabled={submitting}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Adding...' : 'Add Transaction'}
+                  {submitting ? (editingTransaction ? 'Updating...' : 'Adding...') : (editingTransaction ? 'Update Transaction' : 'Add Transaction')}
                 </button>
               </div>
             </form>
