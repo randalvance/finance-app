@@ -3,35 +3,59 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import TransactionTable from '@/components/TransactionTable';
+import EditTransactionModal from '@/components/EditTransactionModal';
 
 interface UnlinkedTransfer {
   id: number;
-  transaction_type: 'Debit' | 'Credit' | 'Transfer';
-  source_account_id: number | null;
-  target_account_id: number | null;
+  transactionType: 'Debit' | 'Credit' | 'Transfer';
+  sourceAccountId: number | null;
+  targetAccountId: number | null;
   description: string;
   amount: number;
   category: string;
   date: string;
-  created_at: string;
-  source_account?: {
+  createdAt: string;
+  sourceAccount?: {
     id: number;
     name: string;
     color: string;
   };
-  target_account?: {
+  targetAccount?: {
     id: number;
     name: string;
     color: string;
   };
+  link?: {
+    id: number;
+    linkedTransactionId: number;
+  };
+}
+
+interface Account {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  color: string;
+  defaultTransactionType?: 'Debit' | 'Credit' | 'Transfer';
 }
 
 export default function UnlinkedTransfersPage() {
   const [transfers, setTransfers] = useState<UnlinkedTransfer[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingTransaction, setEditingTransaction] = useState<UnlinkedTransfer | null>(null);
 
   useEffect(() => {
     fetchUnlinkedTransfers();
+    fetchAccounts();
+    fetchCategories();
   }, []);
 
   const fetchUnlinkedTransfers = async () => {
@@ -46,6 +70,34 @@ export default function UnlinkedTransfersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAccounts = async () => {
+    try {
+      const response = await fetch('/api/accounts');
+      if (response.ok) {
+        const data = await response.json();
+        setAccounts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const handleDataChanged = () => {
+    fetchUnlinkedTransfers();
   };
 
   return (
@@ -89,10 +141,22 @@ export default function UnlinkedTransfersPage() {
               showLinkColumn={false}
               showAccountsColumn={true}
               emptyStateMessage="No unlinked transfers found"
+              editable={true}
+              onEditRequested={setEditingTransaction}
+              onDataChanged={handleDataChanged}
             />
           </div>
         )}
       </main>
+
+      <EditTransactionModal
+        transaction={editingTransaction}
+        accounts={accounts}
+        categories={categories}
+        onClose={() => setEditingTransaction(null)}
+        onSaved={handleDataChanged}
+        showLinkSelection={false}
+      />
     </div>
   );
 }

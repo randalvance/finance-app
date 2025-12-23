@@ -8,16 +8,16 @@ interface Account {
 
 interface Transaction {
   id: number;
-  transaction_type: 'Debit' | 'Credit' | 'Transfer';
-  source_account_id: number | null;
-  target_account_id: number | null;
+  transactionType: 'Debit' | 'Credit' | 'Transfer';
+  sourceAccountId: number | null;
+  targetAccountId: number | null;
   description: string;
   amount: number;
   category: string;
   date: string;
-  created_at: string;
-  source_account?: Account;
-  target_account?: Account;
+  createdAt: string;
+  sourceAccount?: Account;
+  targetAccount?: Account;
   link?: {
     id: number;
     linkedTransactionId: number;
@@ -31,7 +31,7 @@ interface Transaction {
   };
 }
 
-type ActionType = 'select' | 'view' | 'none';
+type ActionType = 'select' | 'view' | 'edit' | 'none';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -55,6 +55,9 @@ interface TransactionTableProps {
   // Actions
   actionType?: ActionType;
   onSelectTransaction?: (transactionId: number) => void;
+  editable?: boolean;
+  onEditRequested?: (transaction: Transaction) => void;
+  onDataChanged?: () => void;
   
   // Additional filters
   filterUnlinkedOnly?: boolean;
@@ -90,9 +93,58 @@ export default function TransactionTable({
   emptyStateMessage = 'No transactions found',
   actionType = 'none',
   onSelectTransaction,
+  editable = false,
+  onEditRequested,
+  onDataChanged,
   filterUnlinkedOnly = false,
   customFilter,
 }: TransactionTableProps) {
+  const handleDelete = async (transaction: Transaction) => {
+    // Check if transaction is linked
+    if (transaction.link) {
+      if (!confirm('This transaction is linked. Deleting will unlink it. Continue?')) {
+        return;
+      }
+      
+      // Unlink first
+      try {
+        const unlinkResponse = await fetch(`/api/transactions/links/${transaction.link.id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!unlinkResponse.ok) {
+          alert('Failed to unlink transaction');
+          return;
+        }
+      } catch (error) {
+        console.error('Error unlinking transaction:', error);
+        alert('Failed to unlink transaction');
+        return;
+      }
+    } else {
+      // Regular confirmation for non-linked transactions
+      if (!confirm('Are you sure you want to delete this transaction?')) {
+        return;
+      }
+    }
+
+    // Delete the transaction
+    try {
+      const response = await fetch(`/api/transactions/${transaction.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        onDataChanged?.();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete transaction');
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      alert('Failed to delete transaction');
+    }
+  };
   // Apply filters
   let filteredTransactions = transactions;
 
@@ -205,7 +257,7 @@ export default function TransactionTable({
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Amount
                 </th>
-                {actionType !== 'none' && (
+                {(actionType !== 'none' || editable) && (
                   <th className="px-6 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Action
                   </th>
@@ -219,47 +271,47 @@ export default function TransactionTable({
                     {new Date(transaction.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getTransactionTypeBadge(transaction.transaction_type)}
+                    {getTransactionTypeBadge(transaction.transactionType)}
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-100">{transaction.description}</div>
                   </td>
                   {showAccountsColumn && (
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {transaction.transaction_type === 'Debit' && transaction.source_account && (
+                      {transaction.transactionType === 'Debit' && transaction.sourceAccount && (
                         <div className="flex items-center space-x-2">
                           <div
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: transaction.source_account.color }}
+                            style={{ backgroundColor: transaction.sourceAccount.color }}
                           />
-                          <span className="text-sm text-gray-300">{transaction.source_account.name}</span>
+                          <span className="text-sm text-gray-300">{transaction.sourceAccount.name}</span>
                         </div>
                       )}
-                      {transaction.transaction_type === 'Credit' && transaction.target_account && (
+                      {transaction.transactionType === 'Credit' && transaction.targetAccount && (
                         <div className="flex items-center space-x-2">
                           <div
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: transaction.target_account.color }}
+                            style={{ backgroundColor: transaction.targetAccount.color }}
                           />
-                          <span className="text-sm text-gray-300">{transaction.target_account.name}</span>
+                          <span className="text-sm text-gray-300">{transaction.targetAccount.name}</span>
                         </div>
                       )}
-                      {transaction.transaction_type === 'Transfer' && transaction.source_account && transaction.target_account && (
+                      {transaction.transactionType === 'Transfer' && transaction.sourceAccount && transaction.targetAccount && (
                         <div className="flex items-center space-x-1 text-sm">
                           <div className="flex items-center space-x-1">
                             <div
                               className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: transaction.source_account.color }}
+                              style={{ backgroundColor: transaction.sourceAccount.color }}
                             />
-                            <span className="text-gray-300">{transaction.source_account.name}</span>
+                            <span className="text-gray-300">{transaction.sourceAccount.name}</span>
                           </div>
                           <span className="text-gray-500">→</span>
                           <div className="flex items-center space-x-1">
                             <div
                               className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: transaction.target_account.color }}
+                              style={{ backgroundColor: transaction.targetAccount.color }}
                             />
-                            <span className="text-gray-300">{transaction.target_account.name}</span>
+                            <span className="text-gray-300">{transaction.targetAccount.name}</span>
                           </div>
                         </div>
                       )}
@@ -280,9 +332,9 @@ export default function TransactionTable({
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <span
                       className={`text-sm font-medium ${
-                        transaction.transaction_type === 'Credit'
+                        transaction.transactionType === 'Credit'
                           ? 'text-green-400'
-                          : transaction.transaction_type === 'Debit'
+                          : transaction.transactionType === 'Debit'
                           ? 'text-red-400'
                           : 'text-blue-400'
                       }`}
@@ -297,6 +349,22 @@ export default function TransactionTable({
                         className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                       >
                         Select
+                      </button>
+                    </td>
+                  )}
+                  {editable && (
+                    <td className="px-6 py-4 text-right text-sm">
+                      <button
+                        onClick={() => onEditRequested?.(transaction)}
+                        className="text-blue-400 hover:text-blue-300 mr-4"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(transaction)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        Delete
                       </button>
                     </td>
                   )}
