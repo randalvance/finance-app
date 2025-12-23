@@ -12,7 +12,12 @@ interface UnlinkedTransfer {
   targetAccountId: number | null;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
+  category?: {
+    id: number;
+    name: string;
+    color: string | null;
+  };
   date: string;
   createdAt: string;
   sourceAccount?: {

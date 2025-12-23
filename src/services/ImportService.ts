@@ -345,7 +345,7 @@ export class ImportService {
       transactionType: preview.transactionType,
       description: preview.description,
       amount: preview.amount,
-      category: categoryMappings[preview.tempId]?.toString() || 'Uncategorized',
+      categoryId: categoryMappings[preview.tempId],
       date: preview.date,
     }));
 

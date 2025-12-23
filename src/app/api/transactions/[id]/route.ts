@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TransactionService } from '@/services/TransactionService';
+import { CategoryService } from '@/services/categoryService';
 import { requireAuth } from '@/lib/auth';
 import { TransactionType } from '@/types/transaction';
 
@@ -64,7 +65,7 @@ export async function PUT(
       targetAccountId?: number | null;
       description?: string;
       amount?: number;
-      category?: string;
+      categoryId?: number;
       date?: string;
     } = { id };
 
@@ -73,8 +74,23 @@ export async function PUT(
     if (body.target_account_id !== undefined) updateData.targetAccountId = body.target_account_id ? parseInt(body.target_account_id) : null;
     if (body.description !== undefined) updateData.description = body.description;
     if (body.amount !== undefined) updateData.amount = parseFloat(body.amount);
-    if (body.category !== undefined) updateData.category = body.category;
     if (body.date !== undefined) updateData.date = body.date;
+
+    // Handle category - accept either ID or name
+    if (body.category_id !== undefined) {
+      updateData.categoryId = parseInt(body.category_id);
+    } else if (body.category !== undefined) {
+      // Look up category by name
+      const categories = await CategoryService.getAllCategories(userId);
+      const foundCategory = categories.find(c => c.name === body.category);
+      if (!foundCategory) {
+        return NextResponse.json(
+          { error: `Category not found: ${body.category}` },
+          { status: 400 }
+        );
+      }
+      updateData.categoryId = foundCategory.id;
+    }
 
     const transaction = await TransactionService.updateTransaction(updateData, userId);
 

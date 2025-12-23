@@ -20,7 +20,11 @@ interface Transaction {
   targetAccountId: number | null;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
+  category?: {
+    id: number;
+    name: string;
+  };
   date: string;
   link?: {
     id: number;
@@ -53,7 +57,7 @@ export default function EditTransactionModal({
     target_account_id: '',
     description: '',
     amount: '',
-    category: '',
+    category_id: '',
     date: new Date().toISOString().split('T')[0]
   });
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +71,7 @@ export default function EditTransactionModal({
         target_account_id: transaction.targetAccountId?.toString() || '',
         description: transaction.description,
         amount: transaction.amount.toString(),
-        category: transaction.category,
+        category_id: transaction.categoryId.toString(),
         date: transaction.date
       });
       setSelectedLinkTransactionId(transaction.link?.linkedTransactionId || null);
@@ -76,18 +80,18 @@ export default function EditTransactionModal({
 
   if (!transaction) return null;
 
-  const handleCategoryChange = (categoryName: string) => {
-    const selectedCategory = categories.find(c => c.name === categoryName);
+  const handleCategoryChange = (categoryId: string) => {
+    const selectedCategory = categories.find(c => c.id.toString() === categoryId);
     if (selectedCategory && selectedCategory.defaultTransactionType) {
       setFormData({
         ...formData,
-        category: categoryName,
+        category_id: categoryId,
         transaction_type: selectedCategory.defaultTransactionType
       });
     } else {
       setFormData({
         ...formData,
-        category: categoryName
+        category_id: categoryId
       });
     }
   };
@@ -132,7 +136,7 @@ export default function EditTransactionModal({
           target_account_id: formData.target_account_id ? parseInt(formData.target_account_id) : null,
           description: formData.description,
           amount: parseFloat(formData.amount),
-          category: formData.category,
+          category_id: parseInt(formData.category_id),
           date: formData.date,
         }),
       });
@@ -358,13 +362,13 @@ export default function EditTransactionModal({
             <select
               id="category"
               required
-              value={formData.category}
+              value={formData.category_id}
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select a category</option>
               {categories.map((category) => (
-                <option key={category.id} value={category.name}>
+                <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
               ))}

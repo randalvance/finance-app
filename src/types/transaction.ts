@@ -26,6 +26,11 @@ export type TransactionWithAccounts = Transaction & {
     name: string;
     color: string | null;
   };
+  category?: {
+    id: number;
+    name: string;
+    color: string | null;
+  };
 };
 
 // Transaction with link information
@@ -51,7 +56,7 @@ export type CreateDebitData = {
   targetAccountId?: number | null;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
   date: string;
 };
 
@@ -62,7 +67,7 @@ export type CreateCreditData = {
   targetAccountId: number;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
   date: string;
 };
 
@@ -73,7 +78,7 @@ export type CreateTransferData = {
   targetAccountId: number;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
   date: string;
 };
 
@@ -87,7 +92,7 @@ export type UpdateTransactionData = Partial<{
   targetAccountId: number | null;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
   date: string;
 }> & {
   id: number;

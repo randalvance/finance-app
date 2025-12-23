@@ -117,7 +117,7 @@ export class TransactionLinkService {
       transactionType: transactions.transactionType,
       description: transactions.description,
       amount: transactions.amount,
-      category: transactions.category,
+      categoryId: transactions.categoryId,
       date: transactions.date,
       importId: transactions.importId,
       createdAt: transactions.createdAt,

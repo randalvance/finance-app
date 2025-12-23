@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { categories } from '@/db/schema';
 import { Category, CreateCategoryData, UpdateCategoryData } from '@/types/transaction';
-import { eq, asc, and } from 'drizzle-orm';
+import { eq, asc, and, inArray } from 'drizzle-orm';
 
 export class CategoryService {
   static async getAllCategories(userId: number): Promise<Category[]> {
@@ -17,6 +17,14 @@ export class CategoryService {
       .from(categories)
       .where(and(eq(categories.id, id), eq(categories.userId, userId)));
     return result[0] || null;
+  }
+
+  static async getCategoriesByIds(ids: number[], userId: number): Promise<Category[]> {
+    if (ids.length === 0) return [];
+    const result = await db.select()
+      .from(categories)
+      .where(and(inArray(categories.id, ids), eq(categories.userId, userId)));
+    return result;
   }
 
   static async createCategory(data: CreateCategoryData): Promise<Category> {
