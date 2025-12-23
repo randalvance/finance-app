@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     const userId = await requireAuth();
     const body = await request.json();
-    const { name, description, color } = body;
+    const { name, description, color, currency } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       name,
       description,
       color,
+      currency,
     });
 
     return NextResponse.json(account, { status: 201 });

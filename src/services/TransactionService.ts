@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { transactions, accounts, transactionLinks, categories } from '@/db/schema';
+import { transactions, accounts, transactionLinks, categories, type Currency } from '@/db/schema';
 import {
   Transaction,
   CreateTransactionData,
@@ -71,20 +71,21 @@ export class TransactionService {
     });
 
     // Fetch all accounts in one query if there are any
-    let accountMap = new Map<number, { id: number; name: string; color: string | null }>();
+    let accountMap = new Map<number, { id: number; name: string; color: string | null; currency: Currency }>();
     if (accountIds.size > 0) {
       const accountsData = await db
         .select({
           id: accounts.id,
           name: accounts.name,
           color: accounts.color,
+          currency: accounts.currency,
         })
         .from(accounts)
         .where(
           inArray(accounts.id, Array.from(accountIds))
         );
 
-      accountMap = new Map(accountsData.map(a => [a.id, a]));
+      accountMap = new Map(accountsData.map(a => [a.id, { ...a, currency: a.currency as Currency }]));
     }
 
     // Fetch all categories in one query if there are any
@@ -111,11 +112,13 @@ export class TransactionService {
         id: t.sourceAccountId,
         name: accountMap.get(t.sourceAccountId)!.name,
         color: accountMap.get(t.sourceAccountId)!.color,
+        currency: accountMap.get(t.sourceAccountId)!.currency,
       } : undefined,
       targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId) ? {
         id: t.targetAccountId,
         name: accountMap.get(t.targetAccountId)!.name,
         color: accountMap.get(t.targetAccountId)!.color,
+        currency: accountMap.get(t.targetAccountId)!.currency,
       } : undefined,
       category: t.categoryId && categoryMap.has(t.categoryId) ? {
         id: t.categoryId,
@@ -277,18 +280,19 @@ export class TransactionService {
       if (t.categoryId) categoryIds.add(t.categoryId);
     });
 
-    let accountMap = new Map<number, { id: number; name: string; color: string | null }>();
+    let accountMap = new Map<number, { id: number; name: string; color: string | null; currency: Currency }>();
     if (accountIds.size > 0) {
       const accountsData = await db
         .select({
           id: accounts.id,
           name: accounts.name,
           color: accounts.color,
+          currency: accounts.currency,
         })
         .from(accounts)
         .where(inArray(accounts.id, Array.from(accountIds)));
 
-      accountMap = new Map(accountsData.map(a => [a.id, a]));
+      accountMap = new Map(accountsData.map(a => [a.id, { ...a, currency: a.currency as Currency }]));
     }
 
     // Fetch categories
@@ -378,11 +382,13 @@ export class TransactionService {
         id: t.sourceAccountId,
         name: accountMap.get(t.sourceAccountId)!.name,
         color: accountMap.get(t.sourceAccountId)!.color,
+        currency: accountMap.get(t.sourceAccountId)!.currency,
       } : undefined,
       targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId) ? {
         id: t.targetAccountId,
         name: accountMap.get(t.targetAccountId)!.name,
         color: accountMap.get(t.targetAccountId)!.color,
+        currency: accountMap.get(t.targetAccountId)!.currency,
       } : undefined,
       category: t.categoryId && categoryMap.has(t.categoryId) ? {
         id: t.categoryId,

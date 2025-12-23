@@ -28,15 +28,26 @@ export const accounts = pgTable('accounts', {
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   color: varchar('color', { length: 7 }).default('#6366f1'),
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 }, (table) => ({
-  uniqueUserAccount: unique().on(table.userId, table.name)
+  uniqueUserAccount: unique().on(table.userId, table.name),
+  // Currency check constraint - escape single quotes in currency codes to prevent SQL syntax errors
+  // Using .replace(/'/g, "''") follows SQL standard for escaping quotes (defensive coding)
+  currencyCheck: check(
+    'currency_check',
+    sql`${table.currency} IN (${sql.raw(currencyEnum.map(c => `'${c.replace(/'/g, "''")}'`).join(', '))})`
+  )
 }));
 
 // Transaction types
 export const transactionTypeEnum = ['Debit', 'Credit', 'Transfer'] as const;
 export type TransactionType = typeof transactionTypeEnum[number];
+
+// Supported currencies
+export const currencyEnum = ['USD', 'SGD', 'EUR', 'JPY', 'PHP'] as const;
+export type Currency = typeof currencyEnum[number];
 
 export const transactions = pgTable('transactions', {
   id: serial('id').primaryKey(),

@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getAvailableCurrencies } from '@/lib/currency';
+import type { Currency } from '@/db/schema';
 
 interface Account {
   id: number;
   name: string;
   description: string | null;
   color: string;
+  currency: string;
   created_at: string;
 }
 
@@ -51,7 +54,8 @@ export default function AdminPage() {
   const [accountFormData, setAccountFormData] = useState({
     name: '',
     description: '',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    currency: 'USD' as Currency
   });
   
   // Category modal state
@@ -126,11 +130,12 @@ export default function AdminPage() {
       setAccountFormData({
         name: account.name,
         description: account.description || '',
-        color: account.color
+        color: account.color,
+        currency: account.currency as Currency
       });
     } else {
       setEditingAccount(null);
-      setAccountFormData({ name: '', description: '', color: '#3b82f6' });
+      setAccountFormData({ name: '', description: '', color: '#3b82f6', currency: 'USD' });
     }
     setShowAccountModal(true);
   };
@@ -155,7 +160,7 @@ export default function AdminPage() {
       if (response.ok) {
         setShowAccountModal(false);
         setEditingAccount(null);
-        setAccountFormData({ name: '', description: '', color: '#3b82f6' });
+        setAccountFormData({ name: '', description: '', color: '#3b82f6', currency: 'USD' });
         fetchAccounts();
       } else {
         const error = await response.json();
@@ -440,6 +445,9 @@ export default function AdminPage() {
                         Description
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Currency
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Color
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -461,6 +469,9 @@ export default function AdminPage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-sm text-gray-400">{account.description || '—'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-400">{account.currency}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-400">{account.color}</span>
@@ -675,13 +686,31 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <div>
+                <label htmlFor="account-currency" className="block text-sm font-medium text-gray-300 mb-2">
+                  Currency *
+                </label>
+                <select
+                  id="account-currency"
+                  value={accountFormData.currency}
+                  onChange={(e) => setAccountFormData({ ...accountFormData, currency: e.target.value as Currency })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {getAvailableCurrencies().map((curr) => (
+                    <option key={curr.code} value={curr.code}>
+                      {curr.symbol} {curr.name} ({curr.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowAccountModal(false);
                     setEditingAccount(null);
-                    setAccountFormData({ name: '', description: '', color: '#3b82f6' });
+                    setAccountFormData({ name: '', description: '', color: '#3b82f6', currency: 'USD' });
                   }}
                   className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
                   disabled={submitting}
