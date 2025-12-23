@@ -57,6 +57,10 @@ async function seed() {
   // Get accounts for sample transactions
   const { eq } = await import('drizzle-orm');
   const accountsList = await db.select().from(accounts).where(eq(accounts.userId, userId));
+  
+  // Get categories for sample transactions
+  const categoriesList = await db.select().from(categories).where(eq(categories.userId, userId));
+  const getCategoryId = (name: string) => categoriesList.find(c => c.name === name)?.id || categoriesList[0]?.id;
 
   if (accountsList.length >= 2) {
     // Insert sample transactions of different types
@@ -70,7 +74,7 @@ async function seed() {
           transactionType: 'Debit',
           description: 'Grocery shopping',
           amount: 85.50,
-          category: 'Food & Dining',
+          categoryId: getCategoryId('Food & Dining')!,
           date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 2 days ago
         },
         {
@@ -80,7 +84,7 @@ async function seed() {
           transactionType: 'Debit',
           description: 'Gas station',
           amount: 45.00,
-          category: 'Transportation',
+          categoryId: getCategoryId('Transportation')!,
           date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 1 day ago
         },
         // Credit transaction (money in)
@@ -91,7 +95,7 @@ async function seed() {
           transactionType: 'Credit',
           description: 'Monthly salary',
           amount: 3500.00,
-          category: 'Salary',
+          categoryId: getCategoryId('Salary')!,
           date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 3 days ago
         },
         // Transfer transaction (between accounts)
@@ -102,7 +106,7 @@ async function seed() {
           transactionType: 'Transfer',
           description: 'Transfer to savings',
           amount: 500.00,
-          category: 'Savings Transfer',
+          categoryId: getCategoryId('Savings Transfer')!,
           date: new Date().toISOString().split('T')[0] // Today
         }
       ])

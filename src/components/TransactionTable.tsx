@@ -6,6 +6,12 @@ interface Account {
   color: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  color: string | null;
+}
+
 interface Transaction {
   id: number;
   transactionType: 'Debit' | 'Credit' | 'Transfer';
@@ -13,7 +19,8 @@ interface Transaction {
   targetAccountId: number | null;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
+  category?: Category;
   date: string;
   createdAt: string;
   sourceAccount?: Account;
@@ -318,7 +325,9 @@ export default function TransactionTable({
                     </td>
                   )}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-400">{transaction.category}</span>
+                    <span className="text-sm text-gray-400">
+                      {transaction.category?.name || 'Uncategorized'}
+                    </span>
                   </td>
                   {showLinkColumn && (
                     <td className="px-6 py-4 whitespace-nowrap text-center">

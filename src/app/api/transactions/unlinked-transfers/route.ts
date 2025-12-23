@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { TransactionLinkService } from '@/services/TransactionLinkService';
 import { requireAuth } from '@/lib/auth';
-import { accounts } from '@/db/schema';
+import { accounts, categories } from '@/db/schema';
 import { db } from '@/lib/db';
 import { inArray } from 'drizzle-orm';
 
@@ -10,11 +10,13 @@ export async function GET() {
     const userId = await requireAuth();
     const unlinkedTransfers = await TransactionLinkService.getUnlinkedTransfers(userId);
 
-    // Enhance with account information
+    // Enhance with account and category information
     const accountIds = new Set<number>();
+    const categoryIds = new Set<number>();
     unlinkedTransfers.forEach(t => {
       if (t.sourceAccountId) accountIds.add(t.sourceAccountId);
       if (t.targetAccountId) accountIds.add(t.targetAccountId);
+      if (t.categoryId) categoryIds.add(t.categoryId);
     });
 
     let accountMap = new Map<number, { id: number; name: string; color: string | null }>();
@@ -31,6 +33,20 @@ export async function GET() {
       accountMap = new Map(accountsData.map(a => [a.id, a]));
     }
 
+    let categoryMap = new Map<number, { id: number; name: string; color: string | null }>();
+    if (categoryIds.size > 0) {
+      const categoriesData = await db
+        .select({
+          id: categories.id,
+          name: categories.name,
+          color: categories.color,
+        })
+        .from(categories)
+        .where(inArray(categories.id, Array.from(categoryIds)));
+
+      categoryMap = new Map(categoriesData.map(c => [c.id, c]));
+    }
+
     const enhancedTransfers = unlinkedTransfers.map(t => ({
       ...t,
       sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId) ? {
@@ -42,6 +58,11 @@ export async function GET() {
         id: t.targetAccountId,
         name: accountMap.get(t.targetAccountId)!.name,
         color: accountMap.get(t.targetAccountId)!.color,
+      } : undefined,
+      category: t.categoryId && categoryMap.has(t.categoryId) ? {
+        id: t.categoryId,
+        name: categoryMap.get(t.categoryId)!.name,
+        color: categoryMap.get(t.categoryId)!.color,
       } : undefined,
     }));
 

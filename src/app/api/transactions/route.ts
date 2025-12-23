@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TransactionService } from '@/services/TransactionService';
+import { CategoryService } from '@/services/categoryService';
 import { requireAuth } from '@/lib/auth';
 import { CreateTransactionData } from '@/types/transaction';
 
@@ -39,11 +40,12 @@ export async function POST(request: NextRequest) {
       description,
       amount,
       category,
+      category_id,
       date
     } = body;
 
     // Validate required fields
-    if (!transaction_type || !description || !amount || !category || !date) {
+    if (!transaction_type || !description || !amount || (!category && !category_id) || !date) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -58,6 +60,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle category - accept either ID or name
+    let categoryId: number;
+    if (category_id) {
+      categoryId = Number(category_id);
+    } else if (category) {
+      // Look up category by name
+      const categories = await CategoryService.getAllCategories(userId);
+      const foundCategory = categories.find(c => c.name === category);
+      if (!foundCategory) {
+        return NextResponse.json(
+          { error: `Category not found: ${category}` },
+          { status: 400 }
+        );
+      }
+      categoryId = foundCategory.id;
+    } else {
+      return NextResponse.json(
+        { error: 'Either category or category_id is required' },
+        { status: 400 }
+      );
+    }
+
     // Build transaction data based on type
     const transactionData: CreateTransactionData = {
       userId,
@@ -66,7 +90,7 @@ export async function POST(request: NextRequest) {
       targetAccountId: target_account_id ? Number(target_account_id) : undefined,
       description,
       amount: Number(amount),
-      category,
+      categoryId,
       date,
     } as CreateTransactionData;
 

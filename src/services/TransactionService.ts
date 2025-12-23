@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { transactions, accounts, transactionLinks } from '@/db/schema';
+import { transactions, accounts, transactionLinks, categories } from '@/db/schema';
 import {
   Transaction,
   CreateTransactionData,
@@ -51,7 +51,7 @@ export class TransactionService {
         transactionType: transactions.transactionType,
         description: transactions.description,
         amount: transactions.amount,
-        category: transactions.category,
+        categoryId: transactions.categoryId,
         date: transactions.date,
         importId: transactions.importId,
         createdAt: transactions.createdAt,
@@ -61,11 +61,13 @@ export class TransactionService {
       .where(eq(transactions.userId, userId))
       .orderBy(desc(transactions.date), desc(transactions.createdAt));
 
-    // Collect all unique account IDs
+    // Collect all unique account IDs and category IDs
     const accountIds = new Set<number>();
+    const categoryIds = new Set<number>();
     result.forEach(t => {
       if (t.sourceAccountId) accountIds.add(t.sourceAccountId);
       if (t.targetAccountId) accountIds.add(t.targetAccountId);
+      if (t.categoryId) categoryIds.add(t.categoryId);
     });
 
     // Fetch all accounts in one query if there are any
@@ -85,7 +87,24 @@ export class TransactionService {
       accountMap = new Map(accountsData.map(a => [a.id, a]));
     }
 
-    // Map transactions with account details
+    // Fetch all categories in one query if there are any
+    let categoryMap = new Map<number, { id: number; name: string; color: string | null }>();
+    if (categoryIds.size > 0) {
+      const categoriesData = await db
+        .select({
+          id: categories.id,
+          name: categories.name,
+          color: categories.color,
+        })
+        .from(categories)
+        .where(
+          inArray(categories.id, Array.from(categoryIds))
+        );
+
+      categoryMap = new Map(categoriesData.map(c => [c.id, c]));
+    }
+
+    // Map transactions with account and category details
     return result.map(t => ({
       ...t,
       sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId) ? {
@@ -97,6 +116,11 @@ export class TransactionService {
         id: t.targetAccountId,
         name: accountMap.get(t.targetAccountId)!.name,
         color: accountMap.get(t.targetAccountId)!.color,
+      } : undefined,
+      category: t.categoryId && categoryMap.has(t.categoryId) ? {
+        id: t.categoryId,
+        name: categoryMap.get(t.categoryId)!.name,
+        color: categoryMap.get(t.categoryId)!.color,
       } : undefined,
     }));
   }
@@ -126,7 +150,7 @@ export class TransactionService {
       transactionType: data.transactionType,
       description: data.description,
       amount: data.amount,
-      category: data.category,
+      categoryId: data.categoryId,
       date: data.date,
     }).returning();
 
@@ -152,7 +176,7 @@ export class TransactionService {
         targetAccountId: data.targetAccountId !== undefined ? data.targetAccountId : current.targetAccountId,
         description: data.description || current.description,
         amount: data.amount || current.amount,
-        category: data.category || current.category,
+        categoryId: data.categoryId || current.categoryId,
         date: data.date || current.date,
       } as CreateTransactionData;
 
@@ -168,7 +192,7 @@ export class TransactionService {
     if (data.transactionType !== undefined) updateData.transactionType = data.transactionType;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.amount !== undefined) updateData.amount = data.amount;
-    if (data.category !== undefined) updateData.category = data.category;
+    if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.date !== undefined) updateData.date = data.date;
 
     const result = await db.update(transactions)
@@ -219,7 +243,7 @@ export class TransactionService {
         transactionType: transactions.transactionType,
         description: transactions.description,
         amount: transactions.amount,
-        category: transactions.category,
+        categoryId: transactions.categoryId,
         date: transactions.date,
         importId: transactions.importId,
         createdAt: transactions.createdAt,
@@ -244,11 +268,13 @@ export class TransactionService {
 
     const result = await query.orderBy(desc(transactions.date), desc(transactions.createdAt));
 
-    // Fetch accounts (same as getAllTransactions)
+    // Fetch accounts
     const accountIds = new Set<number>();
+    const categoryIds = new Set<number>();
     result.forEach(t => {
       if (t.sourceAccountId) accountIds.add(t.sourceAccountId);
       if (t.targetAccountId) accountIds.add(t.targetAccountId);
+      if (t.categoryId) categoryIds.add(t.categoryId);
     });
 
     let accountMap = new Map<number, { id: number; name: string; color: string | null }>();
@@ -263,6 +289,21 @@ export class TransactionService {
         .where(inArray(accounts.id, Array.from(accountIds)));
 
       accountMap = new Map(accountsData.map(a => [a.id, a]));
+    }
+
+    // Fetch categories
+    let categoryMap = new Map<number, { id: number; name: string; color: string | null }>();
+    if (categoryIds.size > 0) {
+      const categoriesData = await db
+        .select({
+          id: categories.id,
+          name: categories.name,
+          color: categories.color,
+        })
+        .from(categories)
+        .where(inArray(categories.id, Array.from(categoryIds)));
+
+      categoryMap = new Map(categoriesData.map(c => [c.id, c]));
     }
 
     // Fetch links for all transactions
@@ -330,7 +371,7 @@ export class TransactionService {
       }
     }
 
-    // Map results with accounts and links
+    // Map results with accounts, categories, and links
     return result.map(t => ({
       ...t,
       sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId) ? {
@@ -342,6 +383,11 @@ export class TransactionService {
         id: t.targetAccountId,
         name: accountMap.get(t.targetAccountId)!.name,
         color: accountMap.get(t.targetAccountId)!.color,
+      } : undefined,
+      category: t.categoryId && categoryMap.has(t.categoryId) ? {
+        id: t.categoryId,
+        name: categoryMap.get(t.categoryId)!.name,
+        color: categoryMap.get(t.categoryId)!.color,
       } : undefined,
       link: linkMap.get(t.id)
     }));

@@ -28,7 +28,12 @@ interface Transaction {
   targetAccountId: number | null;
   description: string;
   amount: number;
-  category: string;
+  categoryId: number;
+  category?: {
+    id: number;
+    name: string;
+    color: string | null;
+  };
   date: string;
   createdAt: string;
   sourceAccount?: {
@@ -67,7 +72,7 @@ export default function Home() {
     target_account_id: '',
     description: '',
     amount: '',
-    category: '',
+    category_id: '',
     date: new Date().toISOString().split('T')[0]
   });
   const [submitting, setSubmitting] = useState(false);
@@ -158,7 +163,7 @@ export default function Home() {
       target_account_id: transaction.targetAccountId?.toString() || '',
       description: transaction.description,
       amount: transaction.amount.toString(),
-      category: transaction.category,
+      category_id: transaction.categoryId.toString(),
       date: transaction.date
     });
     setSelectedLinkTransactionId(transaction.link?.linkedTransactionId || null);
@@ -171,18 +176,18 @@ export default function Home() {
     fetchUnlinkedTransferCount();
   };
 
-  const handleCategoryChange = (categoryName: string) => {
-    const selectedCategory = categories.find(c => c.name === categoryName);
+  const handleCategoryChange = (categoryId: string) => {
+    const selectedCategory = categories.find(c => c.id.toString() === categoryId);
     if (selectedCategory && selectedCategory.defaultTransactionType) {
       setTransactionFormData({
         ...transactionFormData,
-        category: categoryName,
+        category_id: categoryId,
         transaction_type: selectedCategory.defaultTransactionType
       });
     } else {
       setTransactionFormData({
         ...transactionFormData,
-        category: categoryName
+        category_id: categoryId
       });
     }
   };
@@ -232,7 +237,7 @@ export default function Home() {
           target_account_id: transactionFormData.target_account_id ? parseInt(transactionFormData.target_account_id) : null,
           description: transactionFormData.description,
           amount: parseFloat(transactionFormData.amount),
-          category: transactionFormData.category,
+          category_id: parseInt(transactionFormData.category_id),
           date: transactionFormData.date,
         }),
       });
@@ -289,7 +294,7 @@ export default function Home() {
           target_account_id: '',
           description: '',
           amount: '',
-          category: '',
+          category_id: '',
           date: new Date().toISOString().split('T')[0]
         });
         setSelectedLinkTransactionId(null);
@@ -624,13 +629,13 @@ export default function Home() {
                 <select
                   id="category"
                   required
-                  value={transactionFormData.category}
+                  value={transactionFormData.category_id}
                   onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
-                    <option key={category.id} value={category.name}>
+                    <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
@@ -701,7 +706,7 @@ export default function Home() {
                       target_account_id: '',
                       description: '',
                       amount: '',
-                      category: '',
+                      category_id: '',
                       date: new Date().toISOString().split('T')[0]
                     });
                     setSelectedLinkTransactionId(null);

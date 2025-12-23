@@ -46,7 +46,7 @@ export const transactions = pgTable('transactions', {
   transactionType: varchar('transaction_type', { length: 10 }).notNull().default('Debit'),
   description: text('description').notNull(),
   amount: numericDecimal('amount').notNull(),
-  category: varchar('category', { length: 100 }).notNull(),
+  categoryId: integer('category_id').references(() => categories.id, { onDelete: 'restrict' }),
   date: date('date').notNull().default(sql`CURRENT_DATE`),
   importId: integer('import_id').references(() => imports.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow(),
@@ -69,6 +69,7 @@ export const transactions = pgTable('transactions', {
   // Indexes for performance
   sourceAccountIdx: index('idx_transactions_source_account').on(table.sourceAccountId),
   targetAccountIdx: index('idx_transactions_target_account').on(table.targetAccountId),
+  categoryIdx: index('idx_transactions_category_id').on(table.categoryId),
   typeIdx: index('idx_transactions_type').on(table.transactionType),
   userTypeIdx: index('idx_transactions_user_type').on(table.userId, table.transactionType),
   importIdIdx: index('idx_transactions_import_id').on(table.importId)
