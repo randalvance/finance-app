@@ -1,4 +1,4 @@
-import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks } from '@/db/schema';
+import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, type Currency } from '@/db/schema';
 import type { InferSelectModel } from 'drizzle-orm';
 
 // Base types inferred from schema
@@ -20,11 +20,13 @@ export type TransactionWithAccounts = Transaction & {
     id: number;
     name: string;
     color: string | null;
+    currency?: Currency;
   };
   targetAccount?: {
     id: number;
     name: string;
     color: string | null;
+    currency?: Currency;
   };
   category?: {
     id: number;
@@ -104,6 +106,7 @@ export interface CreateAccountData {
   name: string;
   description?: string;
   color?: string;
+  currency?: Currency;
 }
 
 export interface UpdateAccountData extends Partial<Omit<CreateAccountData, 'userId'>> {

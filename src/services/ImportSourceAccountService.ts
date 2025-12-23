@@ -18,6 +18,7 @@ export class ImportSourceAccountService {
         name: accounts.name,
         description: accounts.description,
         color: accounts.color,
+        currency: accounts.currency,
         createdAt: accounts.createdAt,
         updatedAt: accounts.updatedAt,
       })

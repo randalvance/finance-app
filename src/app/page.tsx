@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
 import TransactionTable from '@/components/TransactionTable';
+import { formatCurrency, getCurrencySymbol } from '@/lib/currency';
+import type { Currency } from '@/db/schema';
 
 interface AccountWithStats {
   id: number;
   name: string;
   description: string | null;
   color: string;
+  currency: string;
   transactionCount: number;
   totalAmount: number;
 }
@@ -40,11 +43,13 @@ interface Transaction {
     id: number;
     name: string;
     color: string;
+    currency?: Currency;
   };
   targetAccount?: {
     id: number;
     name: string;
     color: string;
+    currency?: Currency;
   };
   link?: {
     id: number;
@@ -366,7 +371,16 @@ export default function Home() {
                     <dl>
                       <dt className="text-sm font-medium text-gray-400 truncate">Total Net Balance</dt>
                       <dd className="text-lg font-medium text-gray-100">
-                        ${accounts.reduce((sum, a) => sum + a.totalAmount, 0).toFixed(2)}
+                        {(() => {
+                          const currencies = [...new Set(accounts.map(a => a.currency))];
+                          if (currencies.length === 1) {
+                            const total = accounts.reduce((sum, a) => sum + a.totalAmount, 0);
+                            return formatCurrency(total, currencies[0] as Currency);
+                          } else if (currencies.length > 1) {
+                            return 'Multiple currencies';
+                          }
+                          return '$0.00';
+                        })()}
                       </dd>
                     </dl>
                   </div>
@@ -607,7 +621,15 @@ export default function Home() {
                   Amount *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-400">$</span>
+                  <span className="absolute left-3 top-2 text-gray-400">
+                    {(() => {
+                      const accountId = transactionFormData.transaction_type === 'Credit'
+                        ? transactionFormData.target_account_id
+                        : transactionFormData.source_account_id;
+                      const account = accounts.find(a => a.id.toString() === accountId);
+                      return getCurrencySymbol((account?.currency || 'USD') as Currency);
+                    })()}
+                  </span>
                   <input
                     type="number"
                     id="amount"

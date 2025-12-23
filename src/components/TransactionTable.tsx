@@ -1,9 +1,13 @@
 'use client';
 
+import { formatCurrency } from '@/lib/currency';
+import type { Currency } from '@/db/schema';
+
 interface Account {
   id: number;
   name: string;
   color: string;
+  currency?: Currency;
 }
 
 interface Category {
@@ -348,7 +352,12 @@ export default function TransactionTable({
                           : 'text-blue-400'
                       }`}
                     >
-                      ${transaction.amount.toFixed(2)}
+                      {formatCurrency(
+                        transaction.amount,
+                        (transaction.transactionType === 'Credit'
+                          ? transaction.targetAccount?.currency
+                          : transaction.sourceAccount?.currency || 'USD') as Currency
+                      )}
                     </span>
                   </td>
                   {actionType === 'select' && onSelectTransaction && (

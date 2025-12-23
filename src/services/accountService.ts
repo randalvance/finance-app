@@ -25,6 +25,7 @@ export class AccountService {
       name: data.name,
       description: data.description || null,
       color: data.color || '#6366f1',
+      currency: data.currency || 'USD',
     }).returning();
     return result[0] as Account;
   }
@@ -34,6 +35,7 @@ export class AccountService {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.color !== undefined) updateData.color = data.color;
+    if (data.currency !== undefined) updateData.currency = data.currency;
 
     const result = await db.update(accounts)
       .set(updateData)
