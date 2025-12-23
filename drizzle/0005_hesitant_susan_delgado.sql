@@ -1,0 +1,3 @@
+ALTER TABLE "transactions" RENAME COLUMN "category" TO "category_id";--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_transactions_category_id" ON "transactions" USING btree ("category_id");
