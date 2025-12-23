@@ -75,103 +75,153 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Deep Void Purple/Blue Background */
+  --background: oklch(0.12 0.06 275); 
+  --foreground: oklch(0.96 0.02 290); 
+  
+  /* Semi-transparent Glassy Purple Card */
+  --card: oklch(0.18 0.08 275); 
+  --card-foreground: oklch(0.96 0.02 290);
+  
+  --popover: oklch(0.15 0.07 275);
+  --popover-foreground: oklch(0.96 0.02 290);
+  
+  /* Neon Pink Primary */
+  --primary: oklch(0.65 0.28 320); 
+  --primary-foreground: oklch(1 0 0); 
+  
+  /* Neon Cyan Secondary */
+  --secondary: oklch(0.75 0.18 210); 
+  --secondary-foreground: oklch(0.12 0.06 275); 
+  
+  --muted: oklch(0.25 0.08 275); 
+  --muted-foreground: oklch(0.70 0.05 275);
+  
+  /* Vivid Violet Accent */
+  --accent: oklch(0.55 0.25 290); 
+  --accent-foreground: oklch(1 0 0);
+  
+  /* Neon Red Destructive */
+  --destructive: oklch(0.6 0.25 25); 
+  --destructive-foreground: oklch(1 0 0);
+  
+  --border: oklch(0.35 0.10 275); 
+  --input: oklch(0.25 0.08 275);
+  --ring: oklch(0.65 0.28 320); 
+  
+  /* Charts - Neon Spectrum */
+  --chart-1: oklch(0.65 0.28 320); /* Pink */
+  --chart-2: oklch(0.75 0.18 210); /* Cyan */
+  --chart-3: oklch(0.55 0.25 290); /* Purple */
+  --chart-4: oklch(0.70 0.20 150); /* Neon Green */
+  --chart-5: oklch(0.80 0.15 60);  /* Neon Orange */
+  
+  /* Sidebar */
+  --sidebar: oklch(0.10 0.06 275);
+  --sidebar-foreground: oklch(0.96 0.02 290);
+  --sidebar-primary: oklch(0.65 0.28 320);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.25 0.08 275);
+  --sidebar-accent-foreground: oklch(0.96 0.02 290);
+  --sidebar-border: oklch(0.35 0.10 275);
+  --sidebar-ring: oklch(0.65 0.28 320);
+
+  /* Transaction Type Colors - Neon Updates */
+  /* Debit (Neon Red/Pink) */
+  --transaction-debit: oklch(0.25 0.15 25);
+  --transaction-debit-foreground: oklch(0.95 0.05 25);
+  --transaction-debit-border: oklch(0.4 0.2 25);
+  --transaction-debit-hover: oklch(0.3 0.18 25);
+  --transaction-debit-text: oklch(0.8 0.2 25);
+
+  /* Credit (Neon Green) */
+  --transaction-credit: oklch(0.25 0.15 150);
+  --transaction-credit-foreground: oklch(0.95 0.05 150);
+  --transaction-credit-border: oklch(0.4 0.2 150);
+  --transaction-credit-hover: oklch(0.3 0.18 150);
+  --transaction-credit-text: oklch(0.8 0.2 150);
+
+  /* Transfer (Neon Blue) */
+  --transaction-transfer: oklch(0.25 0.15 260);
+  --transaction-transfer-foreground: oklch(0.95 0.05 260);
+  --transaction-transfer-border: oklch(0.4 0.2 260);
+  --transaction-transfer-hover: oklch(0.3 0.18 260);
+  --transaction-transfer-text: oklch(0.8 0.2 260);
+
+  /* Warning (Neon Yellow) */
+  --warning: oklch(0.3 0.15 85);
+  --warning-foreground: oklch(0.95 0.05 85);
+  --warning-border: oklch(0.5 0.2 85);
+  --warning-hover: oklch(0.35 0.18 85);
+
+  /* Accents */
+  --accent-green: oklch(0.70 0.20 150);
+  --accent-blue: oklch(0.75 0.18 210);
+  --accent-purple: oklch(0.65 0.28 320);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.12 0.06 275); 
+  --foreground: oklch(0.96 0.02 290); 
+  --card: oklch(0.18 0.08 275); 
+  --card-foreground: oklch(0.96 0.02 290);
+  --popover: oklch(0.15 0.07 275);
+  --popover-foreground: oklch(0.96 0.02 290);
+  --primary: oklch(0.65 0.28 320); 
+  --primary-foreground: oklch(1 0 0); 
+  --secondary: oklch(0.75 0.18 210); 
+  --secondary-foreground: oklch(0.12 0.06 275); 
+  --muted: oklch(0.25 0.08 275); 
+  --muted-foreground: oklch(0.70 0.05 275);
+  --accent: oklch(0.55 0.25 290); 
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.6 0.25 25); 
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.35 0.10 275); 
+  --input: oklch(0.25 0.08 275);
+  --ring: oklch(0.65 0.28 320); 
+  --chart-1: oklch(0.65 0.28 320);
+  --chart-2: oklch(0.75 0.18 210);
+  --chart-3: oklch(0.55 0.25 290);
+  --chart-4: oklch(0.70 0.20 150);
+  --chart-5: oklch(0.80 0.15 60);
+  --sidebar: oklch(0.10 0.06 275);
+  --sidebar-foreground: oklch(0.96 0.02 290);
+  --sidebar-primary: oklch(0.65 0.28 320);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.25 0.08 275);
+  --sidebar-accent-foreground: oklch(0.96 0.02 290);
+  --sidebar-border: oklch(0.35 0.10 275);
+  --sidebar-ring: oklch(0.65 0.28 320);
 
-  /* Transaction Type Colors - Debit (Red - Money Out) */
-  --transaction-debit: oklch(0.296 0.155 25.881);
-  --transaction-debit-foreground: oklch(0.896 0.117 21.075);
-  --transaction-debit-border: oklch(0.463 0.195 23.478);
-  --transaction-debit-hover: oklch(0.357 0.175 24.679);
-  --transaction-debit-text: oklch(0.704 0.191 22.216);
+  /* Transaction Type Colors - Neon Updates */
+  --transaction-debit: oklch(0.25 0.15 25);
+  --transaction-debit-foreground: oklch(0.95 0.05 25);
+  --transaction-debit-border: oklch(0.4 0.2 25);
+  --transaction-debit-hover: oklch(0.3 0.18 25);
+  --transaction-debit-text: oklch(0.8 0.2 25);
 
-  /* Transaction Type Colors - Credit (Green - Money In) */
-  --transaction-credit: oklch(0.344 0.128 149.579);
-  --transaction-credit-foreground: oklch(0.905 0.092 152.519);
-  --transaction-credit-border: oklch(0.493 0.161 150.849);
-  --transaction-credit-hover: oklch(0.411 0.144 150.214);
-  --transaction-credit-text: oklch(0.714 0.184 149.579);
+  --transaction-credit: oklch(0.25 0.15 150);
+  --transaction-credit-foreground: oklch(0.95 0.05 150);
+  --transaction-credit-border: oklch(0.4 0.2 150);
+  --transaction-credit-hover: oklch(0.3 0.18 150);
+  --transaction-credit-text: oklch(0.8 0.2 150);
 
-  /* Transaction Type Colors - Transfer (Blue - Between Accounts) */
-  --transaction-transfer: oklch(0.302 0.089 265.755);
-  --transaction-transfer-foreground: oklch(0.898 0.064 265.755);
-  --transaction-transfer-border: oklch(0.507 0.168 265.755);
-  --transaction-transfer-hover: oklch(0.374 0.123 265.755);
-  --transaction-transfer-text: oklch(0.699 0.139 265.755);
+  --transaction-transfer: oklch(0.25 0.15 260);
+  --transaction-transfer-foreground: oklch(0.95 0.05 260);
+  --transaction-transfer-border: oklch(0.4 0.2 260);
+  --transaction-transfer-hover: oklch(0.3 0.18 260);
+  --transaction-transfer-text: oklch(0.8 0.2 260);
 
-  /* Warning/Alert Colors (Yellow - Unlinked Transfers) */
-  --warning: oklch(0.469 0.127 85.872);
-  --warning-foreground: oklch(0.916 0.096 95.818);
-  --warning-border: oklch(0.604 0.168 86.451);
-  --warning-hover: oklch(0.534 0.147 86.161);
+  --warning: oklch(0.3 0.15 85);
+  --warning-foreground: oklch(0.95 0.05 85);
+  --warning-border: oklch(0.5 0.2 85);
+  --warning-hover: oklch(0.35 0.18 85);
 
-  /* Accent Colors for Stat Cards & Icons */
-  --accent-green: oklch(0.627 0.176 152.519);
-  --accent-blue: oklch(0.627 0.155 265.755);
-  --accent-purple: oklch(0.597 0.206 305.884);
+  --accent-green: oklch(0.70 0.20 150);
+  --accent-blue: oklch(0.75 0.18 210);
+  --accent-purple: oklch(0.65 0.28 320);
 }
 
 @layer base {

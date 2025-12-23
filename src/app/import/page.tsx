@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import ConfirmButton from '@/components/ConfirmButton';
 
 interface ImportSource {
@@ -502,13 +503,13 @@ export default function ImportPage() {
               </div>
 
               <div className="mt-4">
-                <button
+                <Button
                   onClick={handleParseCSV}
                   disabled={!csvFile || !selectedSourceId || !selectedAccountId || parsing}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="shadow-lg"
                 >
                   {parsing ? 'Parsing...' : 'Parse CSV'}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -542,12 +543,12 @@ export default function ImportPage() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <button
+                          <Button
                             onClick={() => handleResumeDraft(imp)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                            className="shadow-lg"
                           >
                             {imp.status === 'completed' ? 'View' : 'Resume'}
-                          </button>
+                          </Button>
                           <ConfirmButton
                             buttonText="Delete"
                             onConfirm={() => handleDeleteDraft(imp.id, imp.status)}
@@ -582,20 +583,20 @@ export default function ImportPage() {
                   </div>
                   {currentImportRecord?.status !== 'completed' && (
                     <div className="flex items-center space-x-3">
-                      <button
+                      <Button
                         onClick={handleSaveDraft}
                         disabled={saving}
-                        className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors disabled:opacity-50"
+                        variant="outline"
                       >
                         {saving ? 'Saving...' : 'Save Draft'}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={handleImport}
                         disabled={importing || getMappedCount() < previewTransactions.length}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="shadow-lg"
                       >
                         {importing ? 'Importing...' : 'Confirm Import'}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -733,16 +734,17 @@ export default function ImportPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
-                            <button
+                            <Button
                               onClick={() => {
                                 setSelectedRawData(tx.rawCsvRow || null);
                                 setShowRawDataModal(true);
                               }}
-                              className="text-blue-400 hover:text-blue-300 transition-colors text-sm px-2 py-1 rounded border border-gray-700 hover:border-blue-500"
+                              variant="outline"
+                              size="sm"
                               title="View original CSV data"
                             >
                               📄 View
-                            </button>
+                            </Button>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
                             {currentImportRecord?.status !== 'completed' && (
@@ -788,24 +790,24 @@ export default function ImportPage() {
             </div>
 
             <div className="px-6 py-4 border-t border-gray-800 flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={() => {
                   navigator.clipboard.writeText(JSON.stringify(selectedRawData, null, 2));
                   alert('Copied to clipboard!');
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                variant="outline"
               >
                 📋 Copy JSON
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setShowRawDataModal(false);
                   setSelectedRawData(null);
                 }}
-                className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors"
+                variant="outline"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>

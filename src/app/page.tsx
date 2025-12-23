@@ -321,34 +321,34 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <header className="bg-gray-900 shadow-sm border-b border-gray-800">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <header className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-100">Randal&apos;s Finance App</h1>
+            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Randal&apos;s Finance App</h1>
             <div className="flex items-center space-x-3">
               <Button
                 onClick={openTransactionModal}
-                className="shadow-lg"
+                className="shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all duration-300"
               >
                 + Add Transaction
               </Button>
               <Link
                 href="/import"
-                className="text-gray-400 hover:text-gray-200 px-4 py-2.5 rounded-md border border-gray-700 hover:border-gray-600 transition-colors text-sm"
+                className="text-muted-foreground hover:text-foreground px-4 py-2.5 rounded-md border border-border hover:border-primary/50 hover:bg-accent/10 transition-all duration-300 text-sm"
               >
                 📁 Import
               </Link>
               <Link
                 href="/admin"
-                className="text-gray-400 hover:text-gray-200 px-4 py-2.5 rounded-md border border-gray-700 hover:border-gray-600 transition-colors text-sm"
+                className="text-muted-foreground hover:text-foreground px-4 py-2.5 rounded-md border border-border hover:border-primary/50 hover:bg-accent/10 transition-all duration-300 text-sm"
               >
                 ⚙️ Admin
               </Link>
               <UserButton
                 appearance={{
                   elements: {
-                    avatarBox: "w-10 h-10",
+                    avatarBox: "w-10 h-10 ring-2 ring-border hover:ring-primary transition-all",
                   },
                 }}
               />
@@ -362,17 +362,18 @@ export default function Home() {
           {/* Stats Cards */}
           <div className="lg:col-span-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card>
+              <Card className="bg-gradient-to-br from-[oklch(0.2_0.1_260)] to-[oklch(0.15_0.1_290)] border-white/10 backdrop-blur-md shadow-lg relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                  <CardTitle className="text-sm font-medium text-gray-200">
                     Total Net Balance
                   </CardTitle>
-                  <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <span className="text-white text-sm font-semibold">$</span>
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                    <span className="text-white text-lg font-bold">$</span>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                     {(() => {
                       const currencies = [...new Set(accounts.map(a => a.currency))];
                       if (currencies.length === 1) {
@@ -387,17 +388,18 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-gradient-to-br from-[oklch(0.2_0.1_290)] to-[oklch(0.15_0.1_320)] border-white/10 backdrop-blur-md shadow-lg relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 delay-100" />
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Transaction Count
+                  <CardTitle className="text-sm font-medium text-gray-200">
+                    Active Accounts
                   </CardTitle>
-                  <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                    <span className="text-white text-sm font-semibold">#</span>
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                    <span className="text-white text-lg font-bold">#</span>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                     {accounts.reduce((sum, a) => sum + a.transactionCount, 0)}
                   </div>
                 </CardContent>
@@ -422,7 +424,7 @@ export default function Home() {
           {/* Recent Transactions Section */}
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-100">Recent Transactions</h2>
+              <h2 className="text-2xl font-bold text-foreground">Recent Transactions</h2>
             </div>
 
             {/* Unlinked Transfers Warning */}
@@ -430,7 +432,7 @@ export default function Home() {
               <div className="mb-4 flex justify-end">
                 <Link
                   href="/unlinked-transfers"
-                  className="flex items-center space-x-2 px-4 py-2 bg-yellow-900 text-yellow-200 border border-yellow-700 rounded-md hover:bg-yellow-800 transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 bg-warning/20 text-warning-foreground border border-warning-border rounded-md hover:bg-warning/30 transition-colors"
                 >
                   <span className="text-lg">⚠️</span>
                   <span className="text-sm font-medium">
@@ -442,7 +444,7 @@ export default function Home() {
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="text-gray-400">Loading transactions...</div>
+                <div className="text-muted-foreground">Loading transactions...</div>
               </div>
             ) : (
               <TransactionTable
@@ -472,10 +474,10 @@ export default function Home() {
 
       {/* Add Transaction Modal */}
       {showTransactionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-md w-full">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">
                 {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
               </h3>
             </div>
@@ -483,7 +485,7 @@ export default function Home() {
             <form onSubmit={handleTransactionSubmit} className="p-6 space-y-4">
               {/* Transaction Type Selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Transaction Type *
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -491,7 +493,7 @@ export default function Home() {
                     type="button"
                     variant={transactionFormData.transaction_type === 'Debit' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Debit' })}
-                    className={transactionFormData.transaction_type === 'Debit' ? 'bg-red-900 border-red-700 text-red-200 hover:bg-red-800' : ''}
+                    className={transactionFormData.transaction_type === 'Debit' ? 'bg-transaction-debit text-transaction-debit-foreground hover:bg-transaction-debit-hover border-transaction-debit-border' : ''}
                   >
                     Debit
                   </Button>
@@ -499,7 +501,7 @@ export default function Home() {
                     type="button"
                     variant={transactionFormData.transaction_type === 'Credit' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Credit' })}
-                    className={transactionFormData.transaction_type === 'Credit' ? 'bg-green-900 border-green-700 text-green-200 hover:bg-green-800' : ''}
+                    className={transactionFormData.transaction_type === 'Credit' ? 'bg-transaction-credit text-transaction-credit-foreground hover:bg-transaction-credit-hover border-transaction-credit-border' : ''}
                   >
                     Credit
                   </Button>
@@ -507,7 +509,7 @@ export default function Home() {
                     type="button"
                     variant={transactionFormData.transaction_type === 'Transfer' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Transfer' })}
-                    className={transactionFormData.transaction_type === 'Transfer' ? 'bg-blue-900 border-blue-700 text-blue-200 hover:bg-blue-800' : ''}
+                    className={transactionFormData.transaction_type === 'Transfer' ? 'bg-transaction-transfer text-transaction-transfer-foreground hover:bg-transaction-transfer-hover border-transaction-transfer-border' : ''}
                   >
                     Transfer
                   </Button>
@@ -519,7 +521,7 @@ export default function Home() {
                 <>
                   {/* Source Account for Transfer */}
                   <div>
-                    <label htmlFor="source-account" className="block text-sm font-medium text-gray-300 mb-2">
+                    <label htmlFor="source-account" className="block text-sm font-medium text-muted-foreground mb-2">
                       Source Account *
                     </label>
                     <select
@@ -527,7 +529,7 @@ export default function Home() {
                       required
                       value={transactionFormData.source_account_id}
                       onChange={(e) => setTransactionFormData({ ...transactionFormData, source_account_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <option value="">Select source account</option>
                       {accounts.map((account) => (
@@ -540,7 +542,7 @@ export default function Home() {
 
                   {/* Target Account for Transfer */}
                   <div>
-                    <label htmlFor="target-account" className="block text-sm font-medium text-gray-300 mb-2">
+                    <label htmlFor="target-account" className="block text-sm font-medium text-muted-foreground mb-2">
                       Target Account *
                     </label>
                     <select
@@ -548,7 +550,7 @@ export default function Home() {
                       required
                       value={transactionFormData.target_account_id}
                       onChange={(e) => setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <option value="">Select target account</option>
                       {accounts.map((account) => (
@@ -562,7 +564,7 @@ export default function Home() {
               ) : (
                 /* Single Account field for Debit/Credit */
                 <div>
-                  <label htmlFor="account" className="block text-sm font-medium text-gray-300 mb-2">
+                  <label htmlFor="account" className="block text-sm font-medium text-muted-foreground mb-2">
                     Account *
                   </label>
                   <select
@@ -576,7 +578,7 @@ export default function Home() {
                         setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value });
                       }
                     }}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Select an account</option>
                     {accounts.map((account) => (
@@ -589,7 +591,7 @@ export default function Home() {
               )}
 
               <div>
-                <label htmlFor="transaction-description" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="transaction-description" className="block text-sm font-medium text-muted-foreground mb-2">
                   Description *
                 </label>
                 <input
@@ -598,17 +600,17 @@ export default function Home() {
                   required
                   value={transactionFormData.description}
                   onChange={(e) => setTransactionFormData({ ...transactionFormData, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="e.g., Grocery shopping"
                 />
               </div>
 
               <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="amount" className="block text-sm font-medium text-muted-foreground mb-2">
                   Amount *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-400">
+                  <span className="absolute left-3 top-2 text-muted-foreground">
                     {(() => {
                       const accountId = transactionFormData.transaction_type === 'Credit'
                         ? transactionFormData.target_account_id
@@ -625,14 +627,14 @@ export default function Home() {
                     min="0"
                     value={transactionFormData.amount}
                     onChange={(e) => setTransactionFormData({ ...transactionFormData, amount: e.target.value })}
-                    className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-8 pr-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="0.00"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="category" className="block text-sm font-medium text-muted-foreground mb-2">
                   Category *
                 </label>
                 <select
@@ -640,7 +642,7 @@ export default function Home() {
                   required
                   value={transactionFormData.category_id}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
@@ -652,7 +654,7 @@ export default function Home() {
               </div>
 
               <div>
-                <label htmlFor="date" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="date" className="block text-sm font-medium text-muted-foreground mb-2">
                   Date *
                 </label>
                 <input
@@ -661,22 +663,22 @@ export default function Home() {
                   required
                   value={transactionFormData.date}
                   onChange={(e) => setTransactionFormData({ ...transactionFormData, date: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
               {/* Link to Another Transaction */}
-              <div className="border-t border-gray-800 pt-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="border-t border-border pt-4">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Link to Transaction (Optional)
                 </label>
                 {selectedLinkTransactionId ? (
-                  <div className="flex items-center justify-between p-3 bg-blue-900/20 border border-blue-700 rounded-md">
+                  <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded-md">
                     <div className="flex-1">
-                      <div className="text-sm text-blue-200">
+                      <div className="text-sm text-primary-foreground">
                         {transactions.find(t => t.id === selectedLinkTransactionId)?.description}
                       </div>
-                      <div className="text-xs text-blue-300 mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         {new Date(transactions.find(t => t.id === selectedLinkTransactionId)?.date || '').toLocaleDateString()} -
                         ${transactions.find(t => t.id === selectedLinkTransactionId)?.amount.toFixed(2)}
                       </div>
@@ -686,7 +688,7 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedLinkTransactionId(null)}
-                      className="ml-3 text-xs text-red-200 border-red-700 hover:bg-red-900/30"
+                      className="ml-3 text-xs text-destructive border-destructive hover:bg-destructive/10"
                     >
                       Remove
                     </Button>
@@ -701,7 +703,7 @@ export default function Home() {
                     Select transaction to link...
                   </Button>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Link this transaction to another (useful for transfers or refunds)
                 </p>
               </div>
@@ -742,10 +744,10 @@ export default function Home() {
 
       {/* Link Transaction Selection Modal */}
       {showLinkSelectionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-4xl w-full max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-100">Select Transaction to Link</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-4xl w-full max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Select Transaction to Link</h3>
               <Button
                 variant="ghost"
                 size="sm"
@@ -788,8 +790,8 @@ export default function Home() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3 border-t border-gray-800 bg-gray-800/30">
-              <div className="text-sm text-gray-400">
+            <div className="px-6 py-3 border-t border-border bg-muted/30">
+              <div className="text-sm text-muted-foreground">
                 Showing {transactions.filter(t => !t.link).filter(t =>
                   linkSearchQuery === '' ||
                   t.description.toLowerCase().includes(linkSearchQuery.toLowerCase())
