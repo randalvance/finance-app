@@ -6,6 +6,8 @@ import { UserButton } from '@clerk/nextjs';
 import TransactionTable from '@/components/TransactionTable';
 import { formatCurrency, getCurrencySymbol } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AccountWithStats {
   id: number;
@@ -325,12 +327,12 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-100">Randal&apos;s Finance App</h1>
             <div className="flex items-center space-x-3">
-              <button
+              <Button
                 onClick={openTransactionModal}
-                className="bg-blue-600 text-white px-6 py-2.5 rounded-md hover:bg-blue-700 transition-colors font-medium shadow-lg"
+                className="shadow-lg"
               >
                 + Add Transaction
-              </button>
+              </Button>
               <Link
                 href="/import"
                 className="text-gray-400 hover:text-gray-200 px-4 py-2.5 rounded-md border border-gray-700 hover:border-gray-600 transition-colors text-sm"
@@ -360,66 +362,60 @@ export default function Home() {
           {/* Stats Cards */}
           <div className="lg:col-span-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">$</span>
-                    </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Net Balance
+                  </CardTitle>
+                  <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">$</span>
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-400 truncate">Total Net Balance</dt>
-                      <dd className="text-lg font-medium text-gray-100">
-                        {(() => {
-                          const currencies = [...new Set(accounts.map(a => a.currency))];
-                          if (currencies.length === 1) {
-                            const total = accounts.reduce((sum, a) => sum + a.totalAmount, 0);
-                            return formatCurrency(total, currencies[0] as Currency);
-                          } else if (currencies.length > 1) {
-                            return 'Multiple currencies';
-                          }
-                          return '$0.00';
-                        })()}
-                      </dd>
-                    </dl>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {(() => {
+                      const currencies = [...new Set(accounts.map(a => a.currency))];
+                      if (currencies.length === 1) {
+                        const total = accounts.reduce((sum, a) => sum + a.totalAmount, 0);
+                        return formatCurrency(total, currencies[0] as Currency);
+                      } else if (currencies.length > 1) {
+                        return 'Multiple currencies';
+                      }
+                      return '$0.00';
+                    })()}
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">#</span>
-                    </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Transaction Count
+                  </CardTitle>
+                  <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">#</span>
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-400 truncate">Transaction Count</dt>
-                      <dd className="text-lg font-medium text-gray-100">
-                        {accounts.reduce((sum, a) => sum + a.transactionCount, 0)}
-                      </dd>
-                    </dl>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {accounts.reduce((sum, a) => sum + a.transactionCount, 0)}
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">📒</span>
-                    </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Active Accounts
+                  </CardTitle>
+                  <div className="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">📒</span>
                   </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-400 truncate">Active Accounts</dt>
-                      <dd className="text-lg font-medium text-gray-100">{accounts.length}</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{accounts.length}</div>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
@@ -491,39 +487,30 @@ export default function Home() {
                   Transaction Type *
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant={transactionFormData.transaction_type === 'Debit' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Debit' })}
-                    className={`px-4 py-2 rounded-md border transition-colors ${
-                      transactionFormData.transaction_type === 'Debit'
-                        ? 'bg-red-900 border-red-700 text-red-200'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                    }`}
+                    className={transactionFormData.transaction_type === 'Debit' ? 'bg-red-900 border-red-700 text-red-200 hover:bg-red-800' : ''}
                   >
                     Debit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant={transactionFormData.transaction_type === 'Credit' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Credit' })}
-                    className={`px-4 py-2 rounded-md border transition-colors ${
-                      transactionFormData.transaction_type === 'Credit'
-                        ? 'bg-green-900 border-green-700 text-green-200'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                    }`}
+                    className={transactionFormData.transaction_type === 'Credit' ? 'bg-green-900 border-green-700 text-green-200 hover:bg-green-800' : ''}
                   >
                     Credit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant={transactionFormData.transaction_type === 'Transfer' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Transfer' })}
-                    className={`px-4 py-2 rounded-md border transition-colors ${
-                      transactionFormData.transaction_type === 'Transfer'
-                        ? 'bg-blue-900 border-blue-700 text-blue-200'
-                        : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                    }`}
+                    className={transactionFormData.transaction_type === 'Transfer' ? 'bg-blue-900 border-blue-700 text-blue-200 hover:bg-blue-800' : ''}
                   >
                     Transfer
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -694,22 +681,25 @@ export default function Home() {
                         ${transactions.find(t => t.id === selectedLinkTransactionId)?.amount.toFixed(2)}
                       </div>
                     </div>
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={() => setSelectedLinkTransactionId(null)}
-                      className="ml-3 text-xs px-2 py-1 text-red-200 border border-red-700 rounded hover:bg-red-900/30"
+                      className="ml-3 text-xs text-red-200 border-red-700 hover:bg-red-900/30"
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 ) : (
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setShowLinkSelectionModal(true)}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-300 hover:border-gray-600 hover:text-gray-100 transition-colors text-left"
+                    className="w-full justify-start"
                   >
                     Select transaction to link...
-                  </button>
+                  </Button>
                 )}
                 <p className="text-xs text-gray-500 mt-1">
                   Link this transaction to another (useful for transfers or refunds)
@@ -717,8 +707,9 @@ export default function Home() {
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => {
                     setShowTransactionModal(false);
                     setEditingTransaction(null);
@@ -733,18 +724,16 @@ export default function Home() {
                     });
                     setSelectedLinkTransactionId(null);
                   }}
-                  className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
                   disabled={submitting}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={submitting}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? (editingTransaction ? 'Updating...' : 'Adding...') : (editingTransaction ? 'Update Transaction' : 'Add Transaction')}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -757,16 +746,17 @@ export default function Home() {
           <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-4xl w-full max-h-[80vh] flex flex-col">
             <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-100">Select Transaction to Link</h3>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setShowLinkSelectionModal(false);
                   setLinkSearchQuery('');
                   setLinkModalAccountFilter(null);
                 }}
-                className="text-gray-400 hover:text-gray-200 transition-colors"
               >
                 ✕
-              </button>
+              </Button>
             </div>
 
             {/* Transaction Table with integrated filters */}

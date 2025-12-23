@@ -2,6 +2,7 @@
 
 import { formatCurrency } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
+import { Badge } from '@/components/ui/badge';
 
 interface Account {
   id: number;
@@ -76,16 +77,16 @@ interface TransactionTableProps {
 }
 
 const getTransactionTypeBadge = (type: 'Debit' | 'Credit' | 'Transfer') => {
-  const styles = {
-    Debit: 'bg-red-900 text-red-200 border-red-700',
-    Credit: 'bg-green-900 text-green-200 border-green-700',
-    Transfer: 'bg-blue-900 text-blue-200 border-blue-700',
+  const variantMap = {
+    Debit: 'debit' as const,
+    Credit: 'credit' as const,
+    Transfer: 'transfer' as const,
   };
 
   return (
-    <span className={`px-2 py-1 text-xs rounded border ${styles[type]}`}>
+    <Badge variant={variantMap[type]}>
       {type}
-    </span>
+    </Badge>
   );
 };
 

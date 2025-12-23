@@ -44,6 +44,33 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Transaction type color utilities */
+  --color-transaction-debit: var(--transaction-debit);
+  --color-transaction-debit-foreground: var(--transaction-debit-foreground);
+  --color-transaction-debit-border: var(--transaction-debit-border);
+  --color-transaction-debit-hover: var(--transaction-debit-hover);
+  --color-transaction-debit-text: var(--transaction-debit-text);
+
+  --color-transaction-credit: var(--transaction-credit);
+  --color-transaction-credit-foreground: var(--transaction-credit-foreground);
+  --color-transaction-credit-border: var(--transaction-credit-border);
+  --color-transaction-credit-hover: var(--transaction-credit-hover);
+  --color-transaction-credit-text: var(--transaction-credit-text);
+
+  --color-transaction-transfer: var(--transaction-transfer);
+  --color-transaction-transfer-foreground: var(--transaction-transfer-foreground);
+  --color-transaction-transfer-border: var(--transaction-transfer-border);
+  --color-transaction-transfer-hover: var(--transaction-transfer-hover);
+  --color-transaction-transfer-text: var(--transaction-transfer-text);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-border: var(--warning-border);
+
+  --color-accent-green: var(--accent-green);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-purple: var(--accent-purple);
 }
 
 :root {
@@ -113,6 +140,38 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Transaction Type Colors - Debit (Red - Money Out) */
+  --transaction-debit: oklch(0.296 0.155 25.881);
+  --transaction-debit-foreground: oklch(0.896 0.117 21.075);
+  --transaction-debit-border: oklch(0.463 0.195 23.478);
+  --transaction-debit-hover: oklch(0.357 0.175 24.679);
+  --transaction-debit-text: oklch(0.704 0.191 22.216);
+
+  /* Transaction Type Colors - Credit (Green - Money In) */
+  --transaction-credit: oklch(0.344 0.128 149.579);
+  --transaction-credit-foreground: oklch(0.905 0.092 152.519);
+  --transaction-credit-border: oklch(0.493 0.161 150.849);
+  --transaction-credit-hover: oklch(0.411 0.144 150.214);
+  --transaction-credit-text: oklch(0.714 0.184 149.579);
+
+  /* Transaction Type Colors - Transfer (Blue - Between Accounts) */
+  --transaction-transfer: oklch(0.302 0.089 265.755);
+  --transaction-transfer-foreground: oklch(0.898 0.064 265.755);
+  --transaction-transfer-border: oklch(0.507 0.168 265.755);
+  --transaction-transfer-hover: oklch(0.374 0.123 265.755);
+  --transaction-transfer-text: oklch(0.699 0.139 265.755);
+
+  /* Warning/Alert Colors (Yellow - Unlinked Transfers) */
+  --warning: oklch(0.469 0.127 85.872);
+  --warning-foreground: oklch(0.916 0.096 95.818);
+  --warning-border: oklch(0.604 0.168 86.451);
+  --warning-hover: oklch(0.534 0.147 86.161);
+
+  /* Accent Colors for Stat Cards & Icons */
+  --accent-green: oklch(0.627 0.176 152.519);
+  --accent-blue: oklch(0.627 0.155 265.755);
+  --accent-purple: oklch(0.597 0.206 305.884);
 }
 
 @layer base {
