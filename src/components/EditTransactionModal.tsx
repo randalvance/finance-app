@@ -200,26 +200,26 @@ export default function EditTransactionModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
-        <div className="px-6 py-4 border-b border-gray-800">
-          <h3 className="text-lg font-semibold text-gray-100">Edit Transaction</h3>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-card rounded-lg shadow-2xl border border-border max-w-md w-full">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-lg font-semibold text-foreground">Edit Transaction</h3>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Transaction Type Selector */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Transaction Type *
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, transaction_type: 'Debit' })}
-                className={`px-4 py-2 rounded-md border transition-colors ${
+                className={`px-4 py-2 rounded-md border transition-all ${
                   formData.transaction_type === 'Debit'
-                    ? 'bg-red-900 border-red-700 text-red-200'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                    ? 'bg-red-900/30 border-red-500 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
+                    : 'bg-muted/30 border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
                 }`}
               >
                 Debit
@@ -227,10 +227,10 @@ export default function EditTransactionModal({
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, transaction_type: 'Credit' })}
-                className={`px-4 py-2 rounded-md border transition-colors ${
+                className={`px-4 py-2 rounded-md border transition-all ${
                   formData.transaction_type === 'Credit'
-                    ? 'bg-green-900 border-green-700 text-green-200'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                    ? 'bg-green-900/30 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+                    : 'bg-muted/30 border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
                 }`}
               >
                 Credit
@@ -238,10 +238,10 @@ export default function EditTransactionModal({
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, transaction_type: 'Transfer' })}
-                className={`px-4 py-2 rounded-md border transition-colors ${
+                className={`px-4 py-2 rounded-md border transition-all ${
                   formData.transaction_type === 'Transfer'
-                    ? 'bg-blue-900 border-blue-700 text-blue-200'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                    ? 'bg-blue-900/30 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
+                    : 'bg-muted/30 border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
                 }`}
               >
                 Transfer
@@ -253,7 +253,7 @@ export default function EditTransactionModal({
           {formData.transaction_type === 'Transfer' ? (
             <>
               <div>
-                <label htmlFor="source-account" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="source-account" className="block text-sm font-medium text-muted-foreground mb-2">
                   Source Account *
                 </label>
                 <select
@@ -261,7 +261,7 @@ export default function EditTransactionModal({
                   required
                   value={formData.source_account_id}
                   onChange={(e) => setFormData({ ...formData, source_account_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Select source account</option>
                   {accounts.map((account) => (
@@ -273,7 +273,7 @@ export default function EditTransactionModal({
               </div>
 
               <div>
-                <label htmlFor="target-account" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="target-account" className="block text-sm font-medium text-muted-foreground mb-2">
                   Target Account *
                 </label>
                 <select
@@ -281,7 +281,7 @@ export default function EditTransactionModal({
                   required
                   value={formData.target_account_id}
                   onChange={(e) => setFormData({ ...formData, target_account_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Select target account</option>
                   {accounts.map((account) => (
@@ -294,7 +294,7 @@ export default function EditTransactionModal({
             </>
           ) : (
             <div>
-              <label htmlFor="account" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="account" className="block text-sm font-medium text-muted-foreground mb-2">
                 Account *
               </label>
               <select
@@ -308,7 +308,7 @@ export default function EditTransactionModal({
                     setFormData({ ...formData, target_account_id: e.target.value });
                   }
                 }}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">Select an account</option>
                 {accounts.map((account) => (
@@ -321,7 +321,7 @@ export default function EditTransactionModal({
           )}
 
           <div>
-            <label htmlFor="transaction-description" className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="transaction-description" className="block text-sm font-medium text-muted-foreground mb-2">
               Description *
             </label>
             <input
@@ -330,17 +330,17 @@ export default function EditTransactionModal({
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="e.g., Grocery shopping"
             />
           </div>
 
           <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="amount" className="block text-sm font-medium text-muted-foreground mb-2">
               Amount *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-400">$</span>
+              <span className="absolute left-3 top-2 text-muted-foreground">$</span>
               <input
                 type="number"
                 id="amount"
@@ -349,14 +349,14 @@ export default function EditTransactionModal({
                 min="0"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-8 pr-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="0.00"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="category" className="block text-sm font-medium text-muted-foreground mb-2">
               Category *
             </label>
             <select
@@ -364,7 +364,7 @@ export default function EditTransactionModal({
               required
               value={formData.category_id}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select a category</option>
               {categories.map((category) => (
@@ -376,7 +376,7 @@ export default function EditTransactionModal({
           </div>
 
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-300 mb-2">
+            <label htmlFor="date" className="block text-sm font-medium text-muted-foreground mb-2">
               Date *
             </label>
             <input
@@ -385,23 +385,23 @@ export default function EditTransactionModal({
               required
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           {/* Link Selection - only show if enabled */}
           {showLinkSelection && (
-            <div className="border-t border-gray-800 pt-4">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+            <div className="border-t border-border pt-4">
+              <label className="block text-sm font-medium text-muted-foreground mb-2">
                 Link to Transaction (Optional)
               </label>
               {selectedLinkTransactionId ? (
-                <div className="flex items-center justify-between p-3 bg-blue-900/20 border border-blue-700 rounded-md">
+                <div className="flex items-center justify-between p-3 bg-blue-900/20 border border-blue-500/30 rounded-md">
                   <div className="flex-1">
-                    <div className="text-sm text-blue-200">
+                    <div className="text-sm text-blue-300">
                       {allTransactions.find(t => t.id === selectedLinkTransactionId)?.description}
                     </div>
-                    <div className="text-xs text-blue-300 mt-1">
+                    <div className="text-xs text-blue-400 mt-1">
                       {new Date(allTransactions.find(t => t.id === selectedLinkTransactionId)?.date || '').toLocaleDateString()} -
                       ${allTransactions.find(t => t.id === selectedLinkTransactionId)?.amount.toFixed(2)}
                     </div>
@@ -409,7 +409,7 @@ export default function EditTransactionModal({
                   <button
                     type="button"
                     onClick={() => setSelectedLinkTransactionId(null)}
-                    className="ml-3 text-xs px-2 py-1 text-red-200 border border-red-700 rounded hover:bg-red-900/30"
+                    className="ml-3 text-xs px-2 py-1 text-destructive-foreground border border-destructive rounded hover:bg-destructive/20"
                   >
                     Remove
                   </button>
@@ -418,7 +418,7 @@ export default function EditTransactionModal({
                 <button
                   type="button"
                   onClick={() => {/* Link selection modal would go here */}}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-300 hover:border-gray-600 hover:text-gray-100 transition-colors text-left"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground transition-colors text-left"
                   disabled
                 >
                   Select transaction to link...
@@ -431,7 +431,7 @@ export default function EditTransactionModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
+              className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
               disabled={submitting}
             >
               Cancel
@@ -439,7 +439,7 @@ export default function EditTransactionModal({
             <button
               type="submit"
               disabled={submitting}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(168,85,247,0.3)]"
             >
               {submitting ? 'Updating...' : 'Update Transaction'}
             </button>

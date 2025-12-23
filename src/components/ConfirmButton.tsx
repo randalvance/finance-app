@@ -13,7 +13,7 @@ interface ConfirmButtonProps {
 export default function ConfirmButton({
   onConfirm,
   buttonText,
-  buttonClassName = 'px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm',
+  buttonClassName = 'px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm font-medium shadow-sm',
   confirmText = 'Sure?',
   timeout = 5000, // 5 seconds default
 }: ConfirmButtonProps) {

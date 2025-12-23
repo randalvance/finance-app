@@ -419,15 +419,15 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <header className="bg-gray-900 shadow-sm border-b border-gray-800">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card/50 backdrop-blur-md shadow-sm border-b border-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-gray-400 hover:text-gray-200">
+              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
                 ← Back
               </Link>
-              <h1 className="text-2xl font-bold text-gray-100">Import Transactions</h1>
+              <h1 className="text-2xl font-bold text-foreground">Import Transactions</h1>
             </div>
           </div>
         </div>
@@ -435,22 +435,22 @@ export default function ImportPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
-          <div className="text-center py-12 text-gray-400">Loading...</div>
+          <div className="text-center py-12 text-muted-foreground">Loading...</div>
         ) : (
           <div className="space-y-6">
             {/* Upload Form */}
-            <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-6">
-              <h2 className="text-xl font-bold text-gray-100 mb-4">Upload CSV</h2>
+            <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border p-6">
+              <h2 className="text-xl font-bold text-foreground mb-4">Upload CSV</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Import Source *
                   </label>
                   <select
                     value={selectedSourceId || ''}
                     onChange={(e) => setSelectedSourceId(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Select import source...</option>
                     {importSources.map(source => (
@@ -462,13 +462,13 @@ export default function ImportPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Default Account *
                   </label>
                   <select
                     value={selectedAccountId || ''}
                     onChange={(e) => setSelectedAccountId(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Select account...</option>
                     {getSelectableAccounts().map(account => (
@@ -482,7 +482,7 @@ export default function ImportPage() {
                     const hasAssociations = selectedSource?.associatedAccounts && selectedSource.associatedAccounts.length > 0;
 
                     return hasAssociations && selectedSource?.associatedAccounts ? (
-                      <p className="mt-1 text-xs text-gray-400">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Showing {selectedSource.associatedAccounts.length} account(s) associated with this import source
                       </p>
                     ) : null;
@@ -490,14 +490,14 @@ export default function ImportPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     CSV File *
                   </label>
                   <input
                     type="file"
                     accept=".csv"
                     onChange={handleFileSelect}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
                   />
                 </div>
               </div>
@@ -506,7 +506,7 @@ export default function ImportPage() {
                 <Button
                   onClick={handleParseCSV}
                   disabled={!csvFile || !selectedSourceId || !selectedAccountId || parsing}
-                  className="shadow-lg"
+                  className="shadow-[0_0_15px_rgba(168,85,247,0.3)]"
                 >
                   {parsing ? 'Parsing...' : 'Parse CSV'}
                 </Button>
@@ -515,8 +515,8 @@ export default function ImportPage() {
 
             {/* Saved Imports */}
             {draftImports.length > 0 && (
-              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-6">
-                <h2 className="text-xl font-bold text-gray-100 mb-4">Saved Imports</h2>
+              <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border p-6">
+                <h2 className="text-xl font-bold text-foreground mb-4">Saved Imports</h2>
                 <div className="space-y-2">
                   {draftImports.map((imp) => {
                     const mapped = imp.previewData
@@ -527,32 +527,33 @@ export default function ImportPage() {
                     return (
                       <div
                         key={imp.id}
-                        className="flex items-center justify-between p-4 bg-gray-800 rounded-md border border-gray-700 hover:border-gray-600 transition-colors"
+                        className="flex items-center justify-between p-4 bg-muted/30 rounded-md border border-border hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <div className="font-medium text-gray-100">{imp.filename}</div>
+                            <div className="font-medium text-foreground">{imp.filename}</div>
                             {imp.status === 'completed' && (
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-900 text-green-200">
+                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-900/30 text-green-400 border border-green-900/50">
                                 Completed
                               </span>
                             )}
                           </div>
-                          <div className="text-sm text-gray-400">
+                          <div className="text-sm text-muted-foreground">
                             {mapped} of {total} categories mapped • Created {new Date(imp.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Button
                             onClick={() => handleResumeDraft(imp)}
-                            className="shadow-lg"
+                            className="shadow-sm"
+                            variant="secondary"
                           >
                             {imp.status === 'completed' ? 'View' : 'Resume'}
                           </Button>
                           <ConfirmButton
                             buttonText="Delete"
                             onConfirm={() => handleDeleteDraft(imp.id, imp.status)}
-                            buttonClassName="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                            buttonClassName="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm font-medium"
                           />
                         </div>
                       </div>
@@ -564,20 +565,20 @@ export default function ImportPage() {
 
             {/* Preview Table */}
             {previewTransactions.length > 0 && (
-              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+              <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border overflow-hidden">
+                <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/20">
                   <div>
                     <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-bold text-gray-100">
+                      <h2 className="text-xl font-bold text-foreground">
                         Preview: {filename}
                       </h2>
                       {currentImportRecord?.status === 'completed' && (
-                        <span className="px-3 py-1 rounded-md text-sm font-medium bg-green-900 text-green-200">
+                        <span className="px-3 py-1 rounded-md text-sm font-medium bg-green-900/30 text-green-400 border border-green-900/50">
                           Viewing Completed Import (Read-Only)
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {getMappedCount()} of {previewTransactions.length} categories mapped
                     </p>
                   </div>
@@ -593,7 +594,7 @@ export default function ImportPage() {
                       <Button
                         onClick={handleImport}
                         disabled={importing || getMappedCount() < previewTransactions.length}
-                        className="shadow-lg"
+                        className="shadow-[0_0_15px_rgba(168,85,247,0.3)]"
                       >
                         {importing ? 'Importing...' : 'Confirm Import'}
                       </Button>
@@ -602,76 +603,76 @@ export default function ImportPage() {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-800">
-                    <thead className="bg-gray-800">
+                  <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-muted/50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Date
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Description
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Type
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Amount
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Category
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Source Account
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Target Account
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Raw
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <tbody className="divide-y divide-border">
                       {previewTransactions.map((tx) => (
-                        <tr key={tx.tempId} className="hover:bg-gray-800 transition-colors">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">
+                        <tr key={tx.tempId} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
                             {tx.date}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-300 max-w-xs">
+                          <td className="px-4 py-3 text-sm text-foreground max-w-xs">
                             <div className="line-clamp-2">{tx.description}</div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span
                               className={`px-2 py-1 rounded text-xs font-medium ${
                                 tx.transactionType === 'Debit'
-                                  ? 'bg-red-900 text-red-200'
+                                  ? 'bg-red-900/30 text-red-400 border border-red-900/50'
                                   : tx.transactionType === 'Credit'
-                                  ? 'bg-green-900 text-green-200'
-                                  : 'bg-blue-900 text-blue-200'
+                                  ? 'bg-green-900/30 text-green-400 border border-green-900/50'
+                                  : 'bg-blue-900/30 text-blue-400 border border-blue-900/50'
                               }`}
                             >
                               {tx.transactionType}
                             </span>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-300 font-mono">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-foreground font-mono">
                             ${tx.amount.toFixed(2)}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             {currentImportRecord?.status === 'completed' ? (
-                              <span className="text-sm text-gray-300">
+                              <span className="text-sm text-muted-foreground">
                                 {categories.find(cat => cat.id === categoryMappings[tx.tempId])?.name || 'None'}
                               </span>
                             ) : (
                               <select
                                 value={categoryMappings[tx.tempId] || ''}
                                 onChange={(e) => handleCategoryChange(tx.tempId, parseInt(e.target.value))}
-                                className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                                   !categoryMappings[tx.tempId] || categoryMappings[tx.tempId] === 0
-                                    ? 'border-red-500'
-                                    : 'border-gray-700'
+                                    ? 'border-destructive'
+                                    : 'border-border'
                                 }`}
                               >
                                 <option value="">Select category...</option>
@@ -685,17 +686,17 @@ export default function ImportPage() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             {currentImportRecord?.status === 'completed' ? (
-                              <span className="text-sm text-gray-300">
+                              <span className="text-sm text-muted-foreground">
                                 {accounts.find(acc => acc.id === tx.sourceAccountId)?.name || 'None'}
                               </span>
                             ) : (
                               <select
                                 value={tx.sourceAccountId || ''}
                                 onChange={(e) => handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null)}
-                                className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                                   (tx.transactionType === 'Debit' || tx.transactionType === 'Transfer') && !tx.sourceAccountId
-                                    ? 'border-red-500'
-                                    : 'border-gray-700'
+                                    ? 'border-destructive'
+                                    : 'border-border'
                                 }`}
                                 disabled={tx.transactionType === 'Credit'}
                               >
@@ -710,17 +711,17 @@ export default function ImportPage() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             {currentImportRecord?.status === 'completed' ? (
-                              <span className="text-sm text-gray-300">
+                              <span className="text-sm text-muted-foreground">
                                 {accounts.find(acc => acc.id === tx.targetAccountId)?.name || 'None'}
                               </span>
                             ) : (
                               <select
                                 value={tx.targetAccountId || ''}
                                 onChange={(e) => handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null)}
-                                className={`w-full px-2 py-1 bg-gray-800 border rounded text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                                   (tx.transactionType === 'Credit' || tx.transactionType === 'Transfer') && !tx.targetAccountId
-                                    ? 'border-red-500'
-                                    : 'border-gray-700'
+                                    ? 'border-destructive'
+                                    : 'border-border'
                                 }`}
                                 disabled={tx.transactionType === 'Debit'}
                               >
@@ -751,7 +752,7 @@ export default function ImportPage() {
                               <ConfirmButton
                                 buttonText="Delete"
                                 onConfirm={() => handleDeletePreviewRow(tx.tempId)}
-                                buttonClassName="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm"
+                                buttonClassName="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm"
                               />
                             )}
                           </td>
@@ -768,28 +769,28 @@ export default function ImportPage() {
 
       {/* Raw Data Modal */}
       {showRawDataModal && selectedRawData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-3xl w-full max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-100">Original CSV Data</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-3xl w-full max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Original CSV Data</h3>
               <button
                 onClick={() => {
                   setShowRawDataModal(false);
                   setSelectedRawData(null);
                 }}
-                className="text-gray-400 hover:text-gray-200 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 ✕
               </button>
             </div>
 
             <div className="p-6 overflow-auto flex-1">
-              <pre className="bg-gray-950 rounded-lg p-4 overflow-x-auto text-sm text-gray-300 font-mono border border-gray-800">
+              <pre className="bg-muted/30 rounded-lg p-4 overflow-x-auto text-sm text-muted-foreground font-mono border border-border">
 {JSON.stringify(selectedRawData, null, 2)}
               </pre>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-800 flex justify-end space-x-3">
+            <div className="px-6 py-4 border-t border-border flex justify-end space-x-3">
               <Button
                 onClick={() => {
                   navigator.clipboard.writeText(JSON.stringify(selectedRawData, null, 2));

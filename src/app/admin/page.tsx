@@ -374,15 +374,15 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <header className="bg-gray-900 shadow-sm border-b border-gray-800">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <header className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-gray-400 hover:text-gray-200">
+              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
                 ← Back
               </Link>
-              <h1 className="text-2xl font-bold text-gray-100">Admin</h1>
+              <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Admin</h1>
             </div>
           </div>
         </div>
@@ -391,96 +391,97 @@ export default function AdminPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
         <div className="mb-8">
-          <div className="border-b border-gray-800">
+          <div className="border-b border-border">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('accounts')}
                 className={`${
                   activeTab === 'accounts'
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors bg-transparent`}
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
-                Accounts ({accounts.length})
+                Accounts
               </button>
               <button
                 onClick={() => setActiveTab('categories')}
                 className={`${
                   activeTab === 'categories'
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors bg-transparent`}
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
-                Categories ({categories.length})
+                Categories
               </button>
               <button
                 onClick={() => setActiveTab('import-sources')}
                 className={`${
                   activeTab === 'import-sources'
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors bg-transparent`}
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
               >
-                Import Sources ({importSources.length})
+                Import Sources
               </button>
             </nav>
           </div>
         </div>
 
+
         {/* Accounts Tab */}
         {activeTab === 'accounts' && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-100">Manage Accounts</h2>
+              <h2 className="text-xl font-bold text-foreground">Manage Accounts</h2>
               <Button
                 onClick={() => openAccountModal()}
-                className="shadow-lg"
+                className="shadow-[0_0_15px_rgba(168,85,247,0.3)]"
               >
                 + New Account
               </Button>
             </div>
 
             {loading ? (
-              <div className="text-center py-12 text-gray-400">Loading...</div>
+              <div className="text-center py-12 text-muted-foreground">Loading...</div>
             ) : (
-              <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+              <div className="bg-card/50 backdrop-blur-md rounded-lg border border-border overflow-hidden">
                 <Table>
-                  <TableHeader className="bg-gray-800">
-                    <TableRow className="border-gray-800 hover:bg-gray-800">
-                      <TableHead className="text-gray-300">Name</TableHead>
-                      <TableHead className="text-gray-300">Description</TableHead>
-                      <TableHead className="text-gray-300">Currency</TableHead>
-                      <TableHead className="text-gray-300">Color</TableHead>
-                      <TableHead className="text-right text-gray-300">Actions</TableHead>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow className="border-border hover:bg-muted/50">
+                      <TableHead className="text-muted-foreground">Name</TableHead>
+                      <TableHead className="text-muted-foreground">Description</TableHead>
+                      <TableHead className="text-muted-foreground">Currency</TableHead>
+                      <TableHead className="text-muted-foreground">Color</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {accounts.map((account) => (
-                      <TableRow key={account.id} className="border-gray-800 hover:bg-gray-800">
+                      <TableRow key={account.id} className="border-border hover:bg-muted/30">
                         <TableCell>
                           <div className="flex items-center space-x-3">
                             <div
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: account.color }}
                             />
-                            <span className="text-sm font-medium text-gray-100">{account.name}</span>
+                            <span className="text-sm font-medium text-foreground">{account.name}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-gray-400">{account.description || '—'}</span>
+                          <span className="text-sm text-muted-foreground">{account.description || '—'}</span>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-gray-400">{account.currency}</span>
+                          <span className="text-sm text-muted-foreground">{account.currency}</span>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-gray-400">{account.color}</span>
+                          <span className="text-sm text-muted-foreground">{account.color}</span>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => openAccountModal(account)}
-                            className="text-blue-400 hover:text-blue-300 mr-4"
+                            className="text-primary hover:text-primary/80 mr-4"
                           >
                             Edit
                           </Button>
@@ -488,7 +489,7 @@ export default function AdminPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteAccount(account.id)}
-                            className="text-red-400 hover:text-red-300"
+                            className="text-destructive hover:text-destructive/80"
                           >
                             Delete
                           </Button>
@@ -506,49 +507,49 @@ export default function AdminPage() {
         {activeTab === 'categories' && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-100">Manage Categories</h2>
+              <h2 className="text-xl font-bold text-foreground">Manage Categories</h2>
               <Button
                 onClick={() => openCategoryModal()}
-                className="shadow-lg"
+                className="shadow-[0_0_15px_rgba(168,85,247,0.3)]"
               >
                 + New Category
               </Button>
             </div>
 
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+            <div className="bg-card/50 backdrop-blur-md rounded-lg border border-border overflow-hidden">
               <Table>
-                <TableHeader className="bg-gray-800">
-                  <TableRow className="border-gray-800 hover:bg-gray-800">
-                    <TableHead className="text-gray-300">Name</TableHead>
-                    <TableHead className="text-gray-300">Color</TableHead>
-                    <TableHead className="text-gray-300">Default Type</TableHead>
-                    <TableHead className="text-right text-gray-300">Actions</TableHead>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="border-border hover:bg-muted/50">
+                    <TableHead className="text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-muted-foreground">Color</TableHead>
+                    <TableHead className="text-muted-foreground">Default Type</TableHead>
+                    <TableHead className="text-right text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {categories.map((category) => (
-                    <TableRow key={category.id} className="border-gray-800 hover:bg-gray-800">
+                    <TableRow key={category.id} className="border-border hover:bg-muted/30">
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: category.color }}
                           />
-                          <span className="text-sm font-medium text-gray-100">{category.name}</span>
+                          <span className="text-sm font-medium text-foreground">{category.name}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-400">{category.color}</span>
+                        <span className="text-sm text-muted-foreground">{category.color}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-300">{category.defaultTransactionType || 'Debit'}</span>
+                        <span className="text-sm text-foreground">{category.defaultTransactionType || 'Debit'}</span>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => openCategoryModal(category)}
-                          className="text-blue-400 hover:text-blue-300 mr-4"
+                          className="text-primary hover:text-primary/80 mr-4"
                         >
                           Edit
                         </Button>
@@ -556,7 +557,7 @@ export default function AdminPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteCategory(category.id)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-destructive hover:text-destructive/80"
                         >
                           Delete
                         </Button>
@@ -573,39 +574,39 @@ export default function AdminPage() {
         {activeTab === 'import-sources' && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-100">Manage Import Sources</h2>
+              <h2 className="text-xl font-bold text-foreground">Manage Import Sources</h2>
               <Button
                 onClick={() => openImportSourceModal()}
-                className="shadow-lg"
+                className="shadow-[0_0_15px_rgba(168,85,247,0.3)]"
               >
                 + New Import Source
               </Button>
             </div>
 
-            <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+            <div className="bg-card/50 backdrop-blur-md rounded-lg border border-border overflow-hidden">
               <Table>
-                <TableHeader className="bg-gray-800">
-                  <TableRow className="border-gray-800 hover:bg-gray-800">
-                    <TableHead className="text-gray-300">Name</TableHead>
-                    <TableHead className="text-gray-300">Description</TableHead>
-                    <TableHead className="text-right text-gray-300">Actions</TableHead>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="border-border hover:bg-muted/50">
+                    <TableHead className="text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-muted-foreground">Description</TableHead>
+                    <TableHead className="text-right text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {importSources.map((source) => (
-                    <TableRow key={source.id} className="border-gray-800 hover:bg-gray-800">
+                    <TableRow key={source.id} className="border-border hover:bg-muted/30">
                       <TableCell>
-                        <span className="text-sm font-medium text-gray-100">{source.name}</span>
+                        <span className="text-sm font-medium text-foreground">{source.name}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-400">{source.description || '—'}</span>
+                        <span className="text-sm text-muted-foreground">{source.description || '—'}</span>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => openImportSourceModal(source)}
-                          className="text-blue-400 hover:text-blue-300 mr-4"
+                          className="text-primary hover:text-primary/80 mr-4"
                         >
                           Edit
                         </Button>
@@ -613,7 +614,7 @@ export default function AdminPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteImportSource(source.id)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-destructive hover:text-destructive/80"
                         >
                           Delete
                         </Button>
@@ -629,17 +630,17 @@ export default function AdminPage() {
 
       {/* Account Modal */}
       {showAccountModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-md w-full">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">
                 {editingAccount ? 'Edit Account' : 'Create New Account'}
               </h3>
             </div>
             
             <form onSubmit={handleAccountSubmit} className="p-6 space-y-4">
               <div>
-                <label htmlFor="account-name" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="account-name" className="block text-sm font-medium text-muted-foreground mb-2">
                   Account Name *
                 </label>
                 <input
@@ -648,13 +649,13 @@ export default function AdminPage() {
                   required
                   value={accountFormData.name}
                   onChange={(e) => setAccountFormData({ ...accountFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="e.g., Personal, Business"
                 />
               </div>
 
               <div>
-                <label htmlFor="account-description" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="account-description" className="block text-sm font-medium text-muted-foreground mb-2">
                   Description
                 </label>
                 <textarea
@@ -662,13 +663,13 @@ export default function AdminPage() {
                   value={accountFormData.description}
                   onChange={(e) => setAccountFormData({ ...accountFormData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Optional description"
                 />
               </div>
 
               <div>
-                <label htmlFor="account-color" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="account-color" className="block text-sm font-medium text-muted-foreground mb-2">
                   Color
                 </label>
                 <div className="flex items-center space-x-3">
@@ -677,21 +678,21 @@ export default function AdminPage() {
                     id="account-color"
                     value={accountFormData.color}
                     onChange={(e) => setAccountFormData({ ...accountFormData, color: e.target.value })}
-                    className="h-10 w-20 rounded cursor-pointer bg-gray-800 border border-gray-700"
+                    className="h-10 w-20 rounded cursor-pointer bg-input border border-border"
                   />
-                  <span className="text-sm text-gray-400">{accountFormData.color}</span>
+                  <span className="text-sm text-muted-foreground">{accountFormData.color}</span>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="account-currency" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="account-currency" className="block text-sm font-medium text-muted-foreground mb-2">
                   Currency *
                 </label>
                 <select
                   id="account-currency"
                   value={accountFormData.currency}
                   onChange={(e) => setAccountFormData({ ...accountFormData, currency: e.target.value as Currency })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   {getAvailableCurrencies().map((curr) => (
                     <option key={curr.code} value={curr.code}>
@@ -728,17 +729,17 @@ export default function AdminPage() {
 
       {/* Category Modal */}
       {showCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-md w-full">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">
                 {editingCategory ? 'Edit Category' : 'Create New Category'}
               </h3>
             </div>
             
             <form onSubmit={handleCategorySubmit} className="p-6 space-y-4">
               <div>
-                <label htmlFor="category-name" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="category-name" className="block text-sm font-medium text-muted-foreground mb-2">
                   Category Name *
                 </label>
                 <input
@@ -747,13 +748,13 @@ export default function AdminPage() {
                   required
                   value={categoryFormData.name}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="e.g., Food & Dining, Transportation"
                 />
               </div>
 
               <div>
-                <label htmlFor="category-color" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="category-color" className="block text-sm font-medium text-muted-foreground mb-2">
                   Color
                 </label>
                 <div className="flex items-center space-x-3">
@@ -762,27 +763,27 @@ export default function AdminPage() {
                     id="category-color"
                     value={categoryFormData.color}
                     onChange={(e) => setCategoryFormData({ ...categoryFormData, color: e.target.value })}
-                    className="h-10 w-20 rounded cursor-pointer bg-gray-800 border border-gray-700"
+                    className="h-10 w-20 rounded cursor-pointer bg-input border border-border"
                   />
-                  <span className="text-sm text-gray-400">{categoryFormData.color}</span>
+                  <span className="text-sm text-muted-foreground">{categoryFormData.color}</span>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="default-transaction-type" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="default-transaction-type" className="block text-sm font-medium text-muted-foreground mb-2">
                   Default Transaction Type
                 </label>
                 <select
                   id="default-transaction-type"
                   value={categoryFormData.default_transaction_type}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, default_transaction_type: e.target.value as 'Debit' | 'Credit' | 'Transfer' })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="Debit">Debit (Spending)</option>
                   <option value="Credit">Credit (Income)</option>
                   <option value="Transfer">Transfer</option>
                 </select>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   This will be pre-selected when creating transactions with this category
                 </p>
               </div>
@@ -814,17 +815,17 @@ export default function AdminPage() {
 
       {/* Import Source Modal */}
       {showImportSourceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-2xl w-full">
-            <div className="px-6 py-4 border-b border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-2xl w-full">
+            <div className="px-6 py-4 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground">
                 {editingImportSource ? 'Edit Import Source' : 'Create New Import Source'}
               </h3>
             </div>
 
             <form onSubmit={handleImportSourceSubmit} className="p-6 space-y-4">
               <div>
-                <label htmlFor="source-name" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="source-name" className="block text-sm font-medium text-muted-foreground mb-2">
                   Name *
                 </label>
                 <input
@@ -833,13 +834,13 @@ export default function AdminPage() {
                   required
                   value={importSourceFormData.name}
                   onChange={(e) => setImportSourceFormData({ ...importSourceFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="e.g., DBS Bank Statement"
                 />
               </div>
 
               <div>
-                <label htmlFor="source-description" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="source-description" className="block text-sm font-medium text-muted-foreground mb-2">
                   Description
                 </label>
                 <textarea
@@ -847,22 +848,22 @@ export default function AdminPage() {
                   value={importSourceFormData.description}
                   onChange={(e) => setImportSourceFormData({ ...importSourceFormData, description: e.target.value })}
                   rows={2}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Optional description"
                 />
               </div>
 
               <div>
-                <label htmlFor="associated-accounts" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="associated-accounts" className="block text-sm font-medium text-muted-foreground mb-2">
                   Associated Accounts (Optional)
                 </label>
-                <div className="bg-gray-800 border border-gray-700 rounded-md p-3 max-h-48 overflow-y-auto">
+                <div className="bg-input border border-border rounded-md p-3 max-h-48 overflow-y-auto">
                   {accounts.length === 0 ? (
-                    <p className="text-sm text-gray-400">No accounts available</p>
+                    <p className="text-sm text-muted-foreground">No accounts available</p>
                   ) : (
                     <div className="space-y-2">
                       {accounts.map(account => (
-                        <label key={account.id} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-750 p-2 rounded">
+                        <label key={account.id} className="flex items-center space-x-3 cursor-pointer hover:bg-muted/30 p-2 rounded">
                           <input
                             type="checkbox"
                             checked={importSourceFormData.accountIds.includes(account.id)}
@@ -875,27 +876,27 @@ export default function AdminPage() {
                                   : prev.accountIds.filter(id => id !== account.id)
                               }));
                             }}
-                            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-primary bg-input border-border rounded focus:ring-ring"
                           />
                           <div className="flex items-center space-x-2 flex-1">
                             <div
                               className="w-3 h-3 rounded-full"
                               style={{ backgroundColor: account.color }}
                             />
-                            <span className="text-sm text-gray-200">{account.name}</span>
+                            <span className="text-sm text-foreground">{account.name}</span>
                           </div>
                         </label>
                       ))}
                     </div>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   When selected, only these accounts will appear in the import page. Leave empty to allow all accounts.
                 </p>
               </div>
 
               <div>
-                <label htmlFor="source-config" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="source-config" className="block text-sm font-medium text-muted-foreground mb-2">
                   Configuration (JSON) *
                 </label>
                 <textarea
@@ -904,10 +905,10 @@ export default function AdminPage() {
                   value={importSourceFormData.config}
                   onChange={(e) => setImportSourceFormData({ ...importSourceFormData, config: e.target.value })}
                   rows={12}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring font-mono text-sm"
                   placeholder="{...}"
                 />
-                <p className="mt-1 text-xs text-gray-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   JSON configuration for CSV field mappings. Must include startingLine and fieldMappings.
                 </p>
               </div>
