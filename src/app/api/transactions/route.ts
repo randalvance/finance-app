@@ -3,10 +3,17 @@ import { TransactionService } from '@/services/TransactionService';
 import { requireAuth } from '@/lib/auth';
 import { CreateTransactionData } from '@/types/transaction';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const userId = await requireAuth();
-    const transactions = await TransactionService.getAllTransactions(userId);
+    const { searchParams } = new URL(request.url);
+    const accountId = searchParams.get('accountId');
+
+    const transactions = await TransactionService.getAllTransactionsWithLinks(
+      userId,
+      accountId ? parseInt(accountId) : undefined
+    );
+
     return NextResponse.json(transactions);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

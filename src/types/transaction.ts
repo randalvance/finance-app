@@ -1,4 +1,4 @@
-import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts } from '@/db/schema';
+import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks } from '@/db/schema';
 import type { InferSelectModel } from 'drizzle-orm';
 
 // Base types inferred from schema
@@ -9,6 +9,7 @@ export type User = InferSelectModel<typeof users>;
 export type ImportSource = InferSelectModel<typeof importSources>;
 export type Import = InferSelectModel<typeof imports>;
 export type ImportSourceAccount = InferSelectModel<typeof importSourceAccounts>;
+export type TransactionLink = InferSelectModel<typeof transactionLinks>;
 
 // Transaction type enum
 export type TransactionType = 'Debit' | 'Credit' | 'Transfer';
@@ -24,6 +25,21 @@ export type TransactionWithAccounts = Transaction & {
     id: number;
     name: string;
     color: string | null;
+  };
+};
+
+// Transaction with link information
+export type TransactionWithLink = TransactionWithAccounts & {
+  link?: {
+    id: number;
+    linkedTransactionId: number;
+    linkedTransaction?: {
+      id: number;
+      description: string;
+      amount: number;
+      date: string;
+      transactionType: TransactionType;
+    };
   };
 };
 
@@ -191,4 +207,18 @@ export interface ParsedCSVRow {
   debitAmount: number | null;
   creditAmount: number | null;
   rawRow: Record<string, string>;
+}
+
+// Transaction Link DTOs
+export interface CreateTransactionLinkData {
+  userId: number;
+  transaction1Id: number;
+  transaction2Id: number;
+}
+
+export interface TransactionLinkInfo {
+  id: number;
+  transaction1Id: number;
+  transaction2Id: number;
+  createdAt: Date | null;
 }

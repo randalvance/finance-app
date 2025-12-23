@@ -1,13 +1,14 @@
 import { db } from '@/lib/db';
-import { transactions, accounts } from '@/db/schema';
+import { transactions, accounts, transactionLinks } from '@/db/schema';
 import {
   Transaction,
   CreateTransactionData,
   UpdateTransactionData,
   TransactionWithAccounts,
+  TransactionWithLink,
   TransactionType
 } from '@/types/transaction';
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { eq, desc, and, inArray, or } from 'drizzle-orm';
 
 export class TransactionService {
   /**
@@ -198,5 +199,151 @@ export class TransactionService {
       .where(and(eq(transactions.transactionType, type), eq(transactions.userId, userId)))
       .orderBy(desc(transactions.date));
     return result;
+  }
+
+  /**
+   * Get all transactions with account AND link information
+   * Optionally filter by account ID
+   */
+  static async getAllTransactionsWithLinks(
+    userId: number,
+    accountId?: number
+  ): Promise<TransactionWithLink[]> {
+    // Build base query
+    let query = db
+      .select({
+        id: transactions.id,
+        userId: transactions.userId,
+        sourceAccountId: transactions.sourceAccountId,
+        targetAccountId: transactions.targetAccountId,
+        transactionType: transactions.transactionType,
+        description: transactions.description,
+        amount: transactions.amount,
+        category: transactions.category,
+        date: transactions.date,
+        importId: transactions.importId,
+        createdAt: transactions.createdAt,
+        updatedAt: transactions.updatedAt,
+      })
+      .from(transactions);
+
+    // Apply account filter if provided
+    if (accountId !== undefined) {
+      query = query.where(
+        and(
+          eq(transactions.userId, userId),
+          or(
+            eq(transactions.sourceAccountId, accountId),
+            eq(transactions.targetAccountId, accountId)
+          )
+        )
+      ) as typeof query;
+    } else {
+      query = query.where(eq(transactions.userId, userId)) as typeof query;
+    }
+
+    const result = await query.orderBy(desc(transactions.date), desc(transactions.createdAt));
+
+    // Fetch accounts (same as getAllTransactions)
+    const accountIds = new Set<number>();
+    result.forEach(t => {
+      if (t.sourceAccountId) accountIds.add(t.sourceAccountId);
+      if (t.targetAccountId) accountIds.add(t.targetAccountId);
+    });
+
+    let accountMap = new Map<number, { id: number; name: string; color: string | null }>();
+    if (accountIds.size > 0) {
+      const accountsData = await db
+        .select({
+          id: accounts.id,
+          name: accounts.name,
+          color: accounts.color,
+        })
+        .from(accounts)
+        .where(inArray(accounts.id, Array.from(accountIds)));
+
+      accountMap = new Map(accountsData.map(a => [a.id, a]));
+    }
+
+    // Fetch links for all transactions
+    const transactionIds = result.map(t => t.id);
+    const linkMap = new Map<number, { id: number; linkedTransactionId: number; linkedTransaction?: { id: number; description: string; amount: number; date: string; transactionType: TransactionType } }>();
+
+    if (transactionIds.length > 0) {
+      const links = await db
+        .select()
+        .from(transactionLinks)
+        .where(
+          and(
+            eq(transactionLinks.userId, userId),
+            or(
+              inArray(transactionLinks.transaction1Id, transactionIds),
+              inArray(transactionLinks.transaction2Id, transactionIds)
+            )
+          )
+        );
+
+      // For each link, store it mapped to both transaction IDs
+      for (const link of links) {
+        linkMap.set(link.transaction1Id, {
+          id: link.id,
+          linkedTransactionId: link.transaction2Id
+        });
+        linkMap.set(link.transaction2Id, {
+          id: link.id,
+          linkedTransactionId: link.transaction1Id
+        });
+      }
+
+      // Fetch linked transaction details
+      const linkedTransactionIds = Array.from(new Set(
+        links.flatMap(l => [l.transaction1Id, l.transaction2Id])
+      ));
+
+      if (linkedTransactionIds.length > 0) {
+        const linkedTransactions = await db
+          .select({
+            id: transactions.id,
+            description: transactions.description,
+            amount: transactions.amount,
+            date: transactions.date,
+            transactionType: transactions.transactionType
+          })
+          .from(transactions)
+          .where(inArray(transactions.id, linkedTransactionIds));
+
+        const linkedTxMap = new Map(linkedTransactions.map(t => [t.id, t]));
+
+        // Enhance linkMap with transaction details
+        linkMap.forEach((linkInfo) => {
+          const linkedTx = linkedTxMap.get(linkInfo.linkedTransactionId);
+          if (linkedTx) {
+            linkInfo.linkedTransaction = {
+              id: linkedTx.id,
+              description: linkedTx.description,
+              amount: linkedTx.amount,
+              date: linkedTx.date,
+              transactionType: linkedTx.transactionType as TransactionType
+            };
+          }
+        });
+      }
+    }
+
+    // Map results with accounts and links
+    return result.map(t => ({
+      ...t,
+      sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId) ? {
+        id: t.sourceAccountId,
+        name: accountMap.get(t.sourceAccountId)!.name,
+        color: accountMap.get(t.sourceAccountId)!.color,
+      } : undefined,
+      targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId) ? {
+        id: t.targetAccountId,
+        name: accountMap.get(t.targetAccountId)!.name,
+        color: accountMap.get(t.targetAccountId)!.color,
+      } : undefined,
+      link: linkMap.get(t.id)
+    }));
   }
 }
