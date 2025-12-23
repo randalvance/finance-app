@@ -137,3 +137,30 @@ export const imports = pgTable('imports', {
   statusIdx: index('idx_imports_status').on(table.status),
   createdAtIdx: index('idx_imports_created_at').on(table.createdAt)
 }));
+
+// Transaction links table for bidirectional transaction relationships
+export const transactionLinks = pgTable('transaction_links', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  transaction1Id: integer('transaction_1_id').notNull().references(() => transactions.id, { onDelete: 'cascade' }),
+  transaction2Id: integer('transaction_2_id').notNull().references(() => transactions.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow()
+}, (table) => ({
+  // Check constraint: prevent self-links
+  noSelfLink: check(
+    'no_self_link',
+    sql`${table.transaction1Id} != ${table.transaction2Id}`
+  ),
+  // Check constraint: ensure transaction1Id < transaction2Id (canonical ordering)
+  // This prevents duplicate links in reverse order
+  canonicalOrdering: check(
+    'canonical_ordering',
+    sql`${table.transaction1Id} < ${table.transaction2Id}`
+  ),
+  // Indexes for performance
+  transaction1Idx: index('idx_transaction_links_t1').on(table.transaction1Id),
+  transaction2Idx: index('idx_transaction_links_t2').on(table.transaction2Id),
+  userIdIdx: index('idx_transaction_links_user').on(table.userId),
+  // Unique constraint: prevent duplicate links
+  uniqueLink: unique().on(table.transaction1Id, table.transaction2Id)
+}));

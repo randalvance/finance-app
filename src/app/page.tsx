@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
+import TransactionTable from '@/components/TransactionTable';
 
 interface AccountWithStats {
   id: number;
@@ -40,6 +41,17 @@ interface Transaction {
     name: string;
     color: string;
   };
+  link?: {
+    id: number;
+    linkedTransactionId: number;
+    linkedTransaction?: {
+      id: number;
+      description: string;
+      amount: number;
+      date: string;
+      transactionType: string;
+    };
+  };
 }
 
 export default function Home() {
@@ -58,11 +70,19 @@ export default function Home() {
     date: new Date().toISOString().split('T')[0]
   });
   const [submitting, setSubmitting] = useState(false);
+  const [selectedAccountFilter, setSelectedAccountFilter] = useState<number | null>(null);
+  const [homeSearchQuery, setHomeSearchQuery] = useState('');
+  const [unlinkedTransferCount, setUnlinkedTransferCount] = useState(0);
+  const [selectedLinkTransactionId, setSelectedLinkTransactionId] = useState<number | null>(null);
+  const [showLinkSelectionModal, setShowLinkSelectionModal] = useState(false);
+  const [linkSearchQuery, setLinkSearchQuery] = useState('');
+  const [linkModalAccountFilter, setLinkModalAccountFilter] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
     fetchTransactions();
+    fetchUnlinkedTransferCount();
   }, []);
 
   const fetchAccounts = async () => {
@@ -91,15 +111,30 @@ export default function Home() {
     }
   };
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (accountId?: number | null) => {
     try {
-      const response = await fetch('/api/transactions');
+      const url = accountId
+        ? `/api/transactions?accountId=${accountId}`
+        : '/api/transactions';
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setTransactions(data);
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
+    }
+  };
+
+  const fetchUnlinkedTransferCount = async () => {
+    try {
+      const response = await fetch('/api/transactions/unlinked-transfers');
+      if (response.ok) {
+        const data = await response.json();
+        setUnlinkedTransferCount(data.length);
+      }
+    } catch (error) {
+      console.error('Error fetching unlinked transfer count:', error);
     }
   };
 
@@ -176,6 +211,32 @@ export default function Home() {
       });
 
       if (response.ok) {
+        const createdTransaction = await response.json();
+
+        // If a link transaction was selected, create the link
+        if (selectedLinkTransactionId) {
+          try {
+            const linkResponse = await fetch('/api/transactions/links', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                transaction_1_id: createdTransaction.id,
+                transaction_2_id: selectedLinkTransactionId,
+              }),
+            });
+
+            if (!linkResponse.ok) {
+              const linkError = await linkResponse.json();
+              alert(`Transaction created but linking failed: ${linkError.error}`);
+            }
+          } catch (linkErr) {
+            console.error('Error creating link:', linkErr);
+            alert('Transaction created but linking failed');
+          }
+        }
+
         setShowTransactionModal(false);
         setTransactionFormData({
           transaction_type: 'Debit',
@@ -186,8 +247,10 @@ export default function Home() {
           category: '',
           date: new Date().toISOString().split('T')[0]
         });
+        setSelectedLinkTransactionId(null);
         fetchAccounts(); // Refresh to update account totals
         fetchTransactions(); // Refresh to show new transaction
+        fetchUnlinkedTransferCount(); // Refresh unlinked count
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to create transaction');
@@ -198,19 +261,6 @@ export default function Home() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const getTransactionTypeBadge = (type: 'Debit' | 'Credit' | 'Transfer') => {
-    const styles = {
-      Debit: 'bg-red-900 text-red-200 border-red-700',
-      Credit: 'bg-green-900 text-green-200 border-green-700',
-      Transfer: 'bg-blue-900 text-blue-200 border-blue-700'
-    };
-    return (
-      <span className={`px-2 py-1 text-xs rounded border ${styles[type]}`}>
-        {type}
-      </span>
-    );
   };
 
   return (
@@ -315,116 +365,43 @@ export default function Home() {
               <h2 className="text-2xl font-bold text-gray-100">Recent Transactions</h2>
             </div>
 
+            {/* Unlinked Transfers Warning */}
+            {unlinkedTransferCount > 0 && (
+              <div className="mb-4 flex justify-end">
+                <Link
+                  href="/unlinked-transfers"
+                  className="flex items-center space-x-2 px-4 py-2 bg-yellow-900 text-yellow-200 border border-yellow-700 rounded-md hover:bg-yellow-800 transition-colors"
+                >
+                  <span className="text-lg">⚠️</span>
+                  <span className="text-sm font-medium">
+                    {unlinkedTransferCount} Unlinked Transfer{unlinkedTransferCount !== 1 ? 's' : ''}
+                  </span>
+                </Link>
+              </div>
+            )}
+
             {loading ? (
               <div className="text-center py-12">
                 <div className="text-gray-400">Loading transactions...</div>
               </div>
-            ) : transactions.length === 0 ? (
-              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 p-12 text-center">
-                <div className="text-gray-600 text-6xl mb-4">💰</div>
-                <h3 className="text-lg font-medium text-gray-200 mb-2">No transactions yet</h3>
-                <p className="text-gray-400 mb-4">Get started by adding your first transaction</p>
-                <button
-                  onClick={openTransactionModal}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Add Your First Transaction
-                </button>
-              </div>
             ) : (
-              <div className="bg-gray-900 rounded-lg shadow-lg border border-gray-800 overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-800">
-                  <thead className="bg-gray-800">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Description
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Accounts
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Category
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {transactions.slice(0, 20).map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-800 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                          {new Date(transaction.date).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getTransactionTypeBadge(transaction.transaction_type)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-100">{transaction.description}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {transaction.transaction_type === 'Debit' && transaction.source_account && (
-                            <div className="flex items-center space-x-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: transaction.source_account.color }}
-                              />
-                              <span className="text-sm text-gray-300">{transaction.source_account.name}</span>
-                            </div>
-                          )}
-                          {transaction.transaction_type === 'Credit' && transaction.target_account && (
-                            <div className="flex items-center space-x-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: transaction.target_account.color }}
-                              />
-                              <span className="text-sm text-gray-300">{transaction.target_account.name}</span>
-                            </div>
-                          )}
-                          {transaction.transaction_type === 'Transfer' && transaction.source_account && transaction.target_account && (
-                            <div className="flex items-center space-x-1 text-sm">
-                              <div className="flex items-center space-x-1">
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: transaction.source_account.color }}
-                                />
-                                <span className="text-gray-300">{transaction.source_account.name}</span>
-                              </div>
-                              <span className="text-gray-500">→</span>
-                              <div className="flex items-center space-x-1">
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: transaction.target_account.color }}
-                                />
-                                <span className="text-gray-300">{transaction.target_account.name}</span>
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-400">{transaction.category}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <span className={`text-sm font-medium ${
-                            transaction.transaction_type === 'Credit' ? 'text-green-400' :
-                            transaction.transaction_type === 'Debit' ? 'text-red-400' :
-                            'text-blue-400'
-                          }`}>
-                            {transaction.transaction_type === 'Credit' ? '+' : transaction.transaction_type === 'Debit' ? '-' : ''}
-                            ${parseFloat(transaction.amount.toString()).toFixed(2)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <TransactionTable
+                transactions={transactions}
+                accounts={accounts}
+                showAccountFilter={true}
+                selectedAccountFilter={selectedAccountFilter}
+                onAccountFilterChange={(accountId) => {
+                  setSelectedAccountFilter(accountId);
+                  fetchTransactions(accountId);
+                }}
+                showSearchFilter={true}
+                searchQuery={homeSearchQuery}
+                onSearchChange={setHomeSearchQuery}
+                showLinkColumn={true}
+                showAccountsColumn={true}
+                maxRows={20}
+                emptyStateMessage={transactions.length === 0 ? "Get started by adding your first transaction" : "No transactions found matching your filters"}
+              />
             )}
           </div>
         </div>
@@ -624,6 +601,44 @@ export default function Home() {
                 />
               </div>
 
+              {/* Link to Another Transaction */}
+              <div className="border-t border-gray-800 pt-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Link to Transaction (Optional)
+                </label>
+                {selectedLinkTransactionId ? (
+                  <div className="flex items-center justify-between p-3 bg-blue-900/20 border border-blue-700 rounded-md">
+                    <div className="flex-1">
+                      <div className="text-sm text-blue-200">
+                        {transactions.find(t => t.id === selectedLinkTransactionId)?.description}
+                      </div>
+                      <div className="text-xs text-blue-300 mt-1">
+                        {new Date(transactions.find(t => t.id === selectedLinkTransactionId)?.date || '').toLocaleDateString()} -
+                        ${transactions.find(t => t.id === selectedLinkTransactionId)?.amount.toFixed(2)}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLinkTransactionId(null)}
+                      className="ml-3 text-xs px-2 py-1 text-red-200 border border-red-700 rounded hover:bg-red-900/30"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkSelectionModal(true)}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-300 hover:border-gray-600 hover:text-gray-100 transition-colors text-left"
+                  >
+                    Select transaction to link...
+                  </button>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Link this transaction to another (useful for transfers or refunds)
+                </p>
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -638,6 +653,7 @@ export default function Home() {
                       category: '',
                       date: new Date().toISOString().split('T')[0]
                     });
+                    setSelectedLinkTransactionId(null);
                   }}
                   className="px-4 py-2 text-gray-300 hover:text-gray-100 transition-colors"
                   disabled={submitting}
@@ -653,6 +669,65 @@ export default function Home() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Link Transaction Selection Modal */}
+      {showLinkSelectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-800 max-w-4xl w-full max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-100">Select Transaction to Link</h3>
+              <button
+                onClick={() => {
+                  setShowLinkSelectionModal(false);
+                  setLinkSearchQuery('');
+                  setLinkModalAccountFilter(null);
+                }}
+                className="text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Transaction Table with integrated filters */}
+            <div className="flex-1 overflow-auto">
+              <div className="p-6">
+                <TransactionTable
+                  transactions={transactions}
+                  accounts={accounts}
+                  showAccountFilter={true}
+                  selectedAccountFilter={linkModalAccountFilter}
+                  onAccountFilterChange={setLinkModalAccountFilter}
+                  showSearchFilter={true}
+                  searchQuery={linkSearchQuery}
+                  onSearchChange={setLinkSearchQuery}
+                  showLinkColumn={false}
+                  showAccountsColumn={true}
+                  maxRows={100}
+                  actionType="select"
+                  onSelectTransaction={(transactionId) => {
+                    setSelectedLinkTransactionId(transactionId);
+                    setShowLinkSelectionModal(false);
+                    setLinkSearchQuery('');
+                    setLinkModalAccountFilter(null);
+                  }}
+                  filterUnlinkedOnly={true}
+                  emptyStateMessage="No unlinked transactions found"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t border-gray-800 bg-gray-800/30">
+              <div className="text-sm text-gray-400">
+                Showing {transactions.filter(t => !t.link).filter(t =>
+                  linkSearchQuery === '' ||
+                  t.description.toLowerCase().includes(linkSearchQuery.toLowerCase())
+                ).slice(0, 100).length} unlinked transactions
+              </div>
+            </div>
           </div>
         </div>
       )}
