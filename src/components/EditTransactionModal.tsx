@@ -62,6 +62,7 @@ export default function EditTransactionModal({
   });
   const [submitting, setSubmitting] = useState(false);
   const [selectedLinkTransactionId, setSelectedLinkTransactionId] = useState<number | null>(null);
+  const [filterByDate, setFilterByDate] = useState(true);
 
   useEffect(() => {
     if (transaction) {
@@ -415,14 +416,38 @@ export default function EditTransactionModal({
                   </button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {/* Link selection modal would go here */}}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground transition-colors text-left"
-                  disabled
-                >
-                  Select transaction to link...
-                </button>
+                <>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <input
+                      type="checkbox"
+                      id="filter-by-date"
+                      checked={filterByDate}
+                      onChange={(e) => setFilterByDate(e.target.checked)}
+                      className="rounded border-border"
+                    />
+                    <label htmlFor="filter-by-date" className="text-xs text-muted-foreground">
+                      Only show transactions from {new Date(formData.date).toLocaleDateString()}
+                    </label>
+                  </div>
+                  <select
+                    value=""
+                    onChange={(e) => setSelectedLinkTransactionId(parseInt(e.target.value))}
+                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Select transaction to link...</option>
+                    {allTransactions
+                      .filter(t => {
+                        if (t.id === transaction.id) return false;
+                        if (filterByDate && t.date !== formData.date) return false;
+                        return true;
+                      })
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.description} - {new Date(t.date).toLocaleDateString()} - ${t.amount.toFixed(2)}
+                        </option>
+                      ))}
+                  </select>
+                </>
               )}
             </div>
           )}

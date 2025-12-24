@@ -55,11 +55,13 @@ export default function UnlinkedTransfersPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTransaction, setEditingTransaction] = useState<UnlinkedTransfer | null>(null);
+  const [allTransactions, setAllTransactions] = useState<UnlinkedTransfer[]>([]);
 
   useEffect(() => {
     fetchUnlinkedTransfers();
     fetchAccounts();
     fetchCategories();
+    fetchAllTransactions();
   }, []);
 
   const fetchUnlinkedTransfers = async () => {
@@ -100,8 +102,21 @@ export default function UnlinkedTransfersPage() {
     }
   };
 
+  const fetchAllTransactions = async () => {
+    try {
+      const response = await fetch('/api/transactions');
+      if (response.ok) {
+        const data = await response.json();
+        setAllTransactions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching all transactions:', error);
+    }
+  };
+
   const handleDataChanged = () => {
     fetchUnlinkedTransfers();
+    fetchAllTransactions();
   };
 
   return (
@@ -149,9 +164,10 @@ export default function UnlinkedTransfersPage() {
         transaction={editingTransaction}
         accounts={accounts}
         categories={categories}
+        allTransactions={allTransactions}
         onClose={() => setEditingTransaction(null)}
         onSaved={handleDataChanged}
-        showLinkSelection={false}
+        showLinkSelection={true}
       />
     </main>
   );
