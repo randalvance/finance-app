@@ -106,52 +106,65 @@ export default function UnlinkedTransfersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card/50 backdrop-blur-md shadow-sm border-b border-border sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
+      <header className="glass backdrop-blur-xl border-b-2 border-primary/30 sticky top-0 z-50 scan-line-effect shadow-lg">
+        <div className="max-w-[1600px] mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            <div>
-              <Link href="/" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block transition-colors">
-                ← Back to Home
+            <div className="flex items-center space-x-4">
+              <Link href="/" className="mono text-xs px-3 py-2 rounded border border-border hover:border-primary hover:text-primary transition-all duration-200">
+                [←] BACK
               </Link>
-              <h1 className="text-2xl font-bold text-foreground">Unlinked Transfers</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                These transfers don&apos;t have a corresponding link. Link them to track bidirectional transactions.
-              </p>
+              <div className="h-4 w-px bg-border"></div>
+              <div>
+                <h1 className="mono text-lg font-bold tracking-tight">
+                  <span className="text-primary">&gt;</span> UNLINKED_TRANSFERS
+                </h1>
+                <p className="mono text-[10px] text-muted-foreground mt-0.5">
+                  Link bidirectional transactions
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
         {loading ? (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground">Loading unlinked transfers...</div>
+          <div className="glass-card rounded-lg p-12 text-center animate-slide-up-fade">
+            <div className="mono text-sm text-muted-foreground animate-pulse">LOADING_TRANSFERS...</div>
           </div>
         ) : transfers.length === 0 ? (
-          <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border p-12 text-center">
-            <div className="text-green-500 text-6xl mb-4 drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]">✓</div>
-            <h3 className="text-lg font-medium text-foreground mb-2">All Transfers Linked!</h3>
-            <p className="text-muted-foreground">There are no unlinked transfers.</p>
+          <div className="glass-card rounded-lg shadow-lg border border-border p-12 text-center animate-slide-up-fade">
+            <div className="text-6xl mb-4 filter drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]">✓</div>
+            <h3 className="mono text-sm font-bold text-foreground mb-2 tracking-wider">ALL_TRANSFERS_LINKED</h3>
+            <p className="mono text-xs text-muted-foreground tracking-wide">No unlinked transfers found</p>
           </div>
         ) : (
-          <div>
-            <div className="mb-4 px-6 py-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg backdrop-blur-sm">
-              <p className="text-yellow-400 text-sm font-medium">
-                ⚠️ {transfers.length} transfer{transfers.length !== 1 ? 's' : ''} without links
-              </p>
+          <div className="animate-slide-up-fade">
+            <div className="mb-6 glass-card p-4 border border-warning/30 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="text-2xl">⚠</div>
+                <div>
+                  <p className="mono text-xs font-bold text-warning tracking-wider">
+                    UNLINKED_TRANSFERS_DETECTED
+                  </p>
+                  <p className="mono text-[10px] text-muted-foreground mt-0.5">
+                    {transfers.length} transaction{transfers.length !== 1 ? 's' : ''} require linking
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="bg-card/50 backdrop-blur-md rounded-lg border border-border overflow-hidden">
-              <TransactionTable
-                transactions={transfers}
-                showLinkColumn={false}
-                showAccountsColumn={true}
-                emptyStateMessage="No unlinked transfers found"
-                editable={true}
-                onEditRequested={setEditingTransaction}
-                onDataChanged={handleDataChanged}
-              />
-            </div>
+
+            <TransactionTable
+              transactions={transfers}
+              accounts={accounts}
+              showLinkColumn={false}
+              showAccountsColumn={true}
+              emptyStateMessage="NO UNLINKED TRANSFERS // ALL LINKED"
+              editable={true}
+              onEditRequested={setEditingTransaction}
+              onDataChanged={handleDataChanged}
+            />
           </div>
         )}
       </main>

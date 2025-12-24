@@ -419,28 +419,33 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card/50 backdrop-blur-md shadow-sm border-b border-border sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
+      <header className="glass backdrop-blur-xl border-b-2 border-primary/30 sticky top-0 z-50 scan-line-effect shadow-lg">
+        <div className="max-w-[1600px] mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                ← Back
+              <Link href="/" className="mono text-xs px-3 py-2 rounded border border-border hover:border-primary hover:text-primary transition-all duration-200">
+                [←] BACK
               </Link>
-              <h1 className="text-2xl font-bold text-foreground">Import Transactions</h1>
+              <div className="h-4 w-px bg-border"></div>
+              <h1 className="mono text-lg font-bold tracking-tight">
+                <span className="text-primary">&gt;</span> IMPORT_TRANSACTIONS
+              </h1>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading...</div>
+          <div className="glass-card rounded-lg p-12 text-center">
+            <div className="mono text-sm text-muted-foreground animate-pulse">LOADING_DATA...</div>
+          </div>
         ) : (
           <div className="space-y-6">
             {/* Upload Form */}
-            <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border p-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">Upload CSV</h2>
+            <div className="glass-card rounded-lg shadow-lg border border-border p-6 animate-slide-up-fade">
+              <h2 className="mono text-sm font-bold tracking-wider text-primary mb-4">UPLOAD_CSV</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -506,17 +511,17 @@ export default function ImportPage() {
                 <Button
                   onClick={handleParseCSV}
                   disabled={!csvFile || !selectedSourceId || !selectedAccountId || parsing}
-                  className="shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                  className="mono text-xs font-bold tracking-wider terminal-border bg-primary hover:bg-primary/90"
                 >
-                  {parsing ? 'Parsing...' : 'Parse CSV'}
+                  {parsing ? 'PROCESSING...' : 'PARSE_CSV'}
                 </Button>
               </div>
             </div>
 
             {/* Saved Imports */}
             {draftImports.length > 0 && (
-              <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border p-6">
-                <h2 className="text-xl font-bold text-foreground mb-4">Saved Imports</h2>
+              <div className="glass-card rounded-lg shadow-lg border border-border p-6 animate-slide-up-fade" style={{ animationDelay: '100ms' }}>
+                <h2 className="mono text-sm font-bold tracking-wider text-primary mb-4">SAVED_IMPORTS</h2>
                 <div className="space-y-2">
                   {draftImports.map((imp) => {
                     const mapped = imp.previewData
@@ -543,17 +548,16 @@ export default function ImportPage() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Button
+                          <button
                             onClick={() => handleResumeDraft(imp)}
-                            className="shadow-sm"
-                            variant="secondary"
+                            className="mono text-xs px-3 py-2 text-primary hover:bg-primary/10 rounded border border-primary/30 hover:border-primary transition-all"
                           >
-                            {imp.status === 'completed' ? 'View' : 'Resume'}
-                          </Button>
+                            {imp.status === 'completed' ? 'VIEW' : 'RESUME'}
+                          </button>
                           <ConfirmButton
-                            buttonText="Delete"
+                            buttonText="DELETE"
                             onConfirm={() => handleDeleteDraft(imp.id, imp.status)}
-                            buttonClassName="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm font-medium"
+                            buttonClassName="mono text-xs px-3 py-2 text-destructive hover:bg-destructive/10 rounded border border-destructive/30 hover:border-destructive transition-all"
                           />
                         </div>
                       </div>
