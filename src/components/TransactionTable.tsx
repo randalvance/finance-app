@@ -186,16 +186,16 @@ export default function TransactionTable({
           {/* Account Filter */}
           {showAccountFilter && onAccountFilterChange && (
             <div className="flex-1">
-              <label htmlFor="account-filter" className="block text-sm font-medium text-muted-foreground mb-2">
-                Filter by Account
+              <label htmlFor="account-filter" className="mono block text-[10px] font-bold text-primary mb-2 tracking-widest">
+                FILTER_ACCOUNT
               </label>
               <select
                 id="account-filter"
                 value={selectedAccountFilter ?? ''}
                 onChange={(e) => onAccountFilterChange(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               >
-                <option value="">All Accounts</option>
+                <option value="">ALL_ACCOUNTS</option>
                 {accounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.name}
@@ -208,16 +208,16 @@ export default function TransactionTable({
           {/* Search Filter */}
           {showSearchFilter && onSearchChange && (
             <div className="flex-1">
-              <label htmlFor="search-filter" className="block text-sm font-medium text-muted-foreground mb-2">
-                Search
+              <label htmlFor="search-filter" className="mono block text-[10px] font-bold text-primary mb-2 tracking-widest">
+                SEARCH_QUERY
               </label>
               <input
                 id="search-filter"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search by description..."
-                className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                placeholder="SEARCH..."
+                className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
               />
             </div>
           )}
@@ -226,67 +226,67 @@ export default function TransactionTable({
 
       {/* Table or Empty State */}
       {filteredTransactions.length === 0 ? (
-        <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border p-12 text-center">
+        <div className="glass-card rounded-lg shadow-lg border border-border p-12 text-center">
           {transactions.length === 0 && !searchQuery && !selectedAccountFilter ? (
             // Completely empty - no transactions at all
             <>
-              <div className="text-muted-foreground text-6xl mb-4">💰</div>
-              <h3 className="text-lg font-medium text-foreground mb-2">No transactions yet</h3>
-              <p className="text-muted-foreground">{emptyStateMessage}</p>
+              <div className="text-6xl mb-4 filter grayscale opacity-30">💰</div>
+              <h3 className="mono text-sm font-bold text-foreground mb-2 tracking-wider">SYSTEM_EMPTY</h3>
+              <p className="mono text-xs text-muted-foreground tracking-wide">{emptyStateMessage}</p>
             </>
           ) : (
             // Filtered results are empty
-            <p className="text-muted-foreground">{emptyStateMessage}</p>
+            <p className="mono text-xs text-muted-foreground tracking-wide">{emptyStateMessage}</p>
           )}
         </div>
       ) : (
-        <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border overflow-hidden">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-muted/50">
+        <div className="glass-card rounded-lg shadow-lg border border-border overflow-hidden">
+          <table className="min-w-full divide-y divide-border/50">
+            <thead className="glass bg-muted/30 border-b border-primary/20">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Date
+                <th className="mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest">
+                  DATE
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Type
+                <th className="mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest">
+                  TYPE
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Description
+                <th className="mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest">
+                  DESCRIPTION
                 </th>
                 {showAccountsColumn && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Accounts
+                  <th className="mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest">
+                    ACCOUNTS
                   </th>
                 )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Category
+                <th className="mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest">
+                  CATEGORY
                 </th>
                 {showLinkColumn && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Link
+                  <th className="mono px-6 py-3 text-center text-[10px] font-bold text-primary uppercase tracking-widest">
+                    LINK
                   </th>
                 )}
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Amount
+                <th className="mono px-6 py-3 text-right text-[10px] font-bold text-primary uppercase tracking-widest">
+                  AMOUNT
                 </th>
                 {(actionType !== 'none' || editable) && (
-                  <th className="px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Action
+                  <th className="mono px-6 py-3 text-center text-[10px] font-bold text-primary uppercase tracking-widest">
+                    ACTION
                   </th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/30">
               {filteredTransactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                <tr key={transaction.id} className="hover:bg-primary/5 transition-all duration-200 group">
+                  <td className="px-6 py-4 whitespace-nowrap mono text-xs text-muted-foreground">
                     {new Date(transaction.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getTransactionTypeBadge(transaction.transactionType)}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-foreground">{transaction.description}</div>
+                    <div className="text-sm text-foreground group-hover:text-primary transition-colors">{transaction.description}</div>
                   </td>
                   {showAccountsColumn && (
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -345,7 +345,7 @@ export default function TransactionTable({
                   )}
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <span
-                      className={`text-sm font-medium ${
+                      className={`mono text-sm font-bold ${
                         transaction.transactionType === 'Credit'
                           ? 'text-transaction-credit-text'
                           : transaction.transactionType === 'Debit'
@@ -365,25 +365,25 @@ export default function TransactionTable({
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => onSelectTransaction(transaction.id)}
-                        className="text-xs px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                        className="mono text-xs px-3 py-1 bg-primary text-primary-foreground rounded border border-primary hover:bg-primary/90 transition-all font-bold tracking-wider"
                       >
-                        Select
+                        SELECT
                       </button>
                     </td>
                   )}
                   {editable && (
-                    <td className="px-6 py-4 text-right text-sm">
+                    <td className="px-6 py-4 text-center text-sm">
                       <button
                         onClick={() => onEditRequested?.(transaction)}
-                        className="text-primary hover:text-primary/80 mr-4"
+                        className="mono text-xs px-2 py-1 text-primary hover:bg-primary/10 rounded border border-primary/30 hover:border-primary transition-all mr-2"
                       >
-                        Edit
+                        EDIT
                       </button>
                       <button
                         onClick={() => handleDelete(transaction)}
-                        className="text-destructive hover:text-destructive/80"
+                        className="mono text-xs px-2 py-1 text-destructive hover:bg-destructive/10 rounded border border-destructive/30 hover:border-destructive transition-all"
                       >
-                        Delete
+                        DELETE
                       </button>
                     </td>
                   )}

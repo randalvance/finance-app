@@ -90,12 +90,17 @@ export default function Home() {
   const [showLinkSelectionModal, setShowLinkSelectionModal] = useState(false);
   const [linkSearchQuery, setLinkSearchQuery] = useState('');
   const [linkModalAccountFilter, setLinkModalAccountFilter] = useState<number | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
     fetchTransactions();
     fetchUnlinkedTransferCount();
+
+    // Update time every second
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchAccounts = async () => {
@@ -152,7 +157,6 @@ export default function Home() {
   };
 
   const openTransactionModal = () => {
-    // Auto-select account if there's only one
     if (accounts.length === 1) {
       setTransactionFormData({
         ...transactionFormData,
@@ -204,7 +208,6 @@ export default function Home() {
     setSubmitting(true);
 
     try {
-      // Validate based on transaction type
       if (transactionFormData.transaction_type === 'Debit' && !transactionFormData.source_account_id) {
         alert('Debit transactions require a source account');
         setSubmitting(false);
@@ -228,7 +231,6 @@ export default function Home() {
         }
       }
 
-      // Determine if we're editing or creating
       const isEditing = editingTransaction !== null;
       const url = isEditing ? `/api/transactions/${editingTransaction.id}` : '/api/transactions';
       const method = isEditing ? 'PUT' : 'POST';
@@ -252,12 +254,10 @@ export default function Home() {
       if (response.ok) {
         const savedTransaction = await response.json();
 
-        // Handle linking (only for create or if link changed during edit)
         const originalLinkId = editingTransaction?.link?.linkedTransactionId;
         const linkChanged = originalLinkId !== selectedLinkTransactionId;
 
         if (!isEditing || linkChanged) {
-          // Delete old link if editing and link was removed or changed
           if (isEditing && editingTransaction.link && linkChanged) {
             try {
               await fetch(`/api/transactions/links/${editingTransaction.link.id}`, {
@@ -268,7 +268,6 @@ export default function Home() {
             }
           }
 
-          // Create new link if one was selected
           if (selectedLinkTransactionId) {
             try {
               const linkResponse = await fetch('/api/transactions/links', {
@@ -305,9 +304,9 @@ export default function Home() {
           date: new Date().toISOString().split('T')[0]
         });
         setSelectedLinkTransactionId(null);
-        fetchAccounts(); // Refresh to update account totals
-        fetchTransactions(selectedAccountFilter); // Refresh to show updated/new transaction
-        fetchUnlinkedTransferCount(); // Refresh unlinked count
+        fetchAccounts();
+        fetchTransactions(selectedAccountFilter);
+        fetchUnlinkedTransferCount();
       } else {
         const error = await response.json();
         alert(error.error || `Failed to ${isEditing ? 'update' : 'create'} transaction`);
@@ -320,35 +319,59 @@ export default function Home() {
     }
   };
 
+  const totalNetBalance = (() => {
+    const currencies = [...new Set(accounts.map(a => a.currency))];
+    if (currencies.length === 1) {
+      const total = accounts.reduce((sum, a) => sum + a.totalAmount, 0);
+      return { value: formatCurrency(total, currencies[0] as Currency), multi: false };
+    } else if (currencies.length > 1) {
+      return { value: 'MULTI-CURRENCY', multi: true };
+    }
+    return { value: '$0.00', multi: false };
+  })();
+
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-      <header className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
+      {/* Command Header */}
+      <header className="glass backdrop-blur-xl border-b-2 border-primary/30 sticky top-0 z-50 scan-line-effect shadow-lg">
+        <div className="max-w-[1600px] mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Randal&apos;s Finance App</h1>
-            <div className="flex items-center space-x-3">
+            {/* Left: Terminal-style branding */}
+            <div className="flex items-center space-x-4">
+              <div className="mono text-xs text-primary font-bold tracking-wider">
+                {currentTime.toLocaleTimeString('en-US', { hour12: false })}
+              </div>
+              <div className="h-4 w-px bg-border"></div>
+              <h1 className="mono text-lg font-bold tracking-tight">
+                <span className="text-primary">&gt;</span> FINANCIAL_TERMINAL
+                <span className="text-primary animate-pulse">_</span>
+              </h1>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center space-x-2">
               <Button
                 onClick={openTransactionModal}
-                className="shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all duration-300"
+                className="mono text-xs font-bold tracking-wider terminal-border bg-primary hover:bg-primary/90"
               >
-                + Add Transaction
+                [+] NEW_TXN
               </Button>
               <Link
                 href="/import"
-                className="text-muted-foreground hover:text-foreground px-4 py-2.5 rounded-md border border-border hover:border-primary/50 hover:bg-accent/10 transition-all duration-300 text-sm"
+                className="mono text-xs px-3 py-2 rounded border border-border hover:border-secondary hover:text-secondary transition-all duration-200"
               >
-                📁 Import
+                IMPORT
               </Link>
               <Link
                 href="/admin"
-                className="text-muted-foreground hover:text-foreground px-4 py-2.5 rounded-md border border-border hover:border-primary/50 hover:bg-accent/10 transition-all duration-300 text-sm"
+                className="mono text-xs px-3 py-2 rounded border border-border hover:border-accent hover:text-accent transition-all duration-200"
               >
-                ⚙️ Admin
+                ADMIN
               </Link>
               <UserButton
                 appearance={{
                   elements: {
-                    avatarBox: "w-10 h-10 ring-2 ring-border hover:ring-primary transition-all",
+                    avatarBox: "w-8 h-8 ring-2 ring-primary hover:ring-secondary transition-all",
                   },
                 }}
               />
@@ -357,181 +380,214 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Stats Cards */}
-          <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="bg-gradient-to-br from-[oklch(0.2_0.1_260)] to-[oklch(0.15_0.1_290)] border-white/10 backdrop-blur-md shadow-lg relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-200">
-                    Total Net Balance
-                  </CardTitle>
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                    <span className="text-white text-lg font-bold">$</span>
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
+        {/* Dashboard Stats - Neo-brutalist Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+          {/* Primary Stat - Takes 2 columns */}
+          <div className="lg:col-span-2 animate-slide-up-fade" style={{ animationDelay: '0ms' }}>
+            <Card className="glass-card glass-hover terminal-border h-full border-primary/40 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-secondary/10 rounded-full blur-3xl"></div>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="mono text-[10px] text-primary tracking-widest mb-1">TOTAL_NET_BALANCE</div>
+                    <CardTitle className="mono text-4xl font-bold tracking-tight">
+                      {totalNetBalance.value}
+                    </CardTitle>
+                    {totalNetBalance.multi && (
+                      <div className="mono text-xs text-muted-foreground mt-1">
+                        {accounts.length} ACCOUNTS / {[...new Set(accounts.map(a => a.currency))].length} CURRENCIES
+                      </div>
+                    )}
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                    {(() => {
-                      const currencies = [...new Set(accounts.map(a => a.currency))];
-                      if (currencies.length === 1) {
-                        const total = accounts.reduce((sum, a) => sum + a.totalAmount, 0);
-                        return formatCurrency(total, currencies[0] as Currency);
-                      } else if (currencies.length > 1) {
-                        return 'Multiple currencies';
-                      }
-                      return '$0.00';
-                    })()}
+                  <div className="w-12 h-12 bg-primary/20 rounded border border-primary flex items-center justify-center">
+                    <div className="mono text-2xl text-primary">$</div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <div className="mono text-[10px] text-muted-foreground tracking-wider">ACCOUNTS</div>
+                    <div className="mono text-2xl font-bold text-foreground">{accounts.length}</div>
+                  </div>
+                  <div>
+                    <div className="mono text-[10px] text-muted-foreground tracking-wider">TRANSACTIONS</div>
+                    <div className="mono text-2xl font-bold text-foreground">
+                      {accounts.reduce((sum, a) => sum + a.transactionCount, 0)}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-              <Card className="bg-gradient-to-br from-[oklch(0.2_0.1_290)] to-[oklch(0.15_0.1_320)] border-white/10 backdrop-blur-md shadow-lg relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 delay-100" />
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-200">
-                    Active Accounts
-                  </CardTitle>
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                    <span className="text-white text-lg font-bold">#</span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                    {accounts.reduce((sum, a) => sum + a.transactionCount, 0)}
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Account Breakdown */}
+          <div className="lg:col-span-2 animate-slide-up-fade" style={{ animationDelay: '100ms' }}>
+            <Card className="glass-card glass-hover terminal-border h-full border-border">
+              <CardHeader className="pb-2">
+                <div className="mono text-[10px] text-muted-foreground tracking-widest">ACCOUNT_STATUS</div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-[140px] overflow-y-auto">
+                  {accounts.slice(0, 4).map((account, idx) => (
+                    <div
+                      key={account.id}
+                      className="flex items-center justify-between p-2 bg-background/50 rounded border border-border/50 hover:border-primary/50 transition-all group"
+                      style={{ animationDelay: `${150 + idx * 50}ms` }}
+                    >
+                      <div className="flex items-center space-x-2 flex-1 min-w-0">
+                        <div
+                          className="w-2 h-2 rounded-sm flex-shrink-0"
+                          style={{ backgroundColor: account.color }}
+                        />
+                        <span className="mono text-xs text-foreground truncate">{account.name}</span>
+                      </div>
+                      <div className="mono text-xs font-bold text-right ml-2">
+                        <span className={account.totalAmount >= 0 ? 'text-transaction-credit-text' : 'text-transaction-debit-text'}>
+                          {formatCurrency(account.totalAmount, account.currency as Currency)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {accounts.length > 4 && (
+                    <Link href="/admin" className="block text-center mono text-[10px] text-primary hover:text-primary/80 pt-1">
+                      +{accounts.length - 4} MORE
+                    </Link>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Active Accounts
-                  </CardTitle>
-                  <div className="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center">
-                    <span className="text-white text-sm font-semibold">📒</span>
+        {/* Unlinked Transfers Alert */}
+        {unlinkedTransferCount > 0 && (
+          <div className="mb-6 animate-slide-up-fade" style={{ animationDelay: '300ms' }}>
+            <Link
+              href="/unlinked-transfers"
+              className="block p-4 bg-warning/10 border-2 border-warning rounded terminal-border hover:bg-warning/20 transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="mono text-2xl">⚠</div>
+                  <div>
+                    <div className="mono text-sm font-bold text-warning-foreground">
+                      UNLINKED TRANSFERS DETECTED
+                    </div>
+                    <div className="mono text-xs text-muted-foreground">
+                      {unlinkedTransferCount} transaction{unlinkedTransferCount !== 1 ? 's' : ''} require linking
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{accounts.length}</div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="mono text-xs text-warning group-hover:translate-x-1 transition-transform">
+                  [VIEW] →
+                </div>
+              </div>
+            </Link>
+          </div>
+        )}
+
+        {/* Transaction Data Stream */}
+        <div className="animate-slide-up-fade" style={{ animationDelay: '400ms' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="mono text-sm font-bold tracking-wider">
+              <span className="text-primary">&gt;&gt;</span> TRANSACTION_STREAM
+            </h2>
+            <div className="mono text-[10px] text-muted-foreground">
+              LIVE_DATA // {transactions.length} RECORDS
             </div>
           </div>
 
-          {/* Recent Transactions Section */}
-          <div className="lg:col-span-3">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-foreground">Recent Transactions</h2>
+          {loading ? (
+            <div className="terminal-border bg-card/30 rounded p-12 text-center">
+              <div className="mono text-sm text-muted-foreground animate-pulse">
+                LOADING TRANSACTION DATA...
+              </div>
             </div>
-
-            {/* Unlinked Transfers Warning */}
-            {unlinkedTransferCount > 0 && (
-              <div className="mb-4 flex justify-end">
-                <Link
-                  href="/unlinked-transfers"
-                  className="flex items-center space-x-2 px-4 py-2 bg-warning/20 text-warning-foreground border border-warning-border rounded-md hover:bg-warning/30 transition-colors"
-                >
-                  <span className="text-lg">⚠️</span>
-                  <span className="text-sm font-medium">
-                    {unlinkedTransferCount} Unlinked Transfer{unlinkedTransferCount !== 1 ? 's' : ''}
-                  </span>
-                </Link>
-              </div>
-            )}
-
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="text-muted-foreground">Loading transactions...</div>
-              </div>
-            ) : (
-              <TransactionTable
-                transactions={transactions}
-                accounts={accounts}
-                showAccountFilter={true}
-                selectedAccountFilter={selectedAccountFilter}
-                onAccountFilterChange={(accountId) => {
-                  setSelectedAccountFilter(accountId);
-                  fetchTransactions(accountId);
-                }}
-                showSearchFilter={true}
-                searchQuery={homeSearchQuery}
-                onSearchChange={setHomeSearchQuery}
-                showLinkColumn={true}
-                showAccountsColumn={true}
-                maxRows={20}
-                emptyStateMessage={transactions.length === 0 ? "Get started by adding your first transaction" : "No transactions found matching your filters"}
-                editable={true}
-                onEditRequested={openEditModal}
-                onDataChanged={handleDataChanged}
-              />
-            )}
-          </div>
+          ) : (
+            <TransactionTable
+              transactions={transactions}
+              accounts={accounts}
+              showAccountFilter={true}
+              selectedAccountFilter={selectedAccountFilter}
+              onAccountFilterChange={(accountId) => {
+                setSelectedAccountFilter(accountId);
+                fetchTransactions(accountId);
+              }}
+              showSearchFilter={true}
+              searchQuery={homeSearchQuery}
+              onSearchChange={setHomeSearchQuery}
+              showLinkColumn={true}
+              showAccountsColumn={true}
+              maxRows={20}
+              emptyStateMessage={transactions.length === 0 ? "NO TRANSACTIONS // USE [+] NEW_TXN TO BEGIN" : "NO MATCHES FOUND // ADJUST FILTERS"}
+              editable={true}
+              onEditRequested={openEditModal}
+              onDataChanged={handleDataChanged}
+            />
+          )}
         </div>
       </main>
 
-      {/* Add Transaction Modal */}
+      {/* Transaction Modal - Same as before but with updated styling */}
       {showTransactionModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-md w-full">
-            <div className="px-6 py-4 border-b border-border">
-              <h3 className="text-lg font-semibold text-foreground">
-                {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="frosted-glass rounded-lg max-w-md w-full animate-slide-up-fade shadow-2xl">
+            <div className="px-6 py-4 border-b-2 border-primary/30 bg-primary/5">
+              <h3 className="mono text-sm font-bold tracking-wider">
+                {editingTransaction ? '[EDIT] TRANSACTION' : '[NEW] TRANSACTION'}
               </h3>
             </div>
 
             <form onSubmit={handleTransactionSubmit} className="p-6 space-y-4">
-              {/* Transaction Type Selector */}
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Transaction Type *
+                <label className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                  TYPE *
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     type="button"
                     variant={transactionFormData.transaction_type === 'Debit' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Debit' })}
-                    className={transactionFormData.transaction_type === 'Debit' ? 'bg-transaction-debit text-transaction-debit-foreground hover:bg-transaction-debit-hover border-transaction-debit-border' : ''}
+                    className={`mono text-xs ${transactionFormData.transaction_type === 'Debit' ? 'bg-transaction-debit text-transaction-debit-foreground border-transaction-debit-border' : ''}`}
                   >
-                    Debit
+                    DEBIT
                   </Button>
                   <Button
                     type="button"
                     variant={transactionFormData.transaction_type === 'Credit' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Credit' })}
-                    className={transactionFormData.transaction_type === 'Credit' ? 'bg-transaction-credit text-transaction-credit-foreground hover:bg-transaction-credit-hover border-transaction-credit-border' : ''}
+                    className={`mono text-xs ${transactionFormData.transaction_type === 'Credit' ? 'bg-transaction-credit text-transaction-credit-foreground border-transaction-credit-border' : ''}`}
                   >
-                    Credit
+                    CREDIT
                   </Button>
                   <Button
                     type="button"
                     variant={transactionFormData.transaction_type === 'Transfer' ? 'default' : 'outline'}
                     onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Transfer' })}
-                    className={transactionFormData.transaction_type === 'Transfer' ? 'bg-transaction-transfer text-transaction-transfer-foreground hover:bg-transaction-transfer-hover border-transaction-transfer-border' : ''}
+                    className={`mono text-xs ${transactionFormData.transaction_type === 'Transfer' ? 'bg-transaction-transfer text-transaction-transfer-foreground border-transaction-transfer-border' : ''}`}
                   >
-                    Transfer
+                    TRANSFER
                   </Button>
                 </div>
               </div>
 
-              {/* Conditional Account Fields */}
               {transactionFormData.transaction_type === 'Transfer' ? (
                 <>
-                  {/* Source Account for Transfer */}
                   <div>
-                    <label htmlFor="source-account" className="block text-sm font-medium text-muted-foreground mb-2">
-                      Source Account *
+                    <label htmlFor="source-account" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                      SOURCE_ACCOUNT *
                     </label>
                     <select
                       id="source-account"
                       required
                       value={transactionFormData.source_account_id}
                       onChange={(e) => setTransactionFormData({ ...transactionFormData, source_account_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     >
-                      <option value="">Select source account</option>
+                      <option value="">SELECT</option>
                       {accounts.map((account) => (
                         <option key={account.id} value={account.id}>
                           {account.name}
@@ -540,19 +596,18 @@ export default function Home() {
                     </select>
                   </div>
 
-                  {/* Target Account for Transfer */}
                   <div>
-                    <label htmlFor="target-account" className="block text-sm font-medium text-muted-foreground mb-2">
-                      Target Account *
+                    <label htmlFor="target-account" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                      TARGET_ACCOUNT *
                     </label>
                     <select
                       id="target-account"
                       required
                       value={transactionFormData.target_account_id}
                       onChange={(e) => setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     >
-                      <option value="">Select target account</option>
+                      <option value="">SELECT</option>
                       {accounts.map((account) => (
                         <option key={account.id} value={account.id}>
                           {account.name}
@@ -562,10 +617,9 @@ export default function Home() {
                   </div>
                 </>
               ) : (
-                /* Single Account field for Debit/Credit */
                 <div>
-                  <label htmlFor="account" className="block text-sm font-medium text-muted-foreground mb-2">
-                    Account *
+                  <label htmlFor="account" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                    ACCOUNT *
                   </label>
                   <select
                     id="account"
@@ -578,9 +632,9 @@ export default function Home() {
                         setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value });
                       }
                     }}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="">Select an account</option>
+                    <option value="">SELECT</option>
                     {accounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name}
@@ -591,8 +645,8 @@ export default function Home() {
               )}
 
               <div>
-                <label htmlFor="transaction-description" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Description *
+                <label htmlFor="transaction-description" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                  DESCRIPTION *
                 </label>
                 <input
                   type="text"
@@ -600,17 +654,17 @@ export default function Home() {
                   required
                   value={transactionFormData.description}
                   onChange={(e) => setTransactionFormData({ ...transactionFormData, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="e.g., Grocery shopping"
+                  className="w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Transaction description"
                 />
               </div>
 
               <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Amount *
+                <label htmlFor="amount" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                  AMOUNT *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-muted-foreground">
+                  <span className="absolute left-3 top-2 text-muted-foreground mono text-sm">
                     {(() => {
                       const accountId = transactionFormData.transaction_type === 'Credit'
                         ? transactionFormData.target_account_id
@@ -627,24 +681,24 @@ export default function Home() {
                     min="0"
                     value={transactionFormData.amount}
                     onChange={(e) => setTransactionFormData({ ...transactionFormData, amount: e.target.value })}
-                    className="w-full pl-8 pr-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="mono w-full pl-8 pr-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="0.00"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Category *
+                <label htmlFor="category" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                  CATEGORY *
                 </label>
                 <select
                   id="category"
                   required
                   value={transactionFormData.category_id}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="">Select a category</option>
+                  <option value="">SELECT</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -654,8 +708,8 @@ export default function Home() {
               </div>
 
               <div>
-                <label htmlFor="date" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Date *
+                <label htmlFor="date" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                  DATE *
                 </label>
                 <input
                   type="date"
@@ -663,22 +717,21 @@ export default function Home() {
                   required
                   value={transactionFormData.date}
                   onChange={(e) => setTransactionFormData({ ...transactionFormData, date: e.target.value })}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
-              {/* Link to Another Transaction */}
               <div className="border-t border-border pt-4">
-                <label className="block text-sm font-medium text-muted-foreground mb-2">
-                  Link to Transaction (Optional)
+                <label className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
+                  LINK_TO_TRANSACTION
                 </label>
                 {selectedLinkTransactionId ? (
-                  <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded-md">
-                    <div className="flex-1">
-                      <div className="text-sm text-primary-foreground">
+                  <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-primary-foreground truncate">
                         {transactions.find(t => t.id === selectedLinkTransactionId)?.description}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
+                      <div className="mono text-xs text-muted-foreground mt-1">
                         {new Date(transactions.find(t => t.id === selectedLinkTransactionId)?.date || '').toLocaleDateString()} -
                         ${transactions.find(t => t.id === selectedLinkTransactionId)?.amount.toFixed(2)}
                       </div>
@@ -688,9 +741,9 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedLinkTransactionId(null)}
-                      className="ml-3 text-xs text-destructive border-destructive hover:bg-destructive/10"
+                      className="ml-3 mono text-[10px] text-destructive border-destructive hover:bg-destructive/10"
                     >
-                      Remove
+                      REMOVE
                     </Button>
                   </div>
                 ) : (
@@ -698,14 +751,11 @@ export default function Home() {
                     type="button"
                     variant="outline"
                     onClick={() => setShowLinkSelectionModal(true)}
-                    className="w-full justify-start"
+                    className="mono w-full justify-start text-xs"
                   >
-                    Select transaction to link...
+                    [SELECT] TRANSACTION
                   </Button>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  Link this transaction to another (useful for transfers or refunds)
-                </p>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
@@ -727,14 +777,16 @@ export default function Home() {
                     setSelectedLinkTransactionId(null);
                   }}
                   disabled={submitting}
+                  className="mono text-xs"
                 >
-                  Cancel
+                  CANCEL
                 </Button>
                 <Button
                   type="submit"
                   disabled={submitting}
+                  className="mono text-xs bg-primary hover:bg-primary/90"
                 >
-                  {submitting ? (editingTransaction ? 'Updating...' : 'Adding...') : (editingTransaction ? 'Update Transaction' : 'Add Transaction')}
+                  {submitting ? 'PROCESSING...' : (editingTransaction ? 'UPDATE' : 'CREATE')}
                 </Button>
               </div>
             </form>
@@ -742,12 +794,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* Link Transaction Selection Modal */}
+      {/* Link Selection Modal */}
       {showLinkSelectionModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-4xl w-full max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground">Select Transaction to Link</h3>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="frosted-glass rounded-lg max-w-4xl w-full max-h-[80vh] flex flex-col animate-slide-up-fade shadow-2xl">
+            <div className="px-6 py-4 border-b-2 border-primary/30 bg-primary/5 flex items-center justify-between">
+              <h3 className="mono text-sm font-bold tracking-wider">[SELECT] TRANSACTION_TO_LINK</h3>
               <Button
                 variant="ghost"
                 size="sm"
@@ -756,12 +808,12 @@ export default function Home() {
                   setLinkSearchQuery('');
                   setLinkModalAccountFilter(null);
                 }}
+                className="mono text-xs"
               >
-                ✕
+                [X]
               </Button>
             </div>
 
-            {/* Transaction Table with integrated filters */}
             <div className="flex-1 overflow-auto">
               <div className="p-6">
                 <TransactionTable
@@ -784,18 +836,17 @@ export default function Home() {
                     setLinkModalAccountFilter(null);
                   }}
                   filterUnlinkedOnly={true}
-                  emptyStateMessage="No unlinked transactions found"
+                  emptyStateMessage="NO UNLINKED TRANSACTIONS FOUND"
                 />
               </div>
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-3 border-t border-border bg-muted/30">
-              <div className="text-sm text-muted-foreground">
-                Showing {transactions.filter(t => !t.link).filter(t =>
+              <div className="mono text-[10px] text-muted-foreground">
+                SHOWING {transactions.filter(t => !t.link).filter(t =>
                   linkSearchQuery === '' ||
                   t.description.toLowerCase().includes(linkSearchQuery.toLowerCase())
-                ).slice(0, 100).length} unlinked transactions
+                ).slice(0, 100).length} UNLINKED RECORDS
               </div>
             </div>
           </div>
