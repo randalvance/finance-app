@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import ConfirmButton from '@/components/ConfirmButton';
 
@@ -419,24 +418,7 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
-      <header className="glass backdrop-blur-xl border-b-2 border-primary/30 sticky top-0 z-50 scan-line-effect shadow-lg">
-        <div className="max-w-[1600px] mx-auto px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="mono text-xs px-3 py-2 rounded border border-border hover:border-primary hover:text-primary transition-all duration-200">
-                [←] BACK
-              </Link>
-              <div className="h-4 w-px bg-border"></div>
-              <h1 className="mono text-lg font-bold tracking-tight">
-                <span className="text-primary">&gt;</span> IMPORT_TRANSACTIONS
-              </h1>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-[1600px] mx-auto px-6 py-8">
+    <main className="max-w-[1600px] mx-auto px-6 py-8">
         {loading ? (
           <div className="glass-card rounded-lg p-12 text-center">
             <div className="mono text-sm text-muted-foreground animate-pulse">LOADING_DATA...</div>
@@ -769,9 +751,8 @@ export default function ImportPage() {
             )}
           </div>
         )}
-      </main>
 
-      {/* Raw Data Modal */}
+        {/* Raw Data Modal */}
       {showRawDataModal && selectedRawData && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-card rounded-lg shadow-2xl border border-border max-w-3xl w-full max-h-[80vh] flex flex-col">
@@ -817,6 +798,6 @@ export default function ImportPage() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

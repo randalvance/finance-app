@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, IBM_Plex_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import ClientLayout from "@/components/ClientLayout";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -51,7 +52,11 @@ export default function RootLayout({
         <body
           className={`${jetbrainsMono.variable} ${ibmPlexSans.variable} antialiased`}
         >
-          {children}
+          <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
+            <ClientLayout>
+              {children}
+            </ClientLayout>
+          </div>
         </body>
       </html>
     </ClerkProvider>

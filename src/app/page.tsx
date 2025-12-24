@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { UserButton } from '@clerk/nextjs';
+import { useLayout } from '@/components/ClientLayout';
 import TransactionTable from '@/components/TransactionTable';
 import { formatCurrency, getCurrencySymbol } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
@@ -67,6 +67,7 @@ interface Transaction {
 }
 
 export default function Home() {
+  const { setNewTransactionHandler } = useLayout();
   const [accounts, setAccounts] = useState<AccountWithStats[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -90,17 +91,12 @@ export default function Home() {
   const [showLinkSelectionModal, setShowLinkSelectionModal] = useState(false);
   const [linkSearchQuery, setLinkSearchQuery] = useState('');
   const [linkModalAccountFilter, setLinkModalAccountFilter] = useState<number | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
     fetchTransactions();
     fetchUnlinkedTransferCount();
-
-    // Update time every second
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
   }, []);
 
   const fetchAccounts = async () => {
@@ -156,7 +152,7 @@ export default function Home() {
     }
   };
 
-  const openTransactionModal = () => {
+  const openTransactionModal = useCallback(() => {
     if (accounts.length === 1) {
       setTransactionFormData({
         ...transactionFormData,
@@ -164,7 +160,13 @@ export default function Home() {
       });
     }
     setShowTransactionModal(true);
-  };
+  }, [accounts, transactionFormData]);
+
+  useEffect(() => {
+    // Register the new transaction handler with the layout
+    setNewTransactionHandler(openTransactionModal);
+    return () => setNewTransactionHandler(null);
+  }, [setNewTransactionHandler, openTransactionModal]);
 
   const openEditModal = (transaction: Transaction) => {
     setEditingTransaction(transaction);
@@ -331,56 +333,7 @@ export default function Home() {
   })();
 
   return (
-    <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
-      {/* Command Header */}
-      <header className="glass backdrop-blur-xl border-b-2 border-primary/30 sticky top-0 z-50 scan-line-effect shadow-lg">
-        <div className="max-w-[1600px] mx-auto px-6 py-3">
-          <div className="flex items-center justify-between">
-            {/* Left: Terminal-style branding */}
-            <div className="flex items-center space-x-4">
-              <div className="mono text-xs text-primary font-bold tracking-wider">
-                {currentTime.toLocaleTimeString('en-US', { hour12: false })}
-              </div>
-              <div className="h-4 w-px bg-border"></div>
-              <h1 className="mono text-lg font-bold tracking-tight">
-                <span className="text-primary">&gt;</span> FINANCIAL_TERMINAL
-                <span className="text-primary animate-pulse">_</span>
-              </h1>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={openTransactionModal}
-                className="mono text-xs font-bold tracking-wider terminal-border bg-primary hover:bg-primary/90"
-              >
-                [+] NEW_TXN
-              </Button>
-              <Link
-                href="/import"
-                className="mono text-xs px-3 py-2 rounded border border-border hover:border-secondary hover:text-secondary transition-all duration-200"
-              >
-                IMPORT
-              </Link>
-              <Link
-                href="/admin"
-                className="mono text-xs px-3 py-2 rounded border border-border hover:border-accent hover:text-accent transition-all duration-200"
-              >
-                ADMIN
-              </Link>
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8 ring-2 ring-primary hover:ring-secondary transition-all",
-                  },
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-[1600px] mx-auto px-6 py-8">
+    <main className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Dashboard Stats - Neo-brutalist Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
           {/* Primary Stat - Takes 2 columns */}
@@ -529,9 +482,8 @@ export default function Home() {
             />
           )}
         </div>
-      </main>
 
-      {/* Transaction Modal - Same as before but with updated styling */}
+        {/* Transaction Modal - Same as before but with updated styling */}
       {showTransactionModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="frosted-glass rounded-lg max-w-md w-full animate-slide-up-fade shadow-2xl">
@@ -852,6 +804,6 @@ export default function Home() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
