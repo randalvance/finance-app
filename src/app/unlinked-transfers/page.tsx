@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import TransactionTable from '@/components/TransactionTable';
 import EditTransactionModal from '@/components/EditTransactionModal';
 
@@ -106,29 +105,7 @@ export default function UnlinkedTransfersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
-      <header className="glass backdrop-blur-xl border-b-2 border-primary/30 sticky top-0 z-50 scan-line-effect shadow-lg">
-        <div className="max-w-[1600px] mx-auto px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="mono text-xs px-3 py-2 rounded border border-border hover:border-primary hover:text-primary transition-all duration-200">
-                [←] BACK
-              </Link>
-              <div className="h-4 w-px bg-border"></div>
-              <div>
-                <h1 className="mono text-lg font-bold tracking-tight">
-                  <span className="text-primary">&gt;</span> UNLINKED_TRANSFERS
-                </h1>
-                <p className="mono text-[10px] text-muted-foreground mt-0.5">
-                  Link bidirectional transactions
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-[1600px] mx-auto px-6 py-8">
+    <main className="max-w-[1600px] mx-auto px-6 py-8">
         {loading ? (
           <div className="glass-card rounded-lg p-12 text-center animate-slide-up-fade">
             <div className="mono text-sm text-muted-foreground animate-pulse">LOADING_TRANSFERS...</div>
@@ -167,9 +144,8 @@ export default function UnlinkedTransfersPage() {
             />
           </div>
         )}
-      </main>
 
-      <EditTransactionModal
+        <EditTransactionModal
         transaction={editingTransaction}
         accounts={accounts}
         categories={categories}
@@ -177,6 +153,6 @@ export default function UnlinkedTransfersPage() {
         onSaved={handleDataChanged}
         showLinkSelection={false}
       />
-    </div>
+    </main>
   );
 }
