@@ -58,6 +58,13 @@ interface TransactionTableProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   
+  showDateFilter?: boolean;
+  selectedDateFilter?: string | null;
+  customDateRange?: { startDate: string | null; endDate: string | null };
+  onDateFilterChange?: (preset: string | null) => void;
+  onCustomDateChange?: (range: { startDate: string | null; endDate: string | null }) => void;
+  onClearFilters?: () => void;
+  
   // Display options
   showLinkColumn?: boolean;
   showAccountsColumn?: boolean;
@@ -99,6 +106,12 @@ export default function TransactionTable({
   showSearchFilter = false,
   searchQuery = '',
   onSearchChange,
+  showDateFilter = false,
+  selectedDateFilter = null,
+  customDateRange = { startDate: null, endDate: null },
+  onDateFilterChange,
+  onCustomDateChange,
+  onClearFilters,
   showLinkColumn = false,
   showAccountsColumn = true,
   maxRows,
@@ -181,7 +194,7 @@ export default function TransactionTable({
   return (
     <div className="space-y-4">
       {/* Filters - Always visible when enabled */}
-      {(showAccountFilter || showSearchFilter) && (
+      {(showAccountFilter || showSearchFilter || showDateFilter) && (
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Account Filter */}
           {showAccountFilter && onAccountFilterChange && (
@@ -219,6 +232,64 @@ export default function TransactionTable({
                 placeholder="SEARCH..."
                 className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
               />
+            </div>
+          )}
+
+          {/* Date Filter */}
+          {showDateFilter && onDateFilterChange && (
+            <div className="flex-1">
+              <label htmlFor="date-filter" className="mono block text-[10px] font-bold text-primary mb-2 tracking-widest">
+                FILTER_DATE
+              </label>
+              <select
+                id="date-filter"
+                value={selectedDateFilter ?? ''}
+                onChange={(e) => onDateFilterChange(e.target.value || null)}
+                className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+              >
+                <option value="">ALL_TIME</option>
+                <option value="THIS_MONTH">THIS_MONTH</option>
+                <option value="LAST_MONTH">LAST_MONTH</option>
+                <option value="THIS_QUARTER">THIS_QUARTER</option>
+                <option value="LAST_QUARTER">LAST_QUARTER</option>
+                <option value="THIS_YEAR">THIS_YEAR</option>
+                <option value="LAST_YEAR">LAST_YEAR</option>
+                <option value="LAST_30_DAYS">LAST_30_DAYS</option>
+                <option value="LAST_90_DAYS">LAST_90_DAYS</option>
+                <option value="CUSTOM">CUSTOM_RANGE</option>
+              </select>
+
+              {/* Custom Date Range Inputs */}
+              {selectedDateFilter === 'CUSTOM' && onCustomDateChange && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <input
+                    type="date"
+                    value={customDateRange.startDate ?? ''}
+                    onChange={(e) => onCustomDateChange({ ...customDateRange, startDate: e.target.value || null })}
+                    placeholder="START"
+                    className="mono px-2 py-1 bg-input border border-border rounded text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                  />
+                  <input
+                    type="date"
+                    value={customDateRange.endDate ?? ''}
+                    onChange={(e) => onCustomDateChange({ ...customDateRange, endDate: e.target.value || null })}
+                    placeholder="END"
+                    className="mono px-2 py-1 bg-input border border-border rounded text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Clear Filters Button */}
+          {(selectedAccountFilter || searchQuery || selectedDateFilter) && onClearFilters && (
+            <div className="flex items-end">
+              <button
+                onClick={onClearFilters}
+                className="mono text-xs px-3 py-2 bg-destructive/20 text-destructive border border-destructive/50 rounded hover:bg-destructive/30 transition-all tracking-wider"
+              >
+                [CLEAR]
+              </button>
             </div>
           )}
         </div>
