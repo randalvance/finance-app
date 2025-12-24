@@ -54,15 +54,25 @@ export class ImportService {
       }
     });
 
-    // 5. Check for duplicate source columns
-    const sourceCounts = new Map<string, number>();
+    // 5. Check for duplicate source columns with exception for debit/credit pair
+    const sourceCounts = new Map<string, string[]>();
     mappings.forEach(m => {
-      sourceCounts.set(m.sourceColumn, (sourceCounts.get(m.sourceColumn) || 0) + 1);
+      if (!sourceCounts.has(m.sourceColumn)) {
+        sourceCounts.set(m.sourceColumn, []);
+      }
+      sourceCounts.get(m.sourceColumn)!.push(m.transactionField);
     });
 
-    sourceCounts.forEach((count, source) => {
-      if (count > 1) {
-        errors.push(`Source column "${source}" is mapped multiple times`);
+    sourceCounts.forEach((fields, source) => {
+      if (fields.length > 1) {
+        // Allow same source column for debit AND credit (signed amount column)
+        const isDebitCreditPair = fields.length === 2 &&
+                                   fields.includes('debit') &&
+                                   fields.includes('credit');
+
+        if (!isDebitCreditPair) {
+          errors.push(`Source column "${source}" is mapped multiple times`);
+        }
       }
     });
 
@@ -161,18 +171,41 @@ export class ImportService {
       let debitAmount: number | null = null;
       let creditAmount: number | null = null;
 
-      if (debitMapping) {
-        const debitStr = values[debitMapping.idx]?.trim();
-        debitAmount = debitStr ? this.parseAmount(debitStr) : null;
+      // Check if debit and credit point to the same source column (signed amount)
+      const isSameSourceColumn = debitMapping && creditMapping &&
+                                  debitMapping.idx === creditMapping.idx;
+
+      if (isSameSourceColumn) {
+        // Single signed amount column - use sign to determine debit vs credit
+        const amountStr = values[debitMapping!.idx]?.trim();
+        if (amountStr) {
+          const signedAmount = this.parseSignedAmount(amountStr);
+          if (signedAmount !== null) {
+            if (signedAmount < 0) {
+              debitAmount = Math.abs(signedAmount);
+              creditAmount = null;
+            } else if (signedAmount > 0) {
+              debitAmount = null;
+              creditAmount = signedAmount;
+            }
+            // signedAmount === 0, skip this row (both remain null)
+          }
+        }
+      } else {
+        // Separate debit and credit columns - original logic
+        if (debitMapping) {
+          const debitStr = values[debitMapping.idx]?.trim();
+          debitAmount = debitStr ? this.parseAmount(debitStr) : null;
+        }
+
+        if (creditMapping) {
+          const creditStr = values[creditMapping.idx]?.trim();
+          creditAmount = creditStr ? this.parseAmount(creditStr) : null;
+        }
       }
 
-      if (creditMapping) {
-        const creditStr = values[creditMapping.idx]?.trim();
-        creditAmount = creditStr ? this.parseAmount(creditStr) : null;
-      }
-
-      // Skip if both amounts are null or both are present
-      if ((!debitAmount && !creditAmount) || (debitAmount && creditAmount)) {
+      // Skip if both amounts are null or zero
+      if (!debitAmount && !creditAmount) {
         continue;
       }
 
@@ -236,6 +269,15 @@ export class ImportService {
     const cleaned = amountStr.replace(/[^0-9.-]/g, '');
     const parsed = parseFloat(cleaned);
     return isNaN(parsed) ? null : Math.abs(parsed);
+  }
+
+  /**
+   * Parse signed amount string to number (preserves sign)
+   */
+  private static parseSignedAmount(amountStr: string): number | null {
+    const cleaned = amountStr.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed; // Keep the sign!
   }
 
   /**
