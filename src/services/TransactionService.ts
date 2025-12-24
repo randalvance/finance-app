@@ -8,7 +8,8 @@ import {
   TransactionWithLink,
   TransactionType
 } from '@/types/transaction';
-import { eq, desc, and, inArray, or } from 'drizzle-orm';
+import { eq, desc, and, inArray, or, gte, lte } from 'drizzle-orm';
+import { calculateDateRange, type DatePreset } from '@/lib/dateUtils';
 
 export class TransactionService {
   /**
@@ -230,11 +231,14 @@ export class TransactionService {
 
   /**
    * Get all transactions with account AND link information
-   * Optionally filter by account ID
+   * Optionally filter by account ID and date range
    */
   static async getAllTransactionsWithLinks(
     userId: number,
-    accountId?: number
+    accountId?: number,
+    datePreset?: string,
+    customStartDate?: string,
+    customEndDate?: string
   ): Promise<TransactionWithLink[]> {
     // Build base query
     let query = db
@@ -254,20 +258,40 @@ export class TransactionService {
       })
       .from(transactions);
 
+    // Build where conditions
+    const conditions = [eq(transactions.userId, userId)];
+
     // Apply account filter if provided
     if (accountId !== undefined) {
-      query = query.where(
-        and(
-          eq(transactions.userId, userId),
-          or(
-            eq(transactions.sourceAccountId, accountId),
-            eq(transactions.targetAccountId, accountId)
-          )
-        )
-      ) as typeof query;
-    } else {
-      query = query.where(eq(transactions.userId, userId)) as typeof query;
+      conditions.push(
+        or(
+          eq(transactions.sourceAccountId, accountId),
+          eq(transactions.targetAccountId, accountId)
+        )!
+      );
     }
+
+    // Apply date filter if provided
+    if (datePreset) {
+      let dateRange;
+      if (datePreset === 'CUSTOM' && customStartDate && customEndDate) {
+        dateRange = { startDate: customStartDate, endDate: customEndDate };
+      } else if (datePreset !== 'CUSTOM') {
+        dateRange = calculateDateRange(datePreset as DatePreset);
+      }
+
+      if (dateRange) {
+        conditions.push(
+          and(
+            gte(transactions.date, dateRange.startDate),
+            lte(transactions.date, dateRange.endDate)
+          )!
+        );
+      }
+    }
+
+    // Apply where conditions
+    query = query.where(and(...conditions)) as typeof query;
 
     const result = await query.orderBy(desc(transactions.date), desc(transactions.createdAt));
 

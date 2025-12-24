@@ -9,10 +9,16 @@ export async function GET(request: NextRequest) {
     const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get('accountId');
+    const datePreset = searchParams.get('datePreset');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
 
     const transactions = await TransactionService.getAllTransactionsWithLinks(
       userId,
-      accountId ? parseInt(accountId) : undefined
+      accountId ? parseInt(accountId) : undefined,
+      datePreset || undefined,
+      startDate || undefined,
+      endDate || undefined
     );
 
     return NextResponse.json(transactions);

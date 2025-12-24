@@ -86,6 +86,11 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<number | null>(null);
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
+  const [customDateRange, setCustomDateRange] = useState<{
+    startDate: string | null;
+    endDate: string | null;
+  }>({ startDate: null, endDate: null });
   const [unlinkedTransferCount, setUnlinkedTransferCount] = useState(0);
   const [selectedLinkTransactionId, setSelectedLinkTransactionId] = useState<number | null>(null);
   const [showLinkSelectionModal, setShowLinkSelectionModal] = useState(false);
@@ -125,11 +130,23 @@ export default function Home() {
     }
   };
 
-  const fetchTransactions = async (accountId?: number | null) => {
+  const fetchTransactions = async (
+    accountId?: number | null,
+    datePreset?: string | null,
+    customRange?: { startDate: string | null; endDate: string | null }
+  ) => {
     try {
-      const url = accountId
-        ? `/api/transactions?accountId=${accountId}`
-        : '/api/transactions';
+      const params = new URLSearchParams();
+      if (accountId) params.append('accountId', accountId.toString());
+      if (datePreset) {
+        params.append('datePreset', datePreset);
+        if (datePreset === 'CUSTOM' && customRange?.startDate && customRange?.endDate) {
+          params.append('startDate', customRange.startDate);
+          params.append('endDate', customRange.endDate);
+        }
+      }
+
+      const url = `/api/transactions${params.toString() ? '?' + params.toString() : ''}`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -184,9 +201,38 @@ export default function Home() {
   };
 
   const handleDataChanged = () => {
-    fetchTransactions(selectedAccountFilter);
+    fetchTransactions(selectedAccountFilter, selectedDateFilter, customDateRange);
     fetchAccounts();
     fetchUnlinkedTransferCount();
+  };
+
+  const handleDateFilterChange = (preset: string | null) => {
+    setSelectedDateFilter(preset);
+    if (preset !== 'CUSTOM') {
+      setCustomDateRange({ startDate: null, endDate: null });
+      fetchTransactions(selectedAccountFilter, preset, undefined);
+    }
+  };
+
+  const handleCustomDateChange = (range: { startDate: string | null; endDate: string | null }) => {
+    setCustomDateRange(range);
+    // Only fetch if both dates are filled
+    if (range.startDate && range.endDate) {
+      // Validate that start date is before or equal to end date
+      if (range.startDate > range.endDate) {
+        alert('Start date must be before or equal to end date');
+        return;
+      }
+      fetchTransactions(selectedAccountFilter, 'CUSTOM', range);
+    }
+  };
+
+  const handleClearFilters = () => {
+    setSelectedAccountFilter(null);
+    setHomeSearchQuery('');
+    setSelectedDateFilter(null);
+    setCustomDateRange({ startDate: null, endDate: null });
+    fetchTransactions();
   };
 
   const handleCategoryChange = (categoryId: string) => {
@@ -467,11 +513,17 @@ export default function Home() {
               selectedAccountFilter={selectedAccountFilter}
               onAccountFilterChange={(accountId) => {
                 setSelectedAccountFilter(accountId);
-                fetchTransactions(accountId);
+                fetchTransactions(accountId, selectedDateFilter, customDateRange);
               }}
               showSearchFilter={true}
               searchQuery={homeSearchQuery}
               onSearchChange={setHomeSearchQuery}
+              showDateFilter={true}
+              selectedDateFilter={selectedDateFilter}
+              customDateRange={customDateRange}
+              onDateFilterChange={handleDateFilterChange}
+              onCustomDateChange={handleCustomDateChange}
+              onClearFilters={handleClearFilters}
               showLinkColumn={true}
               showAccountsColumn={true}
               maxRows={20}
