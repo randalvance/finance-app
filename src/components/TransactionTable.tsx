@@ -68,6 +68,7 @@ interface TransactionTableProps {
   // Display options
   showLinkColumn?: boolean;
   showAccountsColumn?: boolean;
+  showCategoryColumn?: boolean;
   maxRows?: number;
   emptyStateMessage?: string;
   
@@ -114,6 +115,7 @@ export default function TransactionTable({
   onClearFilters,
   showLinkColumn = false,
   showAccountsColumn = true,
+  showCategoryColumn = true,
   maxRows,
   emptyStateMessage = 'No transactions found',
   actionType = 'none',
@@ -329,9 +331,11 @@ export default function TransactionTable({
                     ACCOUNTS
                   </th>
                 )}
-                <th className="mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest">
-                  CATEGORY
-                </th>
+                {showCategoryColumn && (
+                  <th className="mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest">
+                    CATEGORY
+                  </th>
+                )}
                 {showLinkColumn && (
                   <th className="mono px-6 py-3 text-center text-[10px] font-bold text-primary uppercase tracking-widest">
                     LINK
@@ -400,11 +404,13 @@ export default function TransactionTable({
                       )}
                     </td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-muted-foreground">
-                      {transaction.category?.name || 'Uncategorized'}
-                    </span>
-                  </td>
+                  {showCategoryColumn && (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-muted-foreground">
+                        {transaction.category?.name || 'Uncategorized'}
+                      </span>
+                    </td>
+                  )}
                   {showLinkColumn && (
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       {transaction.link && (

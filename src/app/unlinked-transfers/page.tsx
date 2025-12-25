@@ -161,14 +161,15 @@ export default function UnlinkedTransfersPage() {
         )}
 
         <EditTransactionModal
-        transaction={editingTransaction}
-        accounts={accounts}
-        categories={categories}
-        allTransactions={allTransactions}
-        onClose={() => setEditingTransaction(null)}
-        onSaved={handleDataChanged}
-        showLinkSelection={true}
-      />
+          transaction={editingTransaction}
+          accounts={accounts}
+          categories={categories}
+          allTransactions={allTransactions}
+          isOpen={!!editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          onSaved={handleDataChanged}
+          showLinkSelection={true}
+        />
     </main>
   );
 }
