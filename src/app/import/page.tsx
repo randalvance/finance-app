@@ -272,12 +272,12 @@ export default function ImportPage() {
     setBulkCategoryId(null);
   };
 
-  // Bulk source account update - skips Credit and TransferIn (Debit and TransferOut need source account)
+  // Bulk source account update - skips Credit only (Debit, TransferOut, and TransferIn need source account)
   const handleBulkSourceAccountUpdate = () => {
     if (!bulkSourceAccountId || selectedTempIds.size === 0) return;
 
     setPreviewTransactions(prev => prev.map(tx => {
-      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Credit' && tx.transactionType !== 'TransferIn') {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Credit') {
         return { ...tx, sourceAccountId: bulkSourceAccountId };
       }
       return tx;
@@ -286,12 +286,12 @@ export default function ImportPage() {
     setBulkSourceAccountId(null);
   };
 
-  // Bulk target account update - skips Debit and TransferOut (Credit and TransferIn need target account)
+  // Bulk target account update - skips Debit only (Credit, TransferOut, and TransferIn need target account)
   const handleBulkTargetAccountUpdate = () => {
     if (!bulkTargetAccountId || selectedTempIds.size === 0) return;
 
     setPreviewTransactions(prev => prev.map(tx => {
-      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Debit' && tx.transactionType !== 'TransferOut') {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Debit') {
         return { ...tx, targetAccountId: bulkTargetAccountId };
       }
       return tx;
@@ -813,12 +813,19 @@ export default function ImportPage() {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {previewTransactions.map((tx) => (
-                        <tr key={tx.tempId} className="hover:bg-muted/30 transition-colors">
+                        <tr
+                          key={tx.tempId}
+                          className="hover:bg-muted/30 transition-colors cursor-pointer"
+                          onClick={() => handleToggleSelection(tx.tempId)}
+                        >
                           <td className="px-4 py-3 text-center">
                             <input
                               type="checkbox"
                               checked={selectedTempIds.has(tx.tempId)}
-                              onChange={() => handleToggleSelection(tx.tempId)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleToggleSelection(tx.tempId);
+                              }}
                               disabled={currentImportRecord?.status === 'completed'}
                             />
                           </td>
@@ -852,7 +859,10 @@ export default function ImportPage() {
                             ) : (
                               <select
                                 value={categoryMappings[tx.tempId] || ''}
-                                onChange={(e) => handleCategoryChange(tx.tempId, parseInt(e.target.value))}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleCategoryChange(tx.tempId, parseInt(e.target.value));
+                                }}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                                   !categoryMappings[tx.tempId] || categoryMappings[tx.tempId] === 0
                                     ? 'border-destructive'
@@ -876,7 +886,10 @@ export default function ImportPage() {
                             ) : (
                               <select
                                 value={tx.sourceAccountId || ''}
-                                onChange={(e) => handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null);
+                                }}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                                   (tx.transactionType === 'Debit' || tx.transactionType === 'TransferOut') && !tx.sourceAccountId
                                     ? 'border-destructive'
@@ -901,7 +914,10 @@ export default function ImportPage() {
                             ) : (
                               <select
                                 value={tx.targetAccountId || ''}
-                                onChange={(e) => handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null);
+                                }}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                                   (tx.transactionType === 'Credit' || tx.transactionType === 'TransferIn') && !tx.targetAccountId
                                     ? 'border-destructive'
@@ -920,7 +936,8 @@ export default function ImportPage() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
                             <Button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedRawData(tx.rawCsvRow || null);
                                 setShowRawDataModal(true);
                               }}
@@ -933,11 +950,13 @@ export default function ImportPage() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
                             {currentImportRecord?.status !== 'completed' && (
-                              <ConfirmButton
-                                buttonText="Delete"
-                                onConfirm={() => handleDeletePreviewRow(tx.tempId)}
-                                buttonClassName="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm"
-                              />
+                              <span onClick={(e) => e.stopPropagation()}>
+                                <ConfirmButton
+                                  buttonText="Delete"
+                                  onConfirm={() => handleDeletePreviewRow(tx.tempId)}
+                                  buttonClassName="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm"
+                                />
+                              </span>
                             )}
                           </td>
                         </tr>
