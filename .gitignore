@@ -46,3 +46,6 @@ temp
 
 # agent logs
 .agent_log
+
+# playwright mcp temp files
+.playwright-mcp

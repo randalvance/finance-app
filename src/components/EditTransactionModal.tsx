@@ -1,15 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { getCurrencySymbol } from '@/lib/currency';
+import type { Currency } from '@/db/schema';
+import TransactionTable from '@/components/TransactionTable';
 
 interface Account {
   id: number;
   name: string;
+  color?: string;
+  currency?: Currency | string;
 }
 
 interface Category {
   id: number;
   name: string;
+  color: string;
   defaultTransactionType?: 'Debit' | 'Credit' | 'Transfer';
 }
 
@@ -24,8 +31,22 @@ interface Transaction {
   category?: {
     id: number;
     name: string;
+    color: string | null;
   };
   date: string;
+  createdAt: string;
+  sourceAccount?: {
+    id: number;
+    name: string;
+    color: string;
+    currency?: Currency;
+  };
+  targetAccount?: {
+    id: number;
+    name: string;
+    color: string;
+    currency?: Currency;
+  };
   link?: {
     id: number;
     linkedTransactionId: number;
@@ -33,12 +54,18 @@ interface Transaction {
 }
 
 interface EditTransactionModalProps {
-  transaction: Transaction | null;
+  transaction: Transaction | null;  // null = create mode, object = edit mode
   accounts: Account[];
   categories: Category[];
   allTransactions?: Transaction[];
+  
+  isOpen: boolean;
   onClose: () => void;
   onSaved: () => void;
+  
+  // Optional defaults for create mode
+  defaultSourceAccountId?: number;
+  
   showLinkSelection?: boolean;
 }
 
@@ -47,8 +74,10 @@ export default function EditTransactionModal({
   accounts,
   categories,
   allTransactions = [],
+  isOpen,
   onClose,
   onSaved,
+  defaultSourceAccountId,
   showLinkSelection = false
 }: EditTransactionModalProps) {
   const [formData, setFormData] = useState({
@@ -62,10 +91,17 @@ export default function EditTransactionModal({
   });
   const [submitting, setSubmitting] = useState(false);
   const [selectedLinkTransactionId, setSelectedLinkTransactionId] = useState<number | null>(null);
+
+  // View state for iOS-style slide navigation
+  const [currentView, setCurrentView] = useState<'form' | 'linkSelector'>('form');
+  const [linkSearchQuery, setLinkSearchQuery] = useState('');
+  const [linkModalAccountFilter, setLinkModalAccountFilter] = useState<number | null>(null);
   const [filterByDate, setFilterByDate] = useState(true);
 
+  // Initialize form data when transaction changes or for create mode
   useEffect(() => {
     if (transaction) {
+      // Edit mode
       setFormData({
         transaction_type: transaction.transactionType,
         source_account_id: transaction.sourceAccountId?.toString() || '',
@@ -76,10 +112,47 @@ export default function EditTransactionModal({
         date: transaction.date
       });
       setSelectedLinkTransactionId(transaction.link?.linkedTransactionId || null);
+    } else {
+      // Create mode - reset to defaults
+      setFormData({
+        transaction_type: 'Debit',
+        source_account_id: defaultSourceAccountId?.toString() || '',
+        target_account_id: '',
+        description: '',
+        amount: '',
+        category_id: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      setSelectedLinkTransactionId(null);
     }
-  }, [transaction]);
+    // Reset view to form when modal opens/transaction changes
+    setCurrentView('form');
+  }, [transaction, defaultSourceAccountId]);
 
-  if (!transaction) return null;
+  if (!isOpen) return null;
+  
+  // Get currency symbol based on selected account
+  const getCurrencySymbolForAccount = () => {
+    let accountId: number | null = null;
+    
+    if (formData.transaction_type === 'Debit' && formData.source_account_id) {
+      accountId = parseInt(formData.source_account_id);
+    } else if (formData.transaction_type === 'Credit' && formData.target_account_id) {
+      accountId = parseInt(formData.target_account_id);
+    } else if (formData.transaction_type === 'Transfer' && formData.source_account_id) {
+      accountId = parseInt(formData.source_account_id);
+    }
+    
+    if (accountId) {
+      const account = accounts.find(a => a.id === accountId);
+      if (account?.currency) {
+        return getCurrencySymbol(account.currency as Currency);
+      }
+    }
+    
+    return '$'; // Default to dollar
+  };
+
 
   const handleCategoryChange = (categoryId: string) => {
     const selectedCategory = categories.find(c => c.id.toString() === categoryId);
@@ -126,8 +199,12 @@ export default function EditTransactionModal({
         }
       }
 
-      const response = await fetch(`/api/transactions/${transaction.id}`, {
-        method: 'PUT',
+      const isEditing = transaction !== null;
+      const url = isEditing ? `/api/transactions/${transaction.id}` : '/api/transactions';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -143,14 +220,16 @@ export default function EditTransactionModal({
       });
 
       if (response.ok) {
+        const savedTransaction = await response.json();
+
         // Handle link changes if link selection is enabled
         if (showLinkSelection) {
-          const originalLinkId = transaction.link?.linkedTransactionId;
+          const originalLinkId = transaction?.link?.linkedTransactionId;
           const linkChanged = originalLinkId !== selectedLinkTransactionId;
 
-          if (linkChanged) {
-            // Delete old link if it existed
-            if (transaction.link) {
+          if (!isEditing || linkChanged) {
+            // Delete old link if it existed and changed
+            if (isEditing && transaction?.link && linkChanged) {
               try {
                 await fetch(`/api/transactions/links/${transaction.link.id}`, {
                   method: 'DELETE',
@@ -169,18 +248,18 @@ export default function EditTransactionModal({
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    transaction_1_id: transaction.id,
+                    transaction_1_id: savedTransaction.id,
                     transaction_2_id: selectedLinkTransactionId,
                   }),
                 });
 
                 if (!linkResponse.ok) {
                   const linkError = await linkResponse.json();
-                  alert(`Transaction updated but linking failed: ${linkError.error}`);
+                  alert(`Transaction ${isEditing ? 'updated' : 'created'} but linking failed: ${linkError.error}`);
                 }
               } catch (linkErr) {
                 console.error('Error creating link:', linkErr);
-                alert('Transaction updated but linking failed');
+                alert(`Transaction ${isEditing ? 'updated' : 'created'} but linking failed`);
               }
             }
           }
@@ -190,63 +269,118 @@ export default function EditTransactionModal({
         onClose();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to update transaction');
+        alert(error.error || `Failed to ${isEditing ? 'update' : 'create'} transaction`);
       }
     } catch (error) {
       console.error('Error saving transaction:', error);
-      alert('Failed to update transaction');
+      alert(`Failed to ${transaction ? 'update' : 'create'} transaction`);
     } finally {
       setSubmitting(false);
     }
   };
 
+
+  // Get filtered transactions for link selector
+  const getFilteredTransactions = () => {
+    return allTransactions.filter(t => {
+      // Exclude current transaction
+      if (transaction && t.id === transaction.id) {
+        return false;
+      }
+      // Filter out already linked transactions
+      if (t.link) {
+        return false;
+      }
+      // Filter by date if enabled
+      if (filterByDate && t.date !== formData.date) {
+        return false;
+      }
+      // Filter by search query
+      if (linkSearchQuery && !t.description.toLowerCase().includes(linkSearchQuery.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-card rounded-lg shadow-2xl border border-border max-w-md w-full">
-        <div className="px-6 py-4 border-b border-border">
-          <h3 className="text-lg font-semibold text-foreground">Edit Transaction</h3>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className={`frosted-glass rounded-lg w-full h-[90vh] flex flex-col animate-slide-up-fade shadow-2xl overflow-hidden ${
+        currentView === 'linkSelector' ? 'max-w-6xl' : 'max-w-md'
+      }`}>
+        {/* Header - changes based on current view */}
+        <div className="px-6 border-b-2 border-primary/30 bg-primary/5 flex-shrink-0 h-[60px] flex items-center">
+          {currentView === 'linkSelector' ? (
+            <div className="flex items-center gap-3 w-full">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentView('form')}
+                className="mono text-xs -ml-2 h-8"
+              >
+                ← BACK
+              </Button>
+              <h3 className="mono text-sm font-bold tracking-wider">
+                [SELECT] TRANSACTION_TO_LINK
+              </h3>
+            </div>
+          ) : (
+            <h3 className="mono text-sm font-bold tracking-wider">
+              {transaction ? '[EDIT] TRANSACTION' : '[NEW] TRANSACTION'}
+            </h3>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Content area with two sliding panels */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Form Panel */}
+          <div className={`absolute inset-0 transition-transform duration-300 ${
+            currentView === 'linkSelector' ? '-translate-x-full' : 'translate-x-0'
+          }`}>
+            <form onSubmit={handleSubmit} className="h-full overflow-y-auto p-6 space-y-4">
           {/* Transaction Type Selector */}
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Transaction Type *
+            <label className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+              TRANSACTION_TYPE *
             </label>
             <div className="grid grid-cols-3 gap-2">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setFormData({ ...formData, transaction_type: 'Debit' })}
-                className={`px-4 py-2 rounded-md border transition-all ${
+                className={`mono text-xs ${
                   formData.transaction_type === 'Debit'
-                    ? 'bg-red-900/30 border-red-500 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
-                    : 'bg-muted/30 border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
+                    ? 'bg-red-900/30 border-red-500 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)] hover:bg-red-900/40'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Debit
-              </button>
-              <button
+                DEBIT
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setFormData({ ...formData, transaction_type: 'Credit' })}
-                className={`px-4 py-2 rounded-md border transition-all ${
+                className={`mono text-xs ${
                   formData.transaction_type === 'Credit'
-                    ? 'bg-green-900/30 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.2)]'
-                    : 'bg-muted/30 border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
+                    ? 'bg-green-900/30 border-green-500 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.2)] hover:bg-green-900/40'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Credit
-              </button>
-              <button
+                CREDIT
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setFormData({ ...formData, transaction_type: 'Transfer' })}
-                className={`px-4 py-2 rounded-md border transition-all ${
+                className={`mono text-xs ${
                   formData.transaction_type === 'Transfer'
-                    ? 'bg-blue-900/30 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)]'
-                    : 'bg-muted/30 border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground'
+                    ? 'bg-blue-900/30 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)] hover:bg-blue-900/40'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Transfer
-              </button>
+                TRANSFER
+              </Button>
             </div>
           </div>
 
@@ -254,17 +388,17 @@ export default function EditTransactionModal({
           {formData.transaction_type === 'Transfer' ? (
             <>
               <div>
-                <label htmlFor="source-account" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Source Account *
+                <label htmlFor="source-account" className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+                  SOURCE_ACCOUNT *
                 </label>
                 <select
                   id="source-account"
                   required
                   value={formData.source_account_id}
                   onChange={(e) => setFormData({ ...formData, source_account_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2 bg-background/50 border border-border rounded mono text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
-                  <option value="">Select source account</option>
+                  <option value="">SELECT_SOURCE_ACCOUNT</option>
                   {accounts.map((account) => (
                     <option key={account.id} value={account.id}>
                       {account.name}
@@ -274,17 +408,17 @@ export default function EditTransactionModal({
               </div>
 
               <div>
-                <label htmlFor="target-account" className="block text-sm font-medium text-muted-foreground mb-2">
-                  Target Account *
+                <label htmlFor="target-account" className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+                  TARGET_ACCOUNT *
                 </label>
                 <select
                   id="target-account"
                   required
                   value={formData.target_account_id}
                   onChange={(e) => setFormData({ ...formData, target_account_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-3 py-2 bg-background/50 border border-border rounded mono text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
-                  <option value="">Select target account</option>
+                  <option value="">SELECT_TARGET_ACCOUNT</option>
                   {accounts.map((account) => (
                     <option key={account.id} value={account.id}>
                       {account.name}
@@ -295,8 +429,8 @@ export default function EditTransactionModal({
             </>
           ) : (
             <div>
-              <label htmlFor="account" className="block text-sm font-medium text-muted-foreground mb-2">
-                Account *
+              <label htmlFor="account" className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+                ACCOUNT *
               </label>
               <select
                 id="account"
@@ -309,9 +443,9 @@ export default function EditTransactionModal({
                     setFormData({ ...formData, target_account_id: e.target.value });
                   }
                 }}
-                className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full px-3 py-2 bg-background/50 border border-border rounded mono text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
-                <option value="">Select an account</option>
+                <option value="">SELECT_AN_ACCOUNT</option>
                 {accounts.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.name}
@@ -322,8 +456,8 @@ export default function EditTransactionModal({
           )}
 
           <div>
-            <label htmlFor="transaction-description" className="block text-sm font-medium text-muted-foreground mb-2">
-              Description *
+            <label htmlFor="transaction-description" className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+              DESCRIPTION *
             </label>
             <input
               type="text"
@@ -331,17 +465,19 @@ export default function EditTransactionModal({
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="e.g., Grocery shopping"
+              className="w-full px-3 py-2 bg-background/50 border border-border rounded mono text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="TRANSACTION_DESCRIPTION"
             />
           </div>
 
           <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-muted-foreground mb-2">
-              Amount *
+            <label htmlFor="amount" className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+              AMOUNT *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2 text-muted-foreground">$</span>
+              <span className="absolute left-3 top-2 mono text-xs text-muted-foreground">
+                {getCurrencySymbolForAccount()}
+              </span>
               <input
                 type="number"
                 id="amount"
@@ -350,24 +486,24 @@ export default function EditTransactionModal({
                 min="0"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                className="w-full pl-8 pr-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full pl-8 pr-3 py-2 bg-background/50 border border-border rounded mono text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="0.00"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-muted-foreground mb-2">
-              Category *
+            <label htmlFor="category" className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+              CATEGORY *
             </label>
             <select
               id="category"
               required
               value={formData.category_id}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 bg-background/50 border border-border rounded mono text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
-              <option value="">Select a category</option>
+              <option value="">SELECT_A_CATEGORY</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -377,8 +513,8 @@ export default function EditTransactionModal({
           </div>
 
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-muted-foreground mb-2">
-              Date *
+            <label htmlFor="date" className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+              DATE *
             </label>
             <input
               type="date"
@@ -386,90 +522,149 @@ export default function EditTransactionModal({
               required
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full px-3 py-2 bg-background/50 border border-border rounded mono text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
 
           {/* Link Selection - only show if enabled */}
           {showLinkSelection && (
             <div className="border-t border-border pt-4">
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Link to Transaction (Optional)
+              <label className="mono text-xs text-muted-foreground tracking-wider block mb-2">
+                LINK_TO_TRANSACTION
               </label>
               {selectedLinkTransactionId ? (
-                <div className="flex items-center justify-between p-3 bg-blue-900/20 border border-blue-500/30 rounded-md">
-                  <div className="flex-1">
-                    <div className="text-sm text-blue-300">
-                      {allTransactions.find(t => t.id === selectedLinkTransactionId)?.description}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-primary-foreground truncate">
+                        {allTransactions.find(t => t.id === selectedLinkTransactionId)?.description}
+                      </div>
+                      <div className="mono text-xs text-muted-foreground mt-1">
+                        {allTransactions.find(t => t.id === selectedLinkTransactionId) && (
+                          <>
+                            {new Date(allTransactions.find(t => t.id === selectedLinkTransactionId)!.date).toLocaleDateString()} -
+                            ${allTransactions.find(t => t.id === selectedLinkTransactionId)!.amount.toFixed(2)}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-xs text-blue-400 mt-1">
-                      {new Date(allTransactions.find(t => t.id === selectedLinkTransactionId)?.date || '').toLocaleDateString()} -
-                      ${allTransactions.find(t => t.id === selectedLinkTransactionId)?.amount.toFixed(2)}
-                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedLinkTransactionId(null)}
+                      className="mono text-[10px] text-destructive"
+                    >
+                      ✕
+                    </Button>
                   </div>
-                  <button
+                  <Button
                     type="button"
-                    onClick={() => setSelectedLinkTransactionId(null)}
-                    className="ml-3 text-xs px-2 py-1 text-destructive-foreground border border-destructive rounded hover:bg-destructive/20"
+                    variant="outline"
+                    onClick={() => setCurrentView('linkSelector')}
+                    className="mono w-full justify-between text-xs"
                   >
-                    Remove
-                  </button>
+                    <span>[CHANGE] LINKED TRANSACTION</span>
+                    <span>→</span>
+                  </Button>
                 </div>
               ) : (
-                <>
-                  <div className="flex items-center space-x-2 mb-3">
-                    <input
-                      type="checkbox"
-                      id="filter-by-date"
-                      checked={filterByDate}
-                      onChange={(e) => setFilterByDate(e.target.checked)}
-                      className="rounded border-border"
-                    />
-                    <label htmlFor="filter-by-date" className="text-xs text-muted-foreground">
-                      Only show transactions from {new Date(formData.date).toLocaleDateString()}
-                    </label>
-                  </div>
-                  <select
-                    value=""
-                    onChange={(e) => setSelectedLinkTransactionId(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Select transaction to link...</option>
-                    {allTransactions
-                      .filter(t => {
-                        if (t.id === transaction.id) return false;
-                        if (filterByDate && t.date !== formData.date) return false;
-                        return true;
-                      })
-                      .map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.description} - {new Date(t.date).toLocaleDateString()} - ${t.amount.toFixed(2)}
-                        </option>
-                      ))}
-                  </select>
-                </>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentView('linkSelector')}
+                  className="mono w-full justify-between text-xs"
+                >
+                  <span>[SELECT] TRANSACTION</span>
+                  <span>→</span>
+                </Button>
               )}
             </div>
           )}
 
           <div className="flex justify-end space-x-3 pt-4">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
               disabled={submitting}
+              className="mono text-xs"
             >
-              Cancel
-            </button>
-            <button
+              CANCEL
+            </Button>
+            <Button
               type="submit"
               disabled={submitting}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+              className="mono text-xs bg-primary hover:bg-primary/90"
             >
-              {submitting ? 'Updating...' : 'Update Transaction'}
-            </button>
+              {submitting ? 'PROCESSING...' : (transaction ? 'UPDATE' : 'CREATE')}
+            </Button>
           </div>
         </form>
+          </div>
+
+          {/* Link Selector Panel */}
+          <div className={`absolute inset-0 transition-transform duration-300 ${
+            currentView === 'linkSelector' ? 'translate-x-0' : 'translate-x-full'
+          }`}>
+            <div className="h-full overflow-hidden flex flex-col">
+              {/* Date filter checkbox at top */}
+              <div className="px-6 pt-6 pb-2 flex-shrink-0">
+                {formData.date && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="filterByDate"
+                      checked={filterByDate}
+                      onChange={(e) => setFilterByDate(e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    <label htmlFor="filterByDate" className="mono text-xs text-muted-foreground cursor-pointer">
+                      Only show transactions from {new Date(formData.date).toLocaleDateString()}
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Full TransactionTable */}
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
+                <div className="overflow-x-auto">
+                  <TransactionTable
+                    transactions={getFilteredTransactions()}
+                    accounts={accounts}
+                    showAccountFilter={true}
+                    selectedAccountFilter={linkModalAccountFilter}
+                    onAccountFilterChange={setLinkModalAccountFilter}
+                    showSearchFilter={true}
+                    searchQuery={linkSearchQuery}
+                    onSearchChange={setLinkSearchQuery}
+                    showLinkColumn={false}
+                    showAccountsColumn={false}
+                    showCategoryColumn={false}
+                    maxRows={100}
+                    actionType="select"
+                    onSelectTransaction={(id) => {
+                      setSelectedLinkTransactionId(id);
+                      setCurrentView('form');
+                    }}
+                    filterUnlinkedOnly={true}
+                    emptyStateMessage="NO UNLINKED TRANSACTIONS FOUND"
+                  />
+                </div>
+              </div>
+
+              {/* Record count footer */}
+              <div className="px-6 py-3 border-t border-border bg-muted/30 flex-shrink-0">
+                <div className="mono text-[10px] text-muted-foreground">
+                  SHOWING {getFilteredTransactions().filter(t => !t.link).filter(t =>
+                    linkSearchQuery === '' ||
+                    t.description.toLowerCase().includes(linkSearchQuery.toLowerCase())
+                  ).slice(0, 100).length} UNLINKED RECORDS
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

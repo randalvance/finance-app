@@ -4,9 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useLayout } from '@/components/ClientLayout';
 import TransactionTable from '@/components/TransactionTable';
-import { formatCurrency, getCurrencySymbol } from '@/lib/currency';
+import EditTransactionModal from '@/components/EditTransactionModal';
+import { formatCurrency } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AccountWithStats {
@@ -74,16 +74,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [transactionFormData, setTransactionFormData] = useState({
-    transaction_type: 'Debit' as 'Debit' | 'Credit' | 'Transfer',
-    source_account_id: '',
-    target_account_id: '',
-    description: '',
-    amount: '',
-    category_id: '',
-    date: new Date().toISOString().split('T')[0]
-  });
-  const [submitting, setSubmitting] = useState(false);
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<number | null>(null);
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
@@ -92,10 +82,6 @@ export default function Home() {
     endDate: string | null;
   }>({ startDate: null, endDate: null });
   const [unlinkedTransferCount, setUnlinkedTransferCount] = useState(0);
-  const [selectedLinkTransactionId, setSelectedLinkTransactionId] = useState<number | null>(null);
-  const [showLinkSelectionModal, setShowLinkSelectionModal] = useState(false);
-  const [linkSearchQuery, setLinkSearchQuery] = useState('');
-  const [linkModalAccountFilter, setLinkModalAccountFilter] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAccounts();
@@ -170,14 +156,9 @@ export default function Home() {
   };
 
   const openTransactionModal = useCallback(() => {
-    if (accounts.length === 1) {
-      setTransactionFormData({
-        ...transactionFormData,
-        source_account_id: accounts[0].id.toString()
-      });
-    }
+    setEditingTransaction(null);
     setShowTransactionModal(true);
-  }, [accounts, transactionFormData]);
+  }, []);
 
   useEffect(() => {
     // Register the new transaction handler with the layout
@@ -187,16 +168,6 @@ export default function Home() {
 
   const openEditModal = (transaction: Transaction) => {
     setEditingTransaction(transaction);
-    setTransactionFormData({
-      transaction_type: transaction.transactionType,
-      source_account_id: transaction.sourceAccountId?.toString() || '',
-      target_account_id: transaction.targetAccountId?.toString() || '',
-      description: transaction.description,
-      amount: transaction.amount.toString(),
-      category_id: transaction.categoryId.toString(),
-      date: transaction.date
-    });
-    setSelectedLinkTransactionId(transaction.link?.linkedTransactionId || null);
     setShowTransactionModal(true);
   };
 
@@ -233,138 +204,6 @@ export default function Home() {
     setSelectedDateFilter(null);
     setCustomDateRange({ startDate: null, endDate: null });
     fetchTransactions();
-  };
-
-  const handleCategoryChange = (categoryId: string) => {
-    const selectedCategory = categories.find(c => c.id.toString() === categoryId);
-    if (selectedCategory && selectedCategory.defaultTransactionType) {
-      setTransactionFormData({
-        ...transactionFormData,
-        category_id: categoryId,
-        transaction_type: selectedCategory.defaultTransactionType
-      });
-    } else {
-      setTransactionFormData({
-        ...transactionFormData,
-        category_id: categoryId
-      });
-    }
-  };
-
-  const handleTransactionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      if (transactionFormData.transaction_type === 'Debit' && !transactionFormData.source_account_id) {
-        alert('Debit transactions require a source account');
-        setSubmitting(false);
-        return;
-      }
-      if (transactionFormData.transaction_type === 'Credit' && !transactionFormData.target_account_id) {
-        alert('Credit transactions require a target account');
-        setSubmitting(false);
-        return;
-      }
-      if (transactionFormData.transaction_type === 'Transfer') {
-        if (!transactionFormData.source_account_id || !transactionFormData.target_account_id) {
-          alert('Transfer transactions require both source and target accounts');
-          setSubmitting(false);
-          return;
-        }
-        if (transactionFormData.source_account_id === transactionFormData.target_account_id) {
-          alert('Source and target accounts must be different for transfers');
-          setSubmitting(false);
-          return;
-        }
-      }
-
-      const isEditing = editingTransaction !== null;
-      const url = isEditing ? `/api/transactions/${editingTransaction.id}` : '/api/transactions';
-      const method = isEditing ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transaction_type: transactionFormData.transaction_type,
-          source_account_id: transactionFormData.source_account_id ? parseInt(transactionFormData.source_account_id) : null,
-          target_account_id: transactionFormData.target_account_id ? parseInt(transactionFormData.target_account_id) : null,
-          description: transactionFormData.description,
-          amount: parseFloat(transactionFormData.amount),
-          category_id: parseInt(transactionFormData.category_id),
-          date: transactionFormData.date,
-        }),
-      });
-
-      if (response.ok) {
-        const savedTransaction = await response.json();
-
-        const originalLinkId = editingTransaction?.link?.linkedTransactionId;
-        const linkChanged = originalLinkId !== selectedLinkTransactionId;
-
-        if (!isEditing || linkChanged) {
-          if (isEditing && editingTransaction.link && linkChanged) {
-            try {
-              await fetch(`/api/transactions/links/${editingTransaction.link.id}`, {
-                method: 'DELETE',
-              });
-            } catch (linkErr) {
-              console.error('Error removing old link:', linkErr);
-            }
-          }
-
-          if (selectedLinkTransactionId) {
-            try {
-              const linkResponse = await fetch('/api/transactions/links', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  transaction_1_id: savedTransaction.id,
-                  transaction_2_id: selectedLinkTransactionId,
-                }),
-              });
-
-              if (!linkResponse.ok) {
-                const linkError = await linkResponse.json();
-                alert(`Transaction ${isEditing ? 'updated' : 'created'} but linking failed: ${linkError.error}`);
-              }
-            } catch (linkErr) {
-              console.error('Error creating link:', linkErr);
-              alert(`Transaction ${isEditing ? 'updated' : 'created'} but linking failed`);
-            }
-          }
-        }
-
-        setShowTransactionModal(false);
-        setEditingTransaction(null);
-        setTransactionFormData({
-          transaction_type: 'Debit',
-          source_account_id: '',
-          target_account_id: '',
-          description: '',
-          amount: '',
-          category_id: '',
-          date: new Date().toISOString().split('T')[0]
-        });
-        setSelectedLinkTransactionId(null);
-        fetchAccounts();
-        fetchTransactions(selectedAccountFilter);
-        fetchUnlinkedTransferCount();
-      } else {
-        const error = await response.json();
-        alert(error.error || `Failed to ${isEditing ? 'update' : 'create'} transaction`);
-      }
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-      alert(`Failed to ${editingTransaction ? 'update' : 'create'} transaction`);
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const totalNetBalance = (() => {
@@ -535,327 +374,21 @@ export default function Home() {
           )}
         </div>
 
-        {/* Transaction Modal - Same as before but with updated styling */}
-      {showTransactionModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="frosted-glass rounded-lg max-w-md w-full animate-slide-up-fade shadow-2xl">
-            <div className="px-6 py-4 border-b-2 border-primary/30 bg-primary/5">
-              <h3 className="mono text-sm font-bold tracking-wider">
-                {editingTransaction ? '[EDIT] TRANSACTION' : '[NEW] TRANSACTION'}
-              </h3>
-            </div>
-
-            <form onSubmit={handleTransactionSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                  TYPE *
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    type="button"
-                    variant={transactionFormData.transaction_type === 'Debit' ? 'default' : 'outline'}
-                    onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Debit' })}
-                    className={`mono text-xs ${transactionFormData.transaction_type === 'Debit' ? 'bg-transaction-debit text-transaction-debit-foreground border-transaction-debit-border' : ''}`}
-                  >
-                    DEBIT
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={transactionFormData.transaction_type === 'Credit' ? 'default' : 'outline'}
-                    onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Credit' })}
-                    className={`mono text-xs ${transactionFormData.transaction_type === 'Credit' ? 'bg-transaction-credit text-transaction-credit-foreground border-transaction-credit-border' : ''}`}
-                  >
-                    CREDIT
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={transactionFormData.transaction_type === 'Transfer' ? 'default' : 'outline'}
-                    onClick={() => setTransactionFormData({ ...transactionFormData, transaction_type: 'Transfer' })}
-                    className={`mono text-xs ${transactionFormData.transaction_type === 'Transfer' ? 'bg-transaction-transfer text-transaction-transfer-foreground border-transaction-transfer-border' : ''}`}
-                  >
-                    TRANSFER
-                  </Button>
-                </div>
-              </div>
-
-              {transactionFormData.transaction_type === 'Transfer' ? (
-                <>
-                  <div>
-                    <label htmlFor="source-account" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                      SOURCE_ACCOUNT *
-                    </label>
-                    <select
-                      id="source-account"
-                      required
-                      value={transactionFormData.source_account_id}
-                      onChange={(e) => setTransactionFormData({ ...transactionFormData, source_account_id: e.target.value })}
-                      className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="">SELECT</option>
-                      {accounts.map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="target-account" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                      TARGET_ACCOUNT *
-                    </label>
-                    <select
-                      id="target-account"
-                      required
-                      value={transactionFormData.target_account_id}
-                      onChange={(e) => setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value })}
-                      className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="">SELECT</option>
-                      {accounts.map((account) => (
-                        <option key={account.id} value={account.id}>
-                          {account.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <label htmlFor="account" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                    ACCOUNT *
-                  </label>
-                  <select
-                    id="account"
-                    required
-                    value={transactionFormData.transaction_type === 'Debit' ? transactionFormData.source_account_id : transactionFormData.target_account_id}
-                    onChange={(e) => {
-                      if (transactionFormData.transaction_type === 'Debit') {
-                        setTransactionFormData({ ...transactionFormData, source_account_id: e.target.value });
-                      } else {
-                        setTransactionFormData({ ...transactionFormData, target_account_id: e.target.value });
-                      }
-                    }}
-                    className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="">SELECT</option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="transaction-description" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                  DESCRIPTION *
-                </label>
-                <input
-                  type="text"
-                  id="transaction-description"
-                  required
-                  value={transactionFormData.description}
-                  onChange={(e) => setTransactionFormData({ ...transactionFormData, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Transaction description"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="amount" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                  AMOUNT *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-muted-foreground mono text-sm">
-                    {(() => {
-                      const accountId = transactionFormData.transaction_type === 'Credit'
-                        ? transactionFormData.target_account_id
-                        : transactionFormData.source_account_id;
-                      const account = accounts.find(a => a.id.toString() === accountId);
-                      return getCurrencySymbol((account?.currency || 'USD') as Currency);
-                    })()}
-                  </span>
-                  <input
-                    type="number"
-                    id="amount"
-                    required
-                    step="0.01"
-                    min="0"
-                    value={transactionFormData.amount}
-                    onChange={(e) => setTransactionFormData({ ...transactionFormData, amount: e.target.value })}
-                    className="mono w-full pl-8 pr-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="category" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                  CATEGORY *
-                </label>
-                <select
-                  id="category"
-                  required
-                  value={transactionFormData.category_id}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="">SELECT</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="date" className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                  DATE *
-                </label>
-                <input
-                  type="date"
-                  id="date"
-                  required
-                  value={transactionFormData.date}
-                  onChange={(e) => setTransactionFormData({ ...transactionFormData, date: e.target.value })}
-                  className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <label className="block mono text-[10px] text-muted-foreground mb-2 tracking-wider">
-                  LINK_TO_TRANSACTION
-                </label>
-                {selectedLinkTransactionId ? (
-                  <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-primary-foreground truncate">
-                        {transactions.find(t => t.id === selectedLinkTransactionId)?.description}
-                      </div>
-                      <div className="mono text-xs text-muted-foreground mt-1">
-                        {new Date(transactions.find(t => t.id === selectedLinkTransactionId)?.date || '').toLocaleDateString()} -
-                        ${transactions.find(t => t.id === selectedLinkTransactionId)?.amount.toFixed(2)}
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedLinkTransactionId(null)}
-                      className="ml-3 mono text-[10px] text-destructive border-destructive hover:bg-destructive/10"
-                    >
-                      REMOVE
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowLinkSelectionModal(true)}
-                    className="mono w-full justify-start text-xs"
-                  >
-                    [SELECT] TRANSACTION
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowTransactionModal(false);
-                    setEditingTransaction(null);
-                    setTransactionFormData({
-                      transaction_type: 'Debit',
-                      source_account_id: '',
-                      target_account_id: '',
-                      description: '',
-                      amount: '',
-                      category_id: '',
-                      date: new Date().toISOString().split('T')[0]
-                    });
-                    setSelectedLinkTransactionId(null);
-                  }}
-                  disabled={submitting}
-                  className="mono text-xs"
-                >
-                  CANCEL
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="mono text-xs bg-primary hover:bg-primary/90"
-                >
-                  {submitting ? 'PROCESSING...' : (editingTransaction ? 'UPDATE' : 'CREATE')}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Link Selection Modal */}
-      {showLinkSelectionModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="frosted-glass rounded-lg max-w-4xl w-full max-h-[80vh] flex flex-col animate-slide-up-fade shadow-2xl">
-            <div className="px-6 py-4 border-b-2 border-primary/30 bg-primary/5 flex items-center justify-between">
-              <h3 className="mono text-sm font-bold tracking-wider">[SELECT] TRANSACTION_TO_LINK</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowLinkSelectionModal(false);
-                  setLinkSearchQuery('');
-                  setLinkModalAccountFilter(null);
-                }}
-                className="mono text-xs"
-              >
-                [X]
-              </Button>
-            </div>
-
-            <div className="flex-1 overflow-auto">
-              <div className="p-6">
-                <TransactionTable
-                  transactions={transactions}
-                  accounts={accounts}
-                  showAccountFilter={true}
-                  selectedAccountFilter={linkModalAccountFilter}
-                  onAccountFilterChange={setLinkModalAccountFilter}
-                  showSearchFilter={true}
-                  searchQuery={linkSearchQuery}
-                  onSearchChange={setLinkSearchQuery}
-                  showLinkColumn={false}
-                  showAccountsColumn={true}
-                  maxRows={100}
-                  actionType="select"
-                  onSelectTransaction={(transactionId) => {
-                    setSelectedLinkTransactionId(transactionId);
-                    setShowLinkSelectionModal(false);
-                    setLinkSearchQuery('');
-                    setLinkModalAccountFilter(null);
-                  }}
-                  filterUnlinkedOnly={true}
-                  emptyStateMessage="NO UNLINKED TRANSACTIONS FOUND"
-                />
-              </div>
-            </div>
-
-            <div className="px-6 py-3 border-t border-border bg-muted/30">
-              <div className="mono text-[10px] text-muted-foreground">
-                SHOWING {transactions.filter(t => !t.link).filter(t =>
-                  linkSearchQuery === '' ||
-                  t.description.toLowerCase().includes(linkSearchQuery.toLowerCase())
-                ).slice(0, 100).length} UNLINKED RECORDS
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        {/* Transaction Modal */}
+        <EditTransactionModal
+          transaction={editingTransaction}
+          accounts={accounts}
+          categories={categories}
+          allTransactions={transactions}
+          isOpen={showTransactionModal}
+          onClose={() => {
+            setShowTransactionModal(false);
+            setEditingTransaction(null);
+          }}
+          onSaved={handleDataChanged}
+          defaultSourceAccountId={accounts.length === 1 ? accounts[0].id : undefined}
+          showLinkSelection={true}
+        />
     </main>
   );
 }
