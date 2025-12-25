@@ -1,0 +1,2 @@
+-- Migration placeholder - schema changes already applied via db:push
+-- This file is needed for deployment migration history consistency
