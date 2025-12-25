@@ -363,13 +363,19 @@ export class ImportService {
       // Validate account assignments based on transaction type
       if (preview.transactionType === 'Debit' && !preview.sourceAccountId) {
         errors.push(`Debit transaction "${preview.description}" is missing source account`);
+      } else if (preview.transactionType === 'TransferOut') {
+        if (!preview.sourceAccountId || !preview.targetAccountId) {
+          errors.push(`Transfer Out transaction "${preview.description}" is missing source or target account`);
+        } else if (preview.sourceAccountId === preview.targetAccountId) {
+          errors.push(`Transfer Out transaction "${preview.description}" has same source and target account`);
+        }
       } else if (preview.transactionType === 'Credit' && !preview.targetAccountId) {
         errors.push(`Credit transaction "${preview.description}" is missing target account`);
-      } else if (preview.transactionType === 'Transfer') {
+      } else if (preview.transactionType === 'TransferIn') {
         if (!preview.sourceAccountId || !preview.targetAccountId) {
-          errors.push(`Transfer transaction "${preview.description}" is missing source or target account`);
+          errors.push(`Transfer In transaction "${preview.description}" is missing source or target account`);
         } else if (preview.sourceAccountId === preview.targetAccountId) {
-          errors.push(`Transfer transaction "${preview.description}" has same source and target account`);
+          errors.push(`Transfer In transaction "${preview.description}" has same source and target account`);
         }
       }
     });

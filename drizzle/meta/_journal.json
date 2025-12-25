@@ -50,6 +50,13 @@
       "when": 1766486912196,
       "tag": "0006_aromatic_night_nurse",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1766642820069,
+      "tag": "0007_fuzzy_sinister_six",
+      "breakpoints": true
     }
   ]
 }

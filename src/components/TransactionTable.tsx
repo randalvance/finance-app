@@ -3,50 +3,12 @@
 import { formatCurrency } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
-
-interface Account {
-  id: number;
-  name: string;
-  color: string;
-  currency?: Currency;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  color: string | null;
-}
-
-interface Transaction {
-  id: number;
-  transactionType: 'Debit' | 'Credit' | 'Transfer';
-  sourceAccountId: number | null;
-  targetAccountId: number | null;
-  description: string;
-  amount: number;
-  categoryId: number;
-  category?: Category;
-  date: string;
-  createdAt: string;
-  sourceAccount?: Account;
-  targetAccount?: Account;
-  link?: {
-    id: number;
-    linkedTransactionId: number;
-    linkedTransaction?: {
-      id: number;
-      description: string;
-      amount: number;
-      date: string;
-      transactionType: string;
-    };
-  };
-}
+import { Transaction, TransactionWithLink } from '@/types/transaction';
 
 type ActionType = 'select' | 'view' | 'edit' | 'none';
 
 interface TransactionTableProps {
-  transactions: Transaction[];
+  transactions: TransactionWithLink[];
   accounts?: Array<{ id: number; name: string }>;
   
   // Filtering
@@ -84,16 +46,19 @@ interface TransactionTableProps {
   customFilter?: (transaction: Transaction) => boolean;
 }
 
-const getTransactionTypeBadge = (type: 'Debit' | 'Credit' | 'Transfer') => {
-  const variantMap = {
-    Debit: 'debit' as const,
-    Credit: 'credit' as const,
-    Transfer: 'transfer' as const,
-  };
+const getTransactionTypeBadge = (type: 'Debit' | 'TransferOut' | 'Credit' | 'TransferIn') => {
+  // Format the type name for display
+  const displayName = type === 'TransferOut' ? 'Transfer Out' : type === 'TransferIn' ? 'Transfer In' : type;
+  
+  // Determine color based on sign convention
+  // Debit = negative (red), Credit = positive (green), Transfers = blue
+  const variant: 'debit' | 'credit' | 'transfer' = 
+    type === 'Debit' ? 'debit' :
+    type === 'Credit' ? 'credit' : 'transfer';
 
   return (
-    <Badge variant={variantMap[type]}>
-      {type}
+    <Badge variant={variant}>
+      {displayName}
     </Badge>
   );
 };
@@ -126,7 +91,7 @@ export default function TransactionTable({
   filterUnlinkedOnly = false,
   customFilter,
 }: TransactionTableProps) {
-  const handleDelete = async (transaction: Transaction) => {
+  const handleDelete = async (transaction: TransactionWithLink) => {
     // Check if transaction is linked
     if (transaction.link) {
       if (!confirm('This transaction is linked. Deleting will unlink it. Continue?')) {
@@ -358,7 +323,7 @@ export default function TransactionTable({
                     {new Date(transaction.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getTransactionTypeBadge(transaction.transactionType)}
+                    {getTransactionTypeBadge(transaction.transactionType as 'Debit' | 'TransferOut' | 'Credit' | 'TransferIn')}
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-foreground group-hover:text-primary transition-colors">{transaction.description}</div>
@@ -369,7 +334,7 @@ export default function TransactionTable({
                         <div className="flex items-center space-x-2">
                           <div
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: transaction.sourceAccount.color }}
+                            style={{ backgroundColor: transaction.sourceAccount.color || 'gray' }}
                           />
                           <span className="text-sm text-muted-foreground">{transaction.sourceAccount.name}</span>
                         </div>
@@ -378,17 +343,17 @@ export default function TransactionTable({
                         <div className="flex items-center space-x-2">
                           <div
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: transaction.targetAccount.color }}
+                            style={{ backgroundColor: transaction.targetAccount.color || 'gray' }}
                           />
                           <span className="text-sm text-muted-foreground">{transaction.targetAccount.name}</span>
                         </div>
                       )}
-                      {transaction.transactionType === 'Transfer' && transaction.sourceAccount && transaction.targetAccount && (
+                      {(transaction.transactionType === 'TransferOut' || transaction.transactionType === 'TransferIn') && transaction.sourceAccount && transaction.targetAccount && (
                         <div className="flex items-center space-x-1 text-sm">
                           <div className="flex items-center space-x-1">
                             <div
                               className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: transaction.sourceAccount.color }}
+                              style={{ backgroundColor: transaction.sourceAccount.color || 'gray' }}
                             />
                             <span className="text-muted-foreground">{transaction.sourceAccount.name}</span>
                           </div>
@@ -396,7 +361,7 @@ export default function TransactionTable({
                           <div className="flex items-center space-x-1">
                             <div
                               className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: transaction.targetAccount.color }}
+                              style={{ backgroundColor: transaction.targetAccount.color || 'gray' }}
                             />
                             <span className="text-muted-foreground">{transaction.targetAccount.name}</span>
                           </div>
@@ -423,16 +388,14 @@ export default function TransactionTable({
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <span
                       className={`mono text-sm font-bold ${
-                        transaction.transactionType === 'Credit'
+                        transaction.transactionType === 'Credit' || transaction.transactionType === 'TransferIn'
                           ? 'text-transaction-credit-text'
-                          : transaction.transactionType === 'Debit'
-                          ? 'text-transaction-debit-text'
-                          : 'text-transaction-transfer-text'
+                          : 'text-transaction-debit-text'
                       }`}
                     >
                       {formatCurrency(
-                        transaction.amount,
-                        (transaction.transactionType === 'Credit'
+                        Math.abs(transaction.amount),
+                        (transaction.transactionType === 'Credit' || transaction.transactionType === 'TransferIn'
                           ? transaction.targetAccount?.currency
                           : transaction.sourceAccount?.currency || 'USD') as Currency
                       )}

@@ -78,7 +78,7 @@ export class AccountService {
           eq(transactions.targetAccountId, accountId),
           or(
             eq(transactions.transactionType, 'Credit'),
-            eq(transactions.transactionType, 'Transfer')
+            eq(transactions.transactionType, 'TransferIn')
           )
         )
       );
@@ -93,7 +93,7 @@ export class AccountService {
           eq(transactions.sourceAccountId, accountId),
           or(
             eq(transactions.transactionType, 'Debit'),
-            eq(transactions.transactionType, 'Transfer')
+            eq(transactions.transactionType, 'TransferOut')
           )
         )
       );
@@ -102,6 +102,8 @@ export class AccountService {
     const debitAmount = parseFloat(debits[0]?.total || '0');
 
     // Net balance = credits - debits
-    return creditAmount - debitAmount;
+    // Since debits are negative and credits are positive, this is actually:
+    // credits (positive) + debits (negative) = net balance
+    return creditAmount + debitAmount;
   }
 }

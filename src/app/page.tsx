@@ -8,71 +8,20 @@ import EditTransactionModal from '@/components/EditTransactionModal';
 import { formatCurrency } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Account, TransactionWithAccounts, TransactionWithLink, Category, Transaction } from '@/types/transaction';
 
-interface AccountWithStats {
-  id: number;
-  name: string;
-  description: string | null;
-  color: string;
-  currency: string;
+interface AccountWithStats extends Account {
   transactionCount: number;
   totalAmount: number;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  color: string;
-  defaultTransactionType?: 'Debit' | 'Credit' | 'Transfer';
-}
-
-interface Transaction {
-  id: number;
-  transactionType: 'Debit' | 'Credit' | 'Transfer';
-  sourceAccountId: number | null;
-  targetAccountId: number | null;
-  description: string;
-  amount: number;
-  categoryId: number;
-  category?: {
-    id: number;
-    name: string;
-    color: string | null;
-  };
-  date: string;
-  createdAt: string;
-  sourceAccount?: {
-    id: number;
-    name: string;
-    color: string;
-    currency?: Currency;
-  };
-  targetAccount?: {
-    id: number;
-    name: string;
-    color: string;
-    currency?: Currency;
-  };
-  link?: {
-    id: number;
-    linkedTransactionId: number;
-    linkedTransaction?: {
-      id: number;
-      description: string;
-      amount: number;
-      date: string;
-      transactionType: string;
-    };
-  };
 }
 
 export default function Home() {
   const { setNewTransactionHandler } = useLayout();
   const [accounts, setAccounts] = useState<AccountWithStats[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<TransactionWithLink[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionWithAccounts | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [selectedAccountFilter, setSelectedAccountFilter] = useState<number | null>(null);
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
@@ -278,7 +227,7 @@ export default function Home() {
                       <div className="flex items-center space-x-2 flex-1 min-w-0">
                         <div
                           className="w-2 h-2 rounded-sm flex-shrink-0"
-                          style={{ backgroundColor: account.color }}
+                          style={{ backgroundColor: account.color ?? 'gray' }}
                         />
                         <span className="mono text-xs text-foreground truncate">{account.name}</span>
                       </div>
@@ -331,7 +280,7 @@ export default function Home() {
         <div className="animate-slide-up-fade" style={{ animationDelay: '400ms' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="mono text-sm font-bold tracking-wider">
-              <span className="text-primary">&gt;&gt;</span> TRANSACTION_STREAM
+              <span className="text-primary">{`>`}</span> TRANSACTION_STREAM
             </h2>
             <div className="mono text-[10px] text-muted-foreground">
               LIVE_DATA // {transactions.length} RECORDS

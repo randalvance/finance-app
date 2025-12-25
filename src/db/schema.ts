@@ -42,7 +42,7 @@ export const accounts = pgTable('accounts', {
 }));
 
 // Transaction types
-export const transactionTypeEnum = ['Debit', 'Credit', 'Transfer'] as const;
+export const transactionTypeEnum = ['Debit', 'TransferOut', 'Credit', 'TransferIn'] as const;
 export type TransactionType = typeof transactionTypeEnum[number];
 
 // Supported currencies
@@ -66,15 +66,16 @@ export const transactions = pgTable('transactions', {
   // Check constraint for valid transaction types
   transactionTypeCheck: check(
     'transaction_type_check',
-    sql`${table.transactionType} IN ('Debit', 'Credit', 'Transfer')`
+    sql`${table.transactionType} IN ('Debit', 'TransferOut', 'Credit', 'TransferIn')`
   ),
   // Validation: ensure required accounts based on type
   accountValidation: check(
     'transaction_account_validation',
     sql`
       (${table.transactionType} = 'Debit' AND ${table.sourceAccountId} IS NOT NULL) OR
+      (${table.transactionType} = 'TransferOut' AND ${table.sourceAccountId} IS NOT NULL AND ${table.targetAccountId} IS NOT NULL) OR
       (${table.transactionType} = 'Credit' AND ${table.targetAccountId} IS NOT NULL) OR
-      (${table.transactionType} = 'Transfer' AND ${table.sourceAccountId} IS NOT NULL AND ${table.targetAccountId} IS NOT NULL AND ${table.sourceAccountId} != ${table.targetAccountId})
+      (${table.transactionType} = 'TransferIn' AND ${table.sourceAccountId} IS NOT NULL AND ${table.targetAccountId} IS NOT NULL)
     `
   ),
   // Indexes for performance
@@ -98,7 +99,7 @@ export const categories = pgTable('categories', {
   // Check constraint for valid default transaction types
   transactionTypeCheck: check(
     'categories_transaction_type_check',
-    sql`${table.defaultTransactionType} IN ('Debit', 'Credit', 'Transfer')`
+    sql`${table.defaultTransactionType} IN ('Debit', 'TransferOut', 'Credit', 'TransferIn')`
   )
 }));
 
