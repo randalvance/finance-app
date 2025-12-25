@@ -280,7 +280,7 @@ export default function Home() {
         <div className="animate-slide-up-fade" style={{ animationDelay: '400ms' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="mono text-sm font-bold tracking-wider">
-              <span className="text-primary">{`>`}</span> TRANSACTION_STREAM
+              <span className="text-primary">{'>'}</span> TRANSACTION_STREAM
             </h2>
             <div className="mono text-[10px] text-muted-foreground">
               LIVE_DATA // {transactions.length} RECORDS
