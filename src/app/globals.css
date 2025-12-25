@@ -64,6 +64,18 @@
   --color-transaction-transfer-hover: var(--transaction-transfer-hover);
   --color-transaction-transfer-text: var(--transaction-transfer-text);
 
+  --color-transaction-transfer-out: var(--transaction-transfer-out);
+  --color-transaction-transfer-out-foreground: var(--transaction-transfer-out-foreground);
+  --color-transaction-transfer-out-border: var(--transaction-transfer-out-border);
+  --color-transaction-transfer-out-hover: var(--transaction-transfer-out-hover);
+  --color-transaction-transfer-out-text: var(--transaction-transfer-out-text);
+
+  --color-transaction-transfer-in: var(--transaction-transfer-in);
+  --color-transaction-transfer-in-foreground: var(--transaction-transfer-in-foreground);
+  --color-transaction-transfer-in-border: var(--transaction-transfer-in-border);
+  --color-transaction-transfer-in-hover: var(--transaction-transfer-in-hover);
+  --color-transaction-transfer-in-text: var(--transaction-transfer-in-text);
+
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-warning-border: var(--warning-border);
@@ -142,12 +154,26 @@
   --transaction-credit-hover: oklch(0.3 0.18 150);
   --transaction-credit-text: oklch(0.8 0.2 150);
 
-  /* Transfer (Neon Blue) */
+  /* Transfer (Neon Blue) - Legacy/Fallback */
   --transaction-transfer: oklch(0.25 0.15 260);
   --transaction-transfer-foreground: oklch(0.95 0.05 260);
   --transaction-transfer-border: oklch(0.4 0.2 260);
   --transaction-transfer-hover: oklch(0.3 0.18 260);
   --transaction-transfer-text: oklch(0.8 0.2 260);
+
+  /* Transfer Out (Neon Orange-Red) - Similar to Debit but warmer */
+  --transaction-transfer-out: oklch(0.25 0.15 40);
+  --transaction-transfer-out-foreground: oklch(0.95 0.05 40);
+  --transaction-transfer-out-border: oklch(0.4 0.2 40);
+  --transaction-transfer-out-hover: oklch(0.3 0.18 40);
+  --transaction-transfer-out-text: oklch(0.8 0.2 40);
+
+  /* Transfer In (Neon Teal-Green) - Similar to Credit but cooler */
+  --transaction-transfer-in: oklch(0.25 0.15 180);
+  --transaction-transfer-in-foreground: oklch(0.95 0.05 180);
+  --transaction-transfer-in-border: oklch(0.4 0.2 180);
+  --transaction-transfer-in-hover: oklch(0.3 0.18 180);
+  --transaction-transfer-in-text: oklch(0.8 0.2 180);
 
   /* Warning (Neon Yellow) */
   --warning: oklch(0.3 0.15 85);
@@ -213,6 +239,18 @@
   --transaction-transfer-border: oklch(0.4 0.2 260);
   --transaction-transfer-hover: oklch(0.3 0.18 260);
   --transaction-transfer-text: oklch(0.8 0.2 260);
+
+  --transaction-transfer-out: oklch(0.25 0.15 40);
+  --transaction-transfer-out-foreground: oklch(0.95 0.05 40);
+  --transaction-transfer-out-border: oklch(0.4 0.2 40);
+  --transaction-transfer-out-hover: oklch(0.3 0.18 40);
+  --transaction-transfer-out-text: oklch(0.8 0.2 40);
+
+  --transaction-transfer-in: oklch(0.25 0.15 180);
+  --transaction-transfer-in-foreground: oklch(0.95 0.05 180);
+  --transaction-transfer-in-border: oklch(0.4 0.2 180);
+  --transaction-transfer-in-hover: oklch(0.3 0.18 180);
+  --transaction-transfer-in-text: oklch(0.8 0.2 180);
 
   --warning: oklch(0.3 0.15 85);
   --warning-foreground: oklch(0.95 0.05 85);

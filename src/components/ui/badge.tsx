@@ -24,6 +24,10 @@ const badgeVariants = cva(
           "bg-transaction-credit text-transaction-credit-foreground border-transaction-credit-border",
         transfer:
           "bg-transaction-transfer text-transaction-transfer-foreground border-transaction-transfer-border",
+        transferOut:
+          "bg-transaction-transfer-out text-transaction-transfer-out-foreground border-transaction-transfer-out-border",
+        transferIn:
+          "bg-transaction-transfer-in text-transaction-transfer-in-foreground border-transaction-transfer-in-border",
       },
     },
     defaultVariants: {

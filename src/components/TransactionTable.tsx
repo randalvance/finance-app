@@ -49,12 +49,13 @@ interface TransactionTableProps {
 const getTransactionTypeBadge = (type: 'Debit' | 'TransferOut' | 'Credit' | 'TransferIn') => {
   // Format the type name for display
   const displayName = type === 'TransferOut' ? 'Transfer Out' : type === 'TransferIn' ? 'Transfer In' : type;
-  
-  // Determine color based on sign convention
-  // Debit = negative (red), Credit = positive (green), Transfers = blue
-  const variant: 'debit' | 'credit' | 'transfer' = 
+
+  // Determine color based on transaction type
+  // Debit = red, Credit = green, TransferOut = orange-red, TransferIn = teal-green
+  const variant: 'debit' | 'credit' | 'transferOut' | 'transferIn' =
     type === 'Debit' ? 'debit' :
-    type === 'Credit' ? 'credit' : 'transfer';
+    type === 'Credit' ? 'credit' :
+    type === 'TransferOut' ? 'transferOut' : 'transferIn';
 
   return (
     <Badge variant={variant}>
