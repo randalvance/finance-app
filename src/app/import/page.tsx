@@ -66,6 +66,14 @@ export default function ImportPage() {
   const [categoryMappings, setCategoryMappings] = useState<Record<string, number>>({});
   const [filename, setFilename] = useState<string>('');
 
+  // Selection state using Set for O(1) operations
+  const [selectedTempIds, setSelectedTempIds] = useState<Set<string>>(new Set());
+
+  // Bulk update form controls
+  const [bulkCategoryId, setBulkCategoryId] = useState<number | null>(null);
+  const [bulkSourceAccountId, setBulkSourceAccountId] = useState<number | null>(null);
+  const [bulkTargetAccountId, setBulkTargetAccountId] = useState<number | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -215,6 +223,79 @@ export default function ImportPage() {
       delete updated[tempId];
       return updated;
     });
+
+    // Remove from selection set
+    setSelectedTempIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(tempId);
+      return newSet;
+    });
+  };
+
+  // Toggle individual row selection
+  const handleToggleSelection = (tempId: string) => {
+    setSelectedTempIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tempId)) {
+        newSet.delete(tempId);
+      } else {
+        newSet.add(tempId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle all rows (select all or unselect all)
+  const handleToggleAll = () => {
+    if (selectedTempIds.size === previewTransactions.length) {
+      setSelectedTempIds(new Set());
+    } else {
+      setSelectedTempIds(new Set(previewTransactions.map(tx => tx.tempId)));
+    }
+  };
+
+  // Clear all selections
+  const handleClearSelection = () => {
+    setSelectedTempIds(new Set());
+  };
+
+  // Bulk category update - reuses existing handleCategoryChange
+  const handleBulkCategoryUpdate = () => {
+    if (!bulkCategoryId || selectedTempIds.size === 0) return;
+
+    selectedTempIds.forEach(tempId => {
+      handleCategoryChange(tempId, bulkCategoryId);
+    });
+
+    setBulkCategoryId(null);
+  };
+
+  // Bulk source account update - skips Credit transactions
+  const handleBulkSourceAccountUpdate = () => {
+    if (!bulkSourceAccountId || selectedTempIds.size === 0) return;
+
+    setPreviewTransactions(prev => prev.map(tx => {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Credit') {
+        return { ...tx, sourceAccountId: bulkSourceAccountId };
+      }
+      return tx;
+    }));
+
+    setBulkSourceAccountId(null);
+  };
+
+  // Bulk target account update - skips Debit transactions
+  const handleBulkTargetAccountUpdate = () => {
+    if (!bulkTargetAccountId || selectedTempIds.size === 0) return;
+
+    setPreviewTransactions(prev => prev.map(tx => {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Debit') {
+        return { ...tx, targetAccountId: bulkTargetAccountId };
+      }
+      return tx;
+    }));
+
+    setBulkTargetAccountId(null);
   };
 
   const saveDraftData = async (showSuccessAlert = true) => {
@@ -588,10 +669,117 @@ export default function ImportPage() {
                   )}
                 </div>
 
+                {/* Bulk Controls Panel */}
+                {previewTransactions.length > 0 && currentImportRecord?.status !== 'completed' && (
+                  <div className="px-6 py-4 border-b border-border bg-muted/20">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-sm font-medium text-foreground">
+                        {selectedTempIds.size} of {previewTransactions.length} rows selected
+                      </div>
+                      <Button
+                        onClick={handleClearSelection}
+                        variant="outline"
+                        size="sm"
+                        disabled={selectedTempIds.size === 0}
+                      >
+                        Uncheck All
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Bulk Category Update */}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={bulkCategoryId || ''}
+                          onChange={(e) => setBulkCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                          className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                          disabled={selectedTempIds.size === 0}
+                        >
+                          <option value="">Select category...</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          onClick={handleBulkCategoryUpdate}
+                          disabled={!bulkCategoryId || selectedTempIds.size === 0}
+                          size="sm"
+                        >
+                          Update
+                        </Button>
+                      </div>
+
+                      {/* Bulk Source Account Update */}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={bulkSourceAccountId || ''}
+                          onChange={(e) => setBulkSourceAccountId(e.target.value ? parseInt(e.target.value) : null)}
+                          className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                          disabled={selectedTempIds.size === 0}
+                        >
+                          <option value="">Select source account...</option>
+                          {accounts.map(acc => (
+                            <option key={acc.id} value={acc.id}>
+                              {acc.name}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          onClick={handleBulkSourceAccountUpdate}
+                          disabled={!bulkSourceAccountId || selectedTempIds.size === 0}
+                          size="sm"
+                        >
+                          Update
+                        </Button>
+                      </div>
+
+                      {/* Bulk Target Account Update */}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={bulkTargetAccountId || ''}
+                          onChange={(e) => setBulkTargetAccountId(e.target.value ? parseInt(e.target.value) : null)}
+                          className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                          disabled={selectedTempIds.size === 0}
+                        >
+                          <option value="">Select target account...</option>
+                          {accounts.map(acc => (
+                            <option key={acc.id} value={acc.id}>
+                              {acc.name}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          onClick={handleBulkTargetAccountUpdate}
+                          disabled={!bulkTargetAccountId || selectedTempIds.size === 0}
+                          size="sm"
+                        >
+                          Update
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-border">
                     <thead className="bg-muted/50">
                       <tr>
+                        <th className="px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedTempIds.size === previewTransactions.length}
+                            ref={(el) => {
+                              if (el) {
+                                el.indeterminate = selectedTempIds.size > 0 &&
+                                                  selectedTempIds.size < previewTransactions.length;
+                              }
+                            }}
+                            onChange={handleToggleAll}
+                            disabled={currentImportRecord?.status === 'completed'}
+                            aria-label="Select all transactions"
+                          />
+                        </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Date
                         </th>
@@ -624,6 +812,14 @@ export default function ImportPage() {
                     <tbody className="divide-y divide-border">
                       {previewTransactions.map((tx) => (
                         <tr key={tx.tempId} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedTempIds.has(tx.tempId)}
+                              onChange={() => handleToggleSelection(tx.tempId)}
+                              disabled={currentImportRecord?.status === 'completed'}
+                            />
+                          </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
                             {tx.date}
                           </td>

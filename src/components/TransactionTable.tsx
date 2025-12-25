@@ -394,7 +394,7 @@ export default function TransactionTable({
                       }`}
                     >
                       {formatCurrency(
-                        Math.abs(transaction.amount),
+                        transaction.amount,
                         (transaction.transactionType === 'Credit' || transaction.transactionType === 'TransferIn'
                           ? transaction.targetAccount?.currency
                           : transaction.sourceAccount?.currency || 'USD') as Currency
