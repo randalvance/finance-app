@@ -54,7 +54,7 @@ export const transactions = pgTable('transactions', {
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   sourceAccountId: integer('source_account_id').references(() => accounts.id, { onDelete: 'restrict' }),
   targetAccountId: integer('target_account_id').references(() => accounts.id, { onDelete: 'restrict' }),
-  transactionType: varchar('transaction_type', { length: 10 }).notNull().default('Debit'),
+  transactionType: varchar('transaction_type', { length: 15 }).notNull().default('Debit'),
   description: text('description').notNull(),
   amount: numericDecimal('amount').notNull(),
   categoryId: integer('category_id').references(() => categories.id, { onDelete: 'restrict' }),
@@ -75,7 +75,7 @@ export const transactions = pgTable('transactions', {
       (${table.transactionType} = 'Debit' AND ${table.sourceAccountId} IS NOT NULL) OR
       (${table.transactionType} = 'TransferOut' AND ${table.sourceAccountId} IS NOT NULL AND ${table.targetAccountId} IS NOT NULL) OR
       (${table.transactionType} = 'Credit' AND ${table.targetAccountId} IS NOT NULL) OR
-      (${table.transactionType} = 'TransferIn' AND ${table.sourceAccountId} IS NOT NULL AND ${table.targetAccountId} IS NOT NULL)
+      (${table.transactionType} = 'TransferIn' AND ${table.sourceAccountId} IS NOT NULL AND ${table.targetAccountId} IS NOT NULL AND ${table.sourceAccountId} != ${table.targetAccountId})
     `
   ),
   // Indexes for performance
@@ -92,7 +92,7 @@ export const categories = pgTable('categories', {
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 100 }).notNull(),
   color: varchar('color', { length: 7 }).default('#6366f1'),
-  defaultTransactionType: varchar('default_transaction_type', { length: 10 }).default('Debit'),
+  defaultTransactionType: varchar('default_transaction_type', { length: 15 }).default('Debit'),
   createdAt: timestamp('created_at').defaultNow()
 }, (table) => ({
   uniqueUserCategory: unique().on(table.userId, table.name),

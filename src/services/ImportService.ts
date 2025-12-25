@@ -385,17 +385,24 @@ export class ImportService {
     }
 
     // Prepare transaction data
-    const transactionValues = previewTransactions.map(preview => ({
-      userId,
-      importId,
-      sourceAccountId: preview.sourceAccountId,
-      targetAccountId: preview.targetAccountId,
-      transactionType: preview.transactionType,
-      description: preview.description,
-      amount: preview.amount,
-      categoryId: categoryMappings[preview.tempId],
-      date: preview.date,
-    }));
+    const transactionValues = previewTransactions.map(preview => {
+      // Make amounts negative for Debit and TransferOut transactions
+      const amount = (preview.transactionType === 'Debit' || preview.transactionType === 'TransferOut')
+        ? -Math.abs(preview.amount)
+        : Math.abs(preview.amount);
+
+      return {
+        userId,
+        importId,
+        sourceAccountId: preview.sourceAccountId,
+        targetAccountId: preview.targetAccountId,
+        transactionType: preview.transactionType,
+        description: preview.description,
+        amount,
+        categoryId: categoryMappings[preview.tempId],
+        date: preview.date,
+      };
+    });
 
     // Bulk insert transactions
     if (transactionValues.length > 0) {

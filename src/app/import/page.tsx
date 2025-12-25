@@ -30,7 +30,7 @@ interface PreviewTransaction {
   date: string;
   description: string;
   amount: number;
-  transactionType: 'Debit' | 'Credit' | 'Transfer';
+  transactionType: 'Debit' | 'Credit' | 'TransferOut' | 'TransferIn';
   sourceAccountId: number | null;
   targetAccountId: number | null;
   categoryId?: number | null;
@@ -167,9 +167,14 @@ export default function ImportPage() {
     setPreviewTransactions(prev => prev.map(tx => {
       if (tx.tempId !== tempId) return tx;
 
-      const defaultType = category.defaultTransactionType as 'Debit' | 'Credit' | 'Transfer';
+      let defaultType = category.defaultTransactionType as 'Debit' | 'Credit' | 'TransferOut' | 'TransferIn' | 'Transfer';
       let newSourceAccountId: number | null = tx.sourceAccountId;
       let newTargetAccountId: number | null = tx.targetAccountId;
+
+      // Convert generic 'Transfer' from category to specific TransferOut/TransferIn based on original type
+      if (defaultType === 'Transfer') {
+        defaultType = (tx.transactionType === 'Debit' || tx.transactionType === 'TransferOut') ? 'TransferOut' : 'TransferIn';
+      }
 
       // Only auto-populate accounts if selectedAccountId is available
       if (selectedAccountId) {
@@ -179,21 +184,18 @@ export default function ImportPage() {
         } else if (defaultType === 'Credit') {
           newSourceAccountId = null;
           newTargetAccountId = selectedAccountId;
-        } else if (defaultType === 'Transfer') {
-          // For transfers, populate based on original debit/credit from CSV
-          if (tx.transactionType === 'Debit') {
-            newSourceAccountId = selectedAccountId;
-            newTargetAccountId = null;
-          } else {
-            newSourceAccountId = null;
-            newTargetAccountId = selectedAccountId;
-          }
+        } else if (defaultType === 'TransferOut') {
+          newSourceAccountId = selectedAccountId;
+          newTargetAccountId = null;
+        } else if (defaultType === 'TransferIn') {
+          newSourceAccountId = null;
+          newTargetAccountId = selectedAccountId;
         }
       }
 
       return {
         ...tx,
-        transactionType: defaultType,
+        transactionType: defaultType as 'Debit' | 'Credit' | 'TransferOut' | 'TransferIn',
         sourceAccountId: newSourceAccountId,
         targetAccountId: newTargetAccountId,
         categoryId,
@@ -270,12 +272,12 @@ export default function ImportPage() {
     setBulkCategoryId(null);
   };
 
-  // Bulk source account update - skips Credit transactions
+  // Bulk source account update - skips Credit and TransferIn (Debit and TransferOut need source account)
   const handleBulkSourceAccountUpdate = () => {
     if (!bulkSourceAccountId || selectedTempIds.size === 0) return;
 
     setPreviewTransactions(prev => prev.map(tx => {
-      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Credit') {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Credit' && tx.transactionType !== 'TransferIn') {
         return { ...tx, sourceAccountId: bulkSourceAccountId };
       }
       return tx;
@@ -284,12 +286,12 @@ export default function ImportPage() {
     setBulkSourceAccountId(null);
   };
 
-  // Bulk target account update - skips Debit transactions
+  // Bulk target account update - skips Debit and TransferOut (Credit and TransferIn need target account)
   const handleBulkTargetAccountUpdate = () => {
     if (!bulkTargetAccountId || selectedTempIds.size === 0) return;
 
     setPreviewTransactions(prev => prev.map(tx => {
-      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Debit') {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Debit' && tx.transactionType !== 'TransferOut') {
         return { ...tx, targetAccountId: bulkTargetAccountId };
       }
       return tx;
@@ -407,8 +409,10 @@ export default function ImportPage() {
         return !tx.sourceAccountId;
       } else if (tx.transactionType === 'Credit') {
         return !tx.targetAccountId;
-      } else if (tx.transactionType === 'Transfer') {
-        return !tx.sourceAccountId || !tx.targetAccountId || tx.sourceAccountId === tx.targetAccountId;
+      } else if (tx.transactionType === 'TransferOut') {
+        return !tx.sourceAccountId;
+      } else if (tx.transactionType === 'TransferIn') {
+        return !tx.targetAccountId;
       }
       return false;
     });
@@ -419,12 +423,10 @@ export default function ImportPage() {
           return `Debit transaction "${tx.description}" missing source account`;
         } else if (tx.transactionType === 'Credit' && !tx.targetAccountId) {
           return `Credit transaction "${tx.description}" missing target account`;
-        } else if (tx.transactionType === 'Transfer') {
-          if (!tx.sourceAccountId || !tx.targetAccountId) {
-            return `Transfer transaction "${tx.description}" missing source or target account`;
-          } else if (tx.sourceAccountId === tx.targetAccountId) {
-            return `Transfer transaction "${tx.description}" has same source and target account`;
-          }
+        } else if (tx.transactionType === 'TransferOut' && !tx.sourceAccountId) {
+          return `Transfer Out transaction "${tx.description}" missing source account`;
+        } else if (tx.transactionType === 'TransferIn' && !tx.targetAccountId) {
+          return `Transfer In transaction "${tx.description}" missing target account`;
         }
         return '';
       }).filter(msg => msg);
@@ -876,7 +878,7 @@ export default function ImportPage() {
                                 value={tx.sourceAccountId || ''}
                                 onChange={(e) => handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null)}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                                  (tx.transactionType === 'Debit' || tx.transactionType === 'Transfer') && !tx.sourceAccountId
+                                  (tx.transactionType === 'Debit' || tx.transactionType === 'TransferOut') && !tx.sourceAccountId
                                     ? 'border-destructive'
                                     : 'border-border'
                                 }`}
@@ -901,7 +903,7 @@ export default function ImportPage() {
                                 value={tx.targetAccountId || ''}
                                 onChange={(e) => handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null)}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                                  (tx.transactionType === 'Credit' || tx.transactionType === 'Transfer') && !tx.targetAccountId
+                                  (tx.transactionType === 'Credit' || tx.transactionType === 'TransferIn') && !tx.targetAccountId
                                     ? 'border-destructive'
                                     : 'border-border'
                                 }`}

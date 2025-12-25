@@ -1,0 +1,1028 @@
+{
+  "id": "a899275c-6150-4d69-a234-ecc5e1ef5bac",
+  "prevId": "ad1468c3-e04f-4b78-8cc0-add22f896032",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.accounts": {
+      "name": "accounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "color": {
+          "name": "color",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'#6366f1'"
+        },
+        "currency": {
+          "name": "currency",
+          "type": "varchar(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'USD'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "accounts_user_id_users_id_fk": {
+          "name": "accounts_user_id_users_id_fk",
+          "tableFrom": "accounts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "accounts_user_id_name_unique": {
+          "name": "accounts_user_id_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "currency_check": {
+          "name": "currency_check",
+          "value": "\"accounts\".\"currency\" IN ('USD', 'SGD', 'EUR', 'JPY', 'PHP')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.categories": {
+      "name": "categories",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "varchar(7)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'#6366f1'"
+        },
+        "default_transaction_type": {
+          "name": "default_transaction_type",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'Debit'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "categories_user_id_users_id_fk": {
+          "name": "categories_user_id_users_id_fk",
+          "tableFrom": "categories",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "categories_user_id_name_unique": {
+          "name": "categories_user_id_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "categories_transaction_type_check": {
+          "name": "categories_transaction_type_check",
+          "value": "\"categories\".\"default_transaction_type\" IN ('Debit', 'TransferOut', 'Credit', 'TransferIn')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.import_source_accounts": {
+      "name": "import_source_accounts",
+      "schema": "",
+      "columns": {
+        "import_source_id": {
+          "name": "import_source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_import_source_accounts_source": {
+          "name": "idx_import_source_accounts_source",
+          "columns": [
+            {
+              "expression": "import_source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_import_source_accounts_account": {
+          "name": "idx_import_source_accounts_account",
+          "columns": [
+            {
+              "expression": "account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "import_source_accounts_import_source_id_import_sources_id_fk": {
+          "name": "import_source_accounts_import_source_id_import_sources_id_fk",
+          "tableFrom": "import_source_accounts",
+          "tableTo": "import_sources",
+          "columnsFrom": [
+            "import_source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "import_source_accounts_account_id_accounts_id_fk": {
+          "name": "import_source_accounts_account_id_accounts_id_fk",
+          "tableFrom": "import_source_accounts",
+          "tableTo": "accounts",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "import_source_accounts_import_source_id_account_id_pk": {
+          "name": "import_source_accounts_import_source_id_account_id_pk",
+          "columns": [
+            "import_source_id",
+            "account_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.import_sources": {
+      "name": "import_sources",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "config": {
+          "name": "config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "import_sources_user_id_users_id_fk": {
+          "name": "import_sources_user_id_users_id_fk",
+          "tableFrom": "import_sources",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "import_sources_user_id_name_unique": {
+          "name": "import_sources_user_id_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.imports": {
+      "name": "imports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "import_source_id": {
+          "name": "import_source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "filename": {
+          "name": "filename",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "default_account_id": {
+          "name": "default_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "preview_data": {
+          "name": "preview_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_rows": {
+          "name": "total_rows",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "imported_rows": {
+          "name": "imported_rows",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_imports_user_id": {
+          "name": "idx_imports_user_id",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_imports_source_id": {
+          "name": "idx_imports_source_id",
+          "columns": [
+            {
+              "expression": "import_source_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_imports_status": {
+          "name": "idx_imports_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_imports_created_at": {
+          "name": "idx_imports_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "imports_user_id_users_id_fk": {
+          "name": "imports_user_id_users_id_fk",
+          "tableFrom": "imports",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "imports_import_source_id_import_sources_id_fk": {
+          "name": "imports_import_source_id_import_sources_id_fk",
+          "tableFrom": "imports",
+          "tableTo": "import_sources",
+          "columnsFrom": [
+            "import_source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "imports_default_account_id_accounts_id_fk": {
+          "name": "imports_default_account_id_accounts_id_fk",
+          "tableFrom": "imports",
+          "tableTo": "accounts",
+          "columnsFrom": [
+            "default_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transaction_links": {
+      "name": "transaction_links",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_1_id": {
+          "name": "transaction_1_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaction_2_id": {
+          "name": "transaction_2_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_transaction_links_t1": {
+          "name": "idx_transaction_links_t1",
+          "columns": [
+            {
+              "expression": "transaction_1_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_transaction_links_t2": {
+          "name": "idx_transaction_links_t2",
+          "columns": [
+            {
+              "expression": "transaction_2_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_transaction_links_user": {
+          "name": "idx_transaction_links_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transaction_links_user_id_users_id_fk": {
+          "name": "transaction_links_user_id_users_id_fk",
+          "tableFrom": "transaction_links",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "transaction_links_transaction_1_id_transactions_id_fk": {
+          "name": "transaction_links_transaction_1_id_transactions_id_fk",
+          "tableFrom": "transaction_links",
+          "tableTo": "transactions",
+          "columnsFrom": [
+            "transaction_1_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "transaction_links_transaction_2_id_transactions_id_fk": {
+          "name": "transaction_links_transaction_2_id_transactions_id_fk",
+          "tableFrom": "transaction_links",
+          "tableTo": "transactions",
+          "columnsFrom": [
+            "transaction_2_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "transaction_links_transaction_1_id_transaction_2_id_unique": {
+          "name": "transaction_links_transaction_1_id_transaction_2_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "transaction_1_id",
+            "transaction_2_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "no_self_link": {
+          "name": "no_self_link",
+          "value": "\"transaction_links\".\"transaction_1_id\" != \"transaction_links\".\"transaction_2_id\""
+        },
+        "canonical_ordering": {
+          "name": "canonical_ordering",
+          "value": "\"transaction_links\".\"transaction_1_id\" < \"transaction_links\".\"transaction_2_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.transactions": {
+      "name": "transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_account_id": {
+          "name": "source_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_account_id": {
+          "name": "target_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transaction_type": {
+          "name": "transaction_type",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Debit'"
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_DATE"
+        },
+        "import_id": {
+          "name": "import_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_transactions_source_account": {
+          "name": "idx_transactions_source_account",
+          "columns": [
+            {
+              "expression": "source_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_transactions_target_account": {
+          "name": "idx_transactions_target_account",
+          "columns": [
+            {
+              "expression": "target_account_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_transactions_category_id": {
+          "name": "idx_transactions_category_id",
+          "columns": [
+            {
+              "expression": "category_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_transactions_type": {
+          "name": "idx_transactions_type",
+          "columns": [
+            {
+              "expression": "transaction_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_transactions_user_type": {
+          "name": "idx_transactions_user_type",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "transaction_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_transactions_import_id": {
+          "name": "idx_transactions_import_id",
+          "columns": [
+            {
+              "expression": "import_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transactions_user_id_users_id_fk": {
+          "name": "transactions_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "transactions_source_account_id_accounts_id_fk": {
+          "name": "transactions_source_account_id_accounts_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "accounts",
+          "columnsFrom": [
+            "source_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "transactions_target_account_id_accounts_id_fk": {
+          "name": "transactions_target_account_id_accounts_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "accounts",
+          "columnsFrom": [
+            "target_account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "transactions_category_id_categories_id_fk": {
+          "name": "transactions_category_id_categories_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "transactions_import_id_imports_id_fk": {
+          "name": "transactions_import_id_imports_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "imports",
+          "columnsFrom": [
+            "import_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "transaction_type_check": {
+          "name": "transaction_type_check",
+          "value": "\"transactions\".\"transaction_type\" IN ('Debit', 'TransferOut', 'Credit', 'TransferIn')"
+        },
+        "transaction_account_validation": {
+          "name": "transaction_account_validation",
+          "value": "\n      (\"transactions\".\"transaction_type\" = 'Debit' AND \"transactions\".\"source_account_id\" IS NOT NULL) OR\n      (\"transactions\".\"transaction_type\" = 'TransferOut' AND \"transactions\".\"source_account_id\" IS NOT NULL AND \"transactions\".\"target_account_id\" IS NOT NULL) OR\n      (\"transactions\".\"transaction_type\" = 'Credit' AND \"transactions\".\"target_account_id\" IS NOT NULL) OR\n      (\"transactions\".\"transaction_type\" = 'TransferIn' AND \"transactions\".\"source_account_id\" IS NOT NULL AND \"transactions\".\"target_account_id\" IS NOT NULL AND \"transactions\".\"source_account_id\" != \"transactions\".\"target_account_id\")\n    "
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "clerk_id": {
+          "name": "clerk_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_clerk_id_unique": {
+          "name": "users_clerk_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "clerk_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
