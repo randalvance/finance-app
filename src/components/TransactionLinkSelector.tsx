@@ -3,33 +3,7 @@
 import { useState } from 'react';
 import TransactionTable from '@/components/TransactionTable';
 import { Button } from '@/components/ui/button';
-
-interface Account {
-  id: number;
-  name: string;
-  color?: string;
-}
-
-interface Transaction {
-  id: number;
-  transactionType: 'Debit' | 'Credit' | 'Transfer';
-  sourceAccountId: number | null;
-  targetAccountId: number | null;
-  description: string;
-  amount: number;
-  categoryId: number;
-  category?: {
-    id: number;
-    name: string;
-    color: string | null;
-  };
-  date: string;
-  createdAt: string;
-  link?: {
-    id: number;
-    linkedTransactionId: number;
-  };
-}
+import type { Account, TransactionWithLink } from '@/types/transaction';
 
 interface TransactionLinkSelectorProps {
   // Selection state
@@ -37,7 +11,7 @@ interface TransactionLinkSelectorProps {
   onSelectionChange: (transactionId: number | null) => void;
 
   // Data
-  allTransactions: Transaction[];
+  allTransactions: TransactionWithLink[];
   accounts: Account[];
 
   // Optional filtering

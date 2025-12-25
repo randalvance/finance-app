@@ -4,60 +4,14 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { getCurrencySymbol } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
+import { Account, TransactionWithAccounts, TransactionWithLink, Category } from '@/types/transaction';
 import TransactionTable from '@/components/TransactionTable';
 
-interface Account {
-  id: number;
-  name: string;
-  color?: string;
-  currency?: Currency | string;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  color: string;
-  defaultTransactionType?: 'Debit' | 'Credit' | 'Transfer';
-}
-
-interface Transaction {
-  id: number;
-  transactionType: 'Debit' | 'Credit' | 'Transfer';
-  sourceAccountId: number | null;
-  targetAccountId: number | null;
-  description: string;
-  amount: number;
-  categoryId: number;
-  category?: {
-    id: number;
-    name: string;
-    color: string | null;
-  };
-  date: string;
-  createdAt: string;
-  sourceAccount?: {
-    id: number;
-    name: string;
-    color: string;
-    currency?: Currency;
-  };
-  targetAccount?: {
-    id: number;
-    name: string;
-    color: string;
-    currency?: Currency;
-  };
-  link?: {
-    id: number;
-    linkedTransactionId: number;
-  };
-}
-
 interface EditTransactionModalProps {
-  transaction: Transaction | null;  // null = create mode, object = edit mode
+  transaction: TransactionWithAccounts & { link?: { id: number; linkedTransactionId: number } } | null;  // null = create mode, object = edit mode
   accounts: Account[];
   categories: Category[];
-  allTransactions?: Transaction[];
+  allTransactions?: TransactionWithLink[];
   
   isOpen: boolean;
   onClose: () => void;
@@ -81,7 +35,7 @@ export default function EditTransactionModal({
   showLinkSelection = false
 }: EditTransactionModalProps) {
   const [formData, setFormData] = useState({
-    transaction_type: 'Debit' as 'Debit' | 'Credit' | 'Transfer',
+    transaction_type: 'Debit' as 'Debit' | 'TransferOut' | 'Credit' | 'TransferIn',
     source_account_id: '',
     target_account_id: '',
     description: '',
@@ -103,12 +57,12 @@ export default function EditTransactionModal({
     if (transaction) {
       // Edit mode
       setFormData({
-        transaction_type: transaction.transactionType,
+        transaction_type: transaction.transactionType as 'Debit' | 'TransferOut' | 'Credit' | 'TransferIn',
         source_account_id: transaction.sourceAccountId?.toString() || '',
         target_account_id: transaction.targetAccountId?.toString() || '',
         description: transaction.description,
         amount: transaction.amount.toString(),
-        category_id: transaction.categoryId.toString(),
+        category_id: transaction.categoryId?.toString() || '',
         date: transaction.date
       });
       setSelectedLinkTransactionId(transaction.link?.linkedTransactionId || null);
@@ -137,10 +91,12 @@ export default function EditTransactionModal({
     
     if (formData.transaction_type === 'Debit' && formData.source_account_id) {
       accountId = parseInt(formData.source_account_id);
+    } else if (formData.transaction_type === 'TransferOut' && formData.source_account_id) {
+      accountId = parseInt(formData.source_account_id);
     } else if (formData.transaction_type === 'Credit' && formData.target_account_id) {
       accountId = parseInt(formData.target_account_id);
-    } else if (formData.transaction_type === 'Transfer' && formData.source_account_id) {
-      accountId = parseInt(formData.source_account_id);
+    } else if (formData.transaction_type === 'TransferIn' && formData.target_account_id) {
+      accountId = parseInt(formData.target_account_id);
     }
     
     if (accountId) {
@@ -160,7 +116,7 @@ export default function EditTransactionModal({
       setFormData({
         ...formData,
         category_id: categoryId,
-        transaction_type: selectedCategory.defaultTransactionType
+        transaction_type: selectedCategory.defaultTransactionType as 'Debit' | 'TransferOut' | 'Credit' | 'TransferIn'
       });
     } else {
       setFormData({
@@ -186,7 +142,7 @@ export default function EditTransactionModal({
         setSubmitting(false);
         return;
       }
-      if (formData.transaction_type === 'Transfer') {
+      if (formData.transaction_type === 'TransferOut' || formData.transaction_type === 'TransferIn') {
         if (!formData.source_account_id || !formData.target_account_id) {
           alert('Transfer transactions require both source and target accounts');
           setSubmitting(false);
@@ -344,7 +300,7 @@ export default function EditTransactionModal({
             <label className="mono text-xs text-muted-foreground tracking-wider block mb-2">
               TRANSACTION_TYPE *
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -356,6 +312,18 @@ export default function EditTransactionModal({
                 }`}
               >
                 DEBIT
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormData({ ...formData, transaction_type: 'TransferOut' })}
+                className={`mono text-xs ${
+                  formData.transaction_type === 'TransferOut'
+                    ? 'bg-red-900/30 border-red-500 text-red-400 shadow-[0_0_10px_rgba(59,130,246,0.2)] hover:bg-red-900/40'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                TRANSFER_OUT
               </Button>
               <Button
                 type="button"
@@ -372,20 +340,20 @@ export default function EditTransactionModal({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setFormData({ ...formData, transaction_type: 'Transfer' })}
+                onClick={() => setFormData({ ...formData, transaction_type: 'TransferIn' })}
                 className={`mono text-xs ${
-                  formData.transaction_type === 'Transfer'
-                    ? 'bg-blue-900/30 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.2)] hover:bg-blue-900/40'
+                  formData.transaction_type === 'TransferIn'
+                    ? 'bg-green-900/30 border-green-500 text-green-400 shadow-[0_0_10px_rgba(59,130,246,0.2)] hover:bg-green-900/40'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                TRANSFER
+                TRANSFER_IN
               </Button>
             </div>
           </div>
 
           {/* Conditional Account Fields */}
-          {formData.transaction_type === 'Transfer' ? (
+          {formData.transaction_type === 'TransferOut' || formData.transaction_type === 'TransferIn' ? (
             <>
               <div>
                 <label htmlFor="source-account" className="mono text-xs text-muted-foreground tracking-wider block mb-2">

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TransactionService } from '@/services/TransactionService';
 import { CategoryService } from '@/services/categoryService';
 import { requireAuth } from '@/lib/auth';
-import { CreateTransactionData } from '@/types/transaction';
+import { CreateTransactionData, TRANSACTION_TYPES } from '@/types/transaction';
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate transaction type
-    if (!['Debit', 'Credit', 'Transfer'].includes(transaction_type)) {
+    if (!TRANSACTION_TYPES.includes(transaction_type)) {
       return NextResponse.json(
-        { error: 'Invalid transaction type. Must be Debit, Credit, or Transfer' },
+        { error: `Invalid transaction type. Must be one of: ${TRANSACTION_TYPES.join(', ')}` },
         { status: 400 }
       );
     }

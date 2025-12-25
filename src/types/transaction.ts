@@ -1,4 +1,4 @@
-import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, type Currency } from '@/db/schema';
+import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, transactionTypeEnum, type Currency } from '@/db/schema';
 import type { InferSelectModel } from 'drizzle-orm';
 
 // Base types inferred from schema
@@ -11,8 +11,19 @@ export type Import = InferSelectModel<typeof imports>;
 export type ImportSourceAccount = InferSelectModel<typeof importSourceAccounts>;
 export type TransactionLink = InferSelectModel<typeof transactionLinks>;
 
-// Transaction type enum
-export type TransactionType = 'Debit' | 'Credit' | 'Transfer';
+// Transaction type enum - imported from schema as source of truth
+export type TransactionType = typeof transactionTypeEnum[number];
+
+// Re-export schema constant for convenience
+export const TRANSACTION_TYPES = transactionTypeEnum;
+
+// Display names for transaction types
+export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
+  Debit: 'Debit',
+  TransferOut: 'Transfer Out',
+  Credit: 'Credit',
+  TransferIn: 'Transfer In',
+} as const;
 
 // Enhanced transaction type with account information for display
 export type TransactionWithAccounts = Transaction & {
@@ -51,13 +62,25 @@ export type TransactionWithLink = TransactionWithAccounts & {
 };
 
 // Discriminated unions for create operations with type-safe validation
+// Amount sign convention: Debit/TransferOut = negative, Credit/TransferIn = positive
 export type CreateDebitData = {
   userId: number;
   transactionType: 'Debit';
   sourceAccountId: number;
   targetAccountId?: number | null;
   description: string;
-  amount: number;
+  amount: number; // Should be negative (will be auto-converted)
+  categoryId: number;
+  date: string;
+};
+
+export type CreateTransferOutData = {
+  userId: number;
+  transactionType: 'TransferOut';
+  sourceAccountId: number;
+  targetAccountId: number;
+  description: string;
+  amount: number; // Should be negative (will be auto-converted)
   categoryId: number;
   date: string;
 };
@@ -68,24 +91,24 @@ export type CreateCreditData = {
   sourceAccountId?: number | null;
   targetAccountId: number;
   description: string;
-  amount: number;
+  amount: number; // Should be positive (will be auto-converted)
   categoryId: number;
   date: string;
 };
 
-export type CreateTransferData = {
+export type CreateTransferInData = {
   userId: number;
-  transactionType: 'Transfer';
+  transactionType: 'TransferIn';
   sourceAccountId: number;
   targetAccountId: number;
   description: string;
-  amount: number;
+  amount: number; // Should be positive (will be auto-converted)
   categoryId: number;
   date: string;
 };
 
 // Union type for creating any transaction
-export type CreateTransactionData = CreateDebitData | CreateCreditData | CreateTransferData;
+export type CreateTransactionData = CreateDebitData | CreateTransferOutData | CreateCreditData | CreateTransferInData;
 
 // Update transaction data (partial updates allowed)
 export type UpdateTransactionData = Partial<{

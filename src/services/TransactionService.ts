@@ -23,19 +23,44 @@ export class TransactionService {
           throw new Error('Debit transactions require a source account');
         }
         break;
-      case 'Credit':
-        if (!data.targetAccountId) {
-          throw new Error('Credit transactions require a target account');
-        }
-        break;
-      case 'Transfer':
+      case 'TransferOut':
         if (!data.sourceAccountId || !data.targetAccountId) {
-          throw new Error('Transfer transactions require both source and target accounts');
+          throw new Error('Transfer Out transactions require both source and target accounts');
         }
         if (data.sourceAccountId === data.targetAccountId) {
           throw new Error('Source and target accounts must be different for transfers');
         }
         break;
+      case 'Credit':
+        if (!data.targetAccountId) {
+          throw new Error('Credit transactions require a target account');
+        }
+        break;
+      case 'TransferIn':
+        if (!data.sourceAccountId || !data.targetAccountId) {
+          throw new Error('Transfer In transactions require both source and target accounts');
+        }
+        if (data.sourceAccountId === data.targetAccountId) {
+          throw new Error('Source and target accounts must be different for transfers');
+        }
+        break;
+    }
+  }
+
+  /**
+   * Auto-apply sign to amount based on transaction type
+   * Debit/TransferOut → negative, Credit/TransferIn → positive
+   */
+  private static applyAmountSign(transactionType: TransactionType, amount: number): number {
+    switch (transactionType) {
+      case 'Debit':
+      case 'TransferOut':
+        return -Math.abs(amount); // Force negative
+      case 'Credit':
+      case 'TransferIn':
+        return Math.abs(amount); // Force positive
+      default:
+        return amount;
     }
   }
 
@@ -147,13 +172,16 @@ export class TransactionService {
     // Validate before insertion
     this.validateTransactionData(data);
 
+    // Auto-apply sign based on transaction type
+    const signedAmount = this.applyAmountSign(data.transactionType, data.amount);
+
     const result = await db.insert(transactions).values({
       userId: data.userId,
       sourceAccountId: data.sourceAccountId || null,
       targetAccountId: data.targetAccountId || null,
       transactionType: data.transactionType,
       description: data.description,
-      amount: data.amount,
+      amount: signedAmount,
       categoryId: data.categoryId,
       date: data.date,
     }).returning();
@@ -165,13 +193,14 @@ export class TransactionService {
    * Update a transaction
    */
   static async updateTransaction(data: UpdateTransactionData, userId: number): Promise<Transaction | null> {
-    // If updating transaction type or accounts, fetch current record to validate
-    if (data.transactionType || data.sourceAccountId !== undefined || data.targetAccountId !== undefined) {
-      const current = await this.getTransactionById(data.id, userId);
-      if (!current) {
-        return null;
-      }
+    // Fetch current record for validation and sign application
+    const current = await this.getTransactionById(data.id, userId);
+    if (!current) {
+      return null;
+    }
 
+    // If updating transaction type or accounts, validate
+    if (data.transactionType || data.sourceAccountId !== undefined || data.targetAccountId !== undefined) {
       // Build validation data with current values as defaults
       const validationData: CreateTransactionData = {
         userId,
@@ -195,7 +224,11 @@ export class TransactionService {
     if (data.targetAccountId !== undefined) updateData.targetAccountId = data.targetAccountId;
     if (data.transactionType !== undefined) updateData.transactionType = data.transactionType;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.amount !== undefined) {
+      // Auto-apply sign based on transaction type
+      const transactionType = data.transactionType || (current.transactionType as TransactionType);
+      updateData.amount = this.applyAmountSign(transactionType, data.amount);
+    }
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.date !== undefined) updateData.date = data.date;
 

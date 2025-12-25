@@ -3,59 +3,15 @@
 import { useEffect, useState } from 'react';
 import TransactionTable from '@/components/TransactionTable';
 import EditTransactionModal from '@/components/EditTransactionModal';
-
-interface UnlinkedTransfer {
-  id: number;
-  transactionType: 'Debit' | 'Credit' | 'Transfer';
-  sourceAccountId: number | null;
-  targetAccountId: number | null;
-  description: string;
-  amount: number;
-  categoryId: number;
-  category?: {
-    id: number;
-    name: string;
-    color: string | null;
-  };
-  date: string;
-  createdAt: string;
-  sourceAccount?: {
-    id: number;
-    name: string;
-    color: string;
-  };
-  targetAccount?: {
-    id: number;
-    name: string;
-    color: string;
-  };
-  link?: {
-    id: number;
-    linkedTransactionId: number;
-  };
-}
-
-interface Account {
-  id: number;
-  name: string;
-  description: string | null;
-  color: string;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  color: string;
-  defaultTransactionType?: 'Debit' | 'Credit' | 'Transfer';
-}
+import type { TransactionWithLink, Account, Category } from '@/types/transaction';
 
 export default function UnlinkedTransfersPage() {
-  const [transfers, setTransfers] = useState<UnlinkedTransfer[]>([]);
+  const [transfers, setTransfers] = useState<TransactionWithLink[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingTransaction, setEditingTransaction] = useState<UnlinkedTransfer | null>(null);
-  const [allTransactions, setAllTransactions] = useState<UnlinkedTransfer[]>([]);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionWithLink | null>(null);
+  const [allTransactions, setAllTransactions] = useState<TransactionWithLink[]>([]);
 
   useEffect(() => {
     fetchUnlinkedTransfers();
