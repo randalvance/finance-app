@@ -1,6 +1,6 @@
 {
-  "id": "a695ee98-8334-4ff9-bf56-50e752aa57f9",
-  "prevId": "a899275c-6150-4d69-a234-ecc5e1ef5bac",
+  "id": "a899275c-6150-4d69-a234-ecc5e1ef5bac",
+  "prevId": "ad1468c3-e04f-4b78-8cc0-add22f896032",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -717,7 +717,7 @@
         },
         "transaction_type": {
           "name": "transaction_type",
-          "type": "varchar(15)",
+          "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true,
           "default": "'Debit'"
