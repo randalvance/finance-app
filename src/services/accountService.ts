@@ -1,14 +1,14 @@
 import { db } from '@/lib/db';
 import { accounts, transactions } from '@/db/schema';
 import { Account, CreateAccountData, UpdateAccountData } from '@/types/transaction';
-import { eq, sql, and, or } from 'drizzle-orm';
+import { eq, sql, and, or, asc } from 'drizzle-orm';
 
 export class AccountService {
   static async getAllAccounts(userId: number): Promise<Account[]> {
     const result = await db.select()
       .from(accounts)
       .where(eq(accounts.userId, userId))
-      .orderBy(sql`${accounts.createdAt} DESC`);
+      .orderBy(asc(accounts.name));
     return result as Account[];
   }
 
