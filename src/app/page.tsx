@@ -155,10 +155,12 @@ export default function Home() {
     fetchTransactions();
   };
 
+  const nonZeroAccounts = accounts.filter(a => a.totalAmount !== 0);
+
   const totalNetBalance = (() => {
-    const currencies = [...new Set(accounts.map(a => a.currency))];
+    const currencies = [...new Set(nonZeroAccounts.map(a => a.currency))];
     if (currencies.length === 1) {
-      const total = accounts.reduce((sum, a) => sum + a.totalAmount, 0);
+      const total = nonZeroAccounts.reduce((sum, a) => sum + a.totalAmount, 0);
       return { value: formatCurrency(total, currencies[0] as Currency), multi: false };
     } else if (currencies.length > 1) {
       return { value: 'MULTI-CURRENCY', multi: true };
@@ -184,7 +186,7 @@ export default function Home() {
                     </CardTitle>
                     {totalNetBalance.multi && (
                       <div className="mono text-xs text-muted-foreground mt-1">
-                        {accounts.length} ACCOUNTS / {[...new Set(accounts.map(a => a.currency))].length} CURRENCIES
+                        {nonZeroAccounts.length} ACCOUNTS / {[...new Set(nonZeroAccounts.map(a => a.currency))].length} CURRENCIES
                       </div>
                     )}
                   </div>
@@ -197,12 +199,12 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <div>
                     <div className="mono text-[10px] text-muted-foreground tracking-wider">ACCOUNTS</div>
-                    <div className="mono text-2xl font-bold text-foreground">{accounts.length}</div>
+                    <div className="mono text-2xl font-bold text-foreground">{nonZeroAccounts.length}</div>
                   </div>
                   <div>
                     <div className="mono text-[10px] text-muted-foreground tracking-wider">TRANSACTIONS</div>
                     <div className="mono text-2xl font-bold text-foreground">
-                      {accounts.reduce((sum, a) => sum + a.transactionCount, 0)}
+                      {nonZeroAccounts.reduce((sum, a) => sum + a.transactionCount, 0)}
                     </div>
                   </div>
                 </div>
@@ -218,7 +220,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-[140px] overflow-y-auto">
-                  {accounts.slice(0, 4).map((account, idx) => (
+                  {nonZeroAccounts.slice(0, 4).map((account, idx) => (
                     <div
                       key={account.id}
                       className="flex items-center justify-between p-2 bg-background/50 rounded border border-border/50 hover:border-primary/50 transition-all group"
@@ -238,9 +240,9 @@ export default function Home() {
                       </div>
                     </div>
                   ))}
-                  {accounts.length > 4 && (
+                  {nonZeroAccounts.length > 4 && (
                     <Link href="/admin" className="block text-center mono text-[10px] text-primary hover:text-primary/80 pt-1">
-                      +{accounts.length - 4} MORE
+                      +{nonZeroAccounts.length - 4} MORE
                     </Link>
                   )}
                 </div>
