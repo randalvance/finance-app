@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { getAvailableCurrencies } from '@/lib/currency';
 import type { Currency } from '@/db/schema';
+import type { TransactionType } from '@/types/transaction';
+import { TRANSACTION_TYPE_LABELS } from '@/types/transaction';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -72,7 +74,7 @@ export default function AdminPage() {
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
     color: '#3b82f6',
-    default_transaction_type: 'Debit' as 'Debit' | 'Credit' | 'Transfer'
+    default_transaction_type: 'Debit' as TransactionType
   });
 
   // Import source modal state
@@ -209,7 +211,7 @@ export default function AdminPage() {
       setCategoryFormData({
         name: category.name,
         color: category.color,
-        default_transaction_type: (category.defaultTransactionType as 'Debit' | 'Credit' | 'Transfer') || 'Debit'
+        default_transaction_type: (category.defaultTransactionType as TransactionType) || 'Debit'
       });
     } else {
       setEditingCategory(null);
@@ -759,12 +761,13 @@ export default function AdminPage() {
                 <select
                   id="default-transaction-type"
                   value={categoryFormData.default_transaction_type}
-                  onChange={(e) => setCategoryFormData({ ...categoryFormData, default_transaction_type: e.target.value as 'Debit' | 'Credit' | 'Transfer' })}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, default_transaction_type: e.target.value as TransactionType })}
                   className="mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                 >
-                  <option value="Debit">Debit (Spending)</option>
-                  <option value="Credit">Credit (Income)</option>
-                  <option value="Transfer">Transfer</option>
+                  <option value="Debit">{TRANSACTION_TYPE_LABELS.Debit}</option>
+                  <option value="TransferOut">{TRANSACTION_TYPE_LABELS.TransferOut}</option>
+                  <option value="Credit">{TRANSACTION_TYPE_LABELS.Credit}</option>
+                  <option value="TransferIn">{TRANSACTION_TYPE_LABELS.TransferIn}</option>
                 </select>
                 <p className="mono mt-1 text-[10px] text-muted-foreground">
                   Pre-selected when creating transactions
