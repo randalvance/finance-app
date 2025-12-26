@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev --turbopack\" \"npm run ngrok\"",
+    "dev": "next dev --turbopack",
     "ngrok": "dotenv -e .env.local -- bash -c 'ngrok http --domain=$(echo $NGROK_DOMAIN | sed \"s|https://||\") 3000'",
+    "dev:ngrok": "concurrently \"next dev --turbopack\" \"npm run ngrok\"",
     "build": "next build --turbopack",
     "build:dev": "next build --turbopack",
     "start": "next start",
