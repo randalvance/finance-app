@@ -37,6 +37,12 @@ interface TransactionTableProps {
   maxRows?: number;
   emptyStateMessage?: string;
 
+  // Pagination
+  showLoadMore?: boolean;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+
   // Actions
   actionType?: ActionType;
   onSelectTransaction?: (transactionId: number) => void;
@@ -94,6 +100,10 @@ export default function TransactionTable ({
   showCategoryColumn = true,
   maxRows,
   emptyStateMessage = "No transactions found",
+  showLoadMore = false,
+  onLoadMore,
+  isLoadingMore = false,
+  hasMore = true,
   actionType = "none",
   onSelectTransaction,
   editable = false,
@@ -172,7 +182,8 @@ export default function TransactionTable ({
     filteredTransactions = filteredTransactions.filter(customFilter);
   }
 
-  if (maxRows) {
+  // Only apply maxRows when showLoadMore is not enabled (for backward compatibility)
+  if (maxRows && !showLoadMore) {
     filteredTransactions = filteredTransactions.slice(0, maxRows);
   }
 
@@ -522,6 +533,19 @@ export default function TransactionTable ({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Load More Button */}
+      {showLoadMore && hasMore && (
+        <div className='flex justify-center pt-4'>
+          <button
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className='mono text-xs px-6 py-3 bg-primary text-primary-foreground rounded border border-primary hover:bg-primary/90 transition-all font-bold tracking-wider disabled:opacity-50 disabled:cursor-not-allowed'
+          >
+            {isLoadingMore ? "LOADING..." : "[LOAD_MORE] +20"}
+          </button>
         </div>
       )}
     </div>

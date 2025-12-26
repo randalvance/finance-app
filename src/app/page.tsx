@@ -31,13 +31,11 @@ export default function Home () {
     endDate: string | null;
   }>({ startDate: null, endDate: null });
   const [unlinkedTransferCount, setUnlinkedTransferCount] = useState(0);
-
-  useEffect(() => {
-    fetchAccounts();
-    fetchCategories();
-    fetchTransactions();
-    fetchUnlinkedTransferCount();
-  }, []);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const ITEMS_PER_PAGE = 20;
 
   const fetchAccounts = async () => {
     try {
@@ -65,10 +63,11 @@ export default function Home () {
     }
   };
 
-  const fetchTransactions = async (
+  const fetchTransactions = useCallback(async (
     accountId?: number | null,
     datePreset?: string | null,
-    customRange?: { startDate: string | null; endDate: string | null }
+    customRange?: { startDate: string | null; endDate: string | null },
+    loadMore: boolean = false
   ) => {
     try {
       const params = new URLSearchParams();
@@ -80,17 +79,32 @@ export default function Home () {
           params.append("endDate", customRange.endDate);
         }
       }
+      params.append("limit", ITEMS_PER_PAGE.toString());
+      params.append("offset", (loadMore ? offset : 0).toString());
 
       const url = `/api/transactions${params.toString() ? "?" + params.toString() : ""}`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setTransactions(data);
+        const totalCountHeader = response.headers.get("X-Total-Count");
+        const totalCountValue = totalCountHeader ? parseInt(totalCountHeader) : 0;
+
+        if (loadMore) {
+          setTransactions(prev => [...prev, ...data]);
+          setOffset(prev => prev + ITEMS_PER_PAGE);
+          setHasMore((offset + ITEMS_PER_PAGE) < totalCountValue);
+        } else {
+          setTransactions(data);
+          setOffset(ITEMS_PER_PAGE);
+          setHasMore(ITEMS_PER_PAGE < totalCountValue);
+        }
+
+        setTotalCount(totalCountValue);
       }
     } catch (error) {
       console.error("Error fetching transactions:", error);
     }
-  };
+  }, [ITEMS_PER_PAGE, offset]);
 
   const fetchUnlinkedTransferCount = async () => {
     try {
@@ -103,6 +117,13 @@ export default function Home () {
       console.error("Error fetching unlinked transfer count:", error);
     }
   };
+
+  useEffect(() => {
+    fetchAccounts();
+    fetchCategories();
+    fetchTransactions();
+    fetchUnlinkedTransferCount();
+  }, [fetchTransactions]);
 
   const openTransactionModal = useCallback(() => {
     setEditingTransaction(null);
@@ -121,21 +142,30 @@ export default function Home () {
   };
 
   const handleDataChanged = () => {
-    fetchTransactions(selectedAccountFilter, selectedDateFilter, customDateRange);
+    setOffset(ITEMS_PER_PAGE);
+    fetchTransactions(selectedAccountFilter, selectedDateFilter, customDateRange, false);
     fetchAccounts();
     fetchUnlinkedTransferCount();
   };
 
+  const handleLoadMore = async () => {
+    setIsLoadingMore(true);
+    await fetchTransactions(selectedAccountFilter, selectedDateFilter, customDateRange, true);
+    setIsLoadingMore(false);
+  };
+
   const handleDateFilterChange = (preset: string | null) => {
     setSelectedDateFilter(preset);
+    setOffset(ITEMS_PER_PAGE);
     if (preset !== "CUSTOM") {
       setCustomDateRange({ startDate: null, endDate: null });
-      fetchTransactions(selectedAccountFilter, preset, undefined);
+      fetchTransactions(selectedAccountFilter, preset, undefined, false);
     }
   };
 
   const handleCustomDateChange = (range: { startDate: string | null; endDate: string | null }) => {
     setCustomDateRange(range);
+    setOffset(ITEMS_PER_PAGE);
     // Only fetch if both dates are filled
     if (range.startDate && range.endDate) {
       // Validate that start date is before or equal to end date
@@ -143,7 +173,7 @@ export default function Home () {
         alert("Start date must be before or equal to end date");
         return;
       }
-      fetchTransactions(selectedAccountFilter, "CUSTOM", range);
+      fetchTransactions(selectedAccountFilter, "CUSTOM", range, false);
     }
   };
 
@@ -152,6 +182,7 @@ export default function Home () {
     setHomeSearchQuery("");
     setSelectedDateFilter(null);
     setCustomDateRange({ startDate: null, endDate: null });
+    setOffset(ITEMS_PER_PAGE);
     fetchTransactions();
   };
 
@@ -285,7 +316,7 @@ export default function Home () {
             <span className='text-primary'>{">"}</span> TRANSACTION_STREAM
           </h2>
           <div className='mono text-[10px] text-muted-foreground'>
-            LIVE_DATA // {transactions.length} RECORDS
+            LIVE_DATA // {transactions.length} of {totalCount} RECORDS
           </div>
         </div>
 
@@ -305,7 +336,8 @@ export default function Home () {
               selectedAccountFilter={selectedAccountFilter}
               onAccountFilterChange={(accountId) => {
                 setSelectedAccountFilter(accountId);
-                fetchTransactions(accountId, selectedDateFilter, customDateRange);
+                setOffset(ITEMS_PER_PAGE);
+                fetchTransactions(accountId, selectedDateFilter, customDateRange, false);
               }}
               showSearchFilter
               searchQuery={homeSearchQuery}
@@ -318,7 +350,10 @@ export default function Home () {
               onClearFilters={handleClearFilters}
               showLinkColumn
               showAccountsColumn
-              maxRows={20}
+              showLoadMore
+              onLoadMore={handleLoadMore}
+              isLoadingMore={isLoadingMore}
+              hasMore={hasMore}
               emptyStateMessage={transactions.length === 0 ? "NO TRANSACTIONS // USE [+] NEW_TXN TO BEGIN" : "NO MATCHES FOUND // ADJUST FILTERS"}
               editable
               onEditRequested={openEditModal}

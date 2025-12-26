@@ -12,8 +12,11 @@ export async function GET (request: NextRequest) {
     const datePreset = searchParams.get("datePreset");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const limit = searchParams.get("limit");
+    const offset = searchParams.get("offset");
 
-    const transactions = await TransactionService.getAllTransactionsWithLinks(
+    // Get total count of transactions matching the filters
+    const totalCount = await TransactionService.getTransactionCount(
       userId,
       accountId ? parseInt(accountId) : undefined,
       datePreset || undefined,
@@ -21,7 +24,19 @@ export async function GET (request: NextRequest) {
       endDate || undefined
     );
 
-    return NextResponse.json(transactions);
+    const transactions = await TransactionService.getAllTransactionsWithLinks(
+      userId,
+      accountId ? parseInt(accountId) : undefined,
+      datePreset || undefined,
+      startDate || undefined,
+      endDate || undefined,
+      limit ? parseInt(limit) : undefined,
+      offset ? parseInt(offset) : undefined
+    );
+
+    return NextResponse.json(transactions, {
+      headers: { "X-Total-Count": totalCount.toString() }
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
