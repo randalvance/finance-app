@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import useSWR from "swr";
+import { useAuth } from "@clerk/nextjs";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
@@ -8,28 +10,19 @@ import { Transaction, TransactionWithLink } from "@/types/transaction";
 
 type ActionType = "select" | "view" | "edit" | "none";
 
+export interface FilterConstraints {
+  dateEquals?: string; // YYYY-MM-DD - for TransactionLinkSelector
+  hasLinks?: boolean; // For unlinked-transfers page
+}
+
 interface TransactionTableProps {
-  transactions: TransactionWithLink[];
-  accounts?: Array<{ id: number; name: string }>;
+  // Filter constraints (from parent - immutable)
+  constraints?: FilterConstraints;
 
-  // Filtering
+  // Filter UI visibility (controls what filters user can interact with)
   showAccountFilter?: boolean;
-  selectedAccountFilter?: number | null;
-  onAccountFilterChange?: (accountId: number | null) => void;
-
   showSearchFilter?: boolean;
-  searchQuery?: string;
-  onSearchChange?: (query: string) => void;
-
   showDateFilter?: boolean;
-  selectedDateFilter?: string | null;
-  customDateRange?: { startDate: string | null; endDate: string | null };
-  onDateFilterChange?: (preset: string | null) => void;
-  onCustomDateChange?: (range: {
-    startDate: string | null;
-    endDate: string | null;
-  }) => void;
-  onClearFilters?: () => void;
 
   // Display options
   showLinkColumn?: boolean;
@@ -40,15 +33,16 @@ interface TransactionTableProps {
 
   // Actions
   actionType?: ActionType;
-  onSelectTransaction?: (transactionId: number) => void;
+  onSelectTransaction?: (transaction: TransactionWithLink) => void;
   editable?: boolean;
   onEditRequested?: (transaction: Transaction) => void;
   onDataChanged?: () => void;
 
-  // Additional filters
-  filterUnlinkedOnly?: boolean;
+  // Client-side custom filtering (for edge cases)
   customFilter?: (transaction: Transaction) => boolean;
 }
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const getTransactionTypeBadge = (
   type: "Debit" | "TransferOut" | "Credit" | "TransferIn"
@@ -76,20 +70,10 @@ const getTransactionTypeBadge = (
 };
 
 export default function TransactionTable ({
-  transactions,
-  accounts = [],
+  constraints,
   showAccountFilter = false,
-  selectedAccountFilter = null,
-  onAccountFilterChange,
   showSearchFilter = false,
-  searchQuery = "",
-  onSearchChange,
   showDateFilter = false,
-  selectedDateFilter = null,
-  customDateRange = { startDate: null, endDate: null },
-  onDateFilterChange,
-  onCustomDateChange,
-  onClearFilters,
   showLinkColumn = false,
   showAccountsColumn = true,
   showCategoryColumn = true,
@@ -100,9 +84,84 @@ export default function TransactionTable ({
   editable = false,
   onEditRequested,
   onDataChanged,
-  filterUnlinkedOnly = false,
   customFilter,
 }: TransactionTableProps) {
+  const { isLoaded } = useAuth();
+
+  // Internal filter state
+  const [accountFilter, setAccountFilter] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [datePreset, setDatePreset] = useState<string | null>(null);
+  const [customDateRange, setCustomDateRange] = useState<{
+    startDate: string | null;
+    endDate: string | null;
+  }>({ startDate: null, endDate: null });
+
+  // Build API URL for transactions
+  const transactionsApiUrl = useMemo(() => {
+    if (!isLoaded) return null;
+
+    const params = new URLSearchParams();
+
+    // Apply constraints
+    if (constraints?.dateEquals) {
+      params.append("datePreset", "CUSTOM");
+      params.append("startDate", constraints.dateEquals);
+      params.append("endDate", constraints.dateEquals);
+    } else if (datePreset) {
+      params.append("datePreset", datePreset);
+      if (datePreset === "CUSTOM") {
+        if (customDateRange.startDate) {
+          params.append("startDate", customDateRange.startDate);
+        }
+        if (customDateRange.endDate) {
+          params.append("endDate", customDateRange.endDate);
+        }
+      }
+    }
+
+    if (constraints?.hasLinks !== undefined) {
+      params.append("hasLinks", constraints.hasLinks.toString());
+    }
+
+    // Apply user filters
+    if (accountFilter) {
+      params.append("accountId", accountFilter.toString());
+    }
+
+    return `/api/transactions?${params.toString()}`;
+  }, [
+    isLoaded,
+    constraints,
+    accountFilter,
+    datePreset,
+    customDateRange.startDate,
+    customDateRange.endDate,
+  ]);
+
+  // Fetch transactions
+  const {
+    data: transactions = [],
+    error: transactionsError,
+    isLoading: transactionsLoading,
+    mutate: mutateTransactions,
+  } = useSWR<TransactionWithLink[]>(transactionsApiUrl, fetcher, {
+    revalidateOnFocus: false,
+  });
+
+  // Fetch accounts for filter dropdown
+  const { data: accounts = [] } = useSWR<Array<{ id: number; name: string }>>(
+    showAccountFilter ? "/api/accounts" : null,
+    fetcher
+  );
+
+  const handleClearFilters = () => {
+    setAccountFilter(null);
+    setSearchQuery("");
+    setDatePreset(null);
+    setCustomDateRange({ startDate: null, endDate: null });
+  };
+
   const handleDelete = async (transaction: TransactionWithLink) => {
     // Check if transaction is linked
     if (transaction.link) {
@@ -146,6 +205,7 @@ export default function TransactionTable ({
       });
 
       if (response.ok) {
+        mutateTransactions();
         onDataChanged?.();
       } else {
         const error = await response.json();
@@ -156,22 +216,23 @@ export default function TransactionTable ({
       alert("Failed to delete transaction");
     }
   };
-  // Apply filters
-  let filteredTransactions = transactions;
 
-  if (filterUnlinkedOnly) {
-    filteredTransactions = filteredTransactions.filter((t) => !t.link);
-  }
+  // Apply client-side filters (search and customFilter)
+  const filteredTransactions = useMemo(() => {
+    let result = transactions;
 
-  if (searchQuery) {
-    filteredTransactions = filteredTransactions.filter((t) =>
-      t.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }
+    if (searchQuery) {
+      result = result.filter((t) =>
+        t.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
-  if (customFilter) {
-    filteredTransactions = filteredTransactions.filter(customFilter);
-  }
+    if (customFilter) {
+      result = result.filter(customFilter);
+    }
+
+    return result;
+  }, [transactions, searchQuery, customFilter]);
 
   const [displayLimit, setDisplayLimit] = useState(maxRows || 20);
   const [isEnd, setIsEnd] = useState(false);
@@ -180,7 +241,7 @@ export default function TransactionTable ({
   useEffect(() => {
     setDisplayLimit(maxRows || 20);
     setIsEnd(false);
-  }, [maxRows, searchQuery, selectedAccountFilter, selectedDateFilter, filterUnlinkedOnly, transactions]);
+  }, [maxRows, searchQuery, accountFilter, datePreset, transactions]);
 
   const displayedTransactions = filteredTransactions.slice(0, displayLimit);
 
@@ -196,13 +257,23 @@ export default function TransactionTable ({
     }
   };
 
+  if (transactionsError) {
+    return (
+      <div className='glass-card rounded-lg border border-destructive/50 p-8 text-center'>
+        <p className='mono text-sm text-destructive'>
+          ERROR_FETCHING_TRANSACTIONS
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-4'>
       {/* Filters - Always visible when enabled */}
       {(showAccountFilter || showSearchFilter || showDateFilter) && (
         <div className='flex flex-col sm:flex-row gap-4'>
           {/* Account Filter */}
-          {showAccountFilter && onAccountFilterChange && (
+          {showAccountFilter && (
             <div className='flex-1'>
               <label
                 htmlFor='account-filter'
@@ -212,9 +283,9 @@ export default function TransactionTable ({
               </label>
               <select
                 id='account-filter'
-                value={selectedAccountFilter ?? ""}
+                value={accountFilter ?? ""}
                 onChange={(e) =>
-                  onAccountFilterChange(
+                  setAccountFilter(
                     e.target.value ? parseInt(e.target.value) : null
                   )}
                 className='mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all'
@@ -230,7 +301,7 @@ export default function TransactionTable ({
           )}
 
           {/* Search Filter */}
-          {showSearchFilter && onSearchChange && (
+          {showSearchFilter && (
             <div className='flex-1'>
               <label
                 htmlFor='search-filter'
@@ -242,7 +313,7 @@ export default function TransactionTable ({
                 id='search-filter'
                 type='text'
                 value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder='SEARCH...'
                 className='mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-muted-foreground/50'
               />
@@ -250,7 +321,7 @@ export default function TransactionTable ({
           )}
 
           {/* Date Filter */}
-          {showDateFilter && onDateFilterChange && (
+          {showDateFilter && (
             <div className='flex-1'>
               <label
                 htmlFor='date-filter'
@@ -260,8 +331,8 @@ export default function TransactionTable ({
               </label>
               <select
                 id='date-filter'
-                value={selectedDateFilter ?? ""}
-                onChange={(e) => onDateFilterChange(e.target.value || null)}
+                value={datePreset ?? ""}
+                onChange={(e) => setDatePreset(e.target.value || null)}
                 className='mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all'
               >
                 <option value=''>ALL_TIME</option>
@@ -277,13 +348,13 @@ export default function TransactionTable ({
               </select>
 
               {/* Custom Date Range Inputs */}
-              {selectedDateFilter === "CUSTOM" && onCustomDateChange && (
+              {datePreset === "CUSTOM" && (
                 <div className='grid grid-cols-2 gap-2 mt-2'>
                   <input
                     type='date'
                     value={customDateRange.startDate ?? ""}
                     onChange={(e) =>
-                      onCustomDateChange({
+                      setCustomDateRange({
                         ...customDateRange,
                         startDate: e.target.value || null,
                       })}
@@ -294,7 +365,7 @@ export default function TransactionTable ({
                     type='date'
                     value={customDateRange.endDate ?? ""}
                     onChange={(e) =>
-                      onCustomDateChange({
+                      setCustomDateRange({
                         ...customDateRange,
                         endDate: e.target.value || null,
                       })}
@@ -307,11 +378,10 @@ export default function TransactionTable ({
           )}
 
           {/* Clear Filters Button */}
-          {(selectedAccountFilter || searchQuery || selectedDateFilter) &&
-            onClearFilters && (
+          {(accountFilter || searchQuery || datePreset) && (
             <div className='flex items-end'>
               <button
-                onClick={onClearFilters}
+                onClick={handleClearFilters}
                 className='mono text-xs px-3 py-2 bg-destructive/20 text-destructive border border-destructive/50 rounded hover:bg-destructive/30 transition-all tracking-wider'
               >
                 [CLEAR]
@@ -322,11 +392,19 @@ export default function TransactionTable ({
       )}
 
       {/* Table or Empty State */}
-      {filteredTransactions.length === 0 ? (
+      {transactionsLoading ? (
+        <div className='glass-card rounded-lg shadow-lg border border-border p-12 text-center'>
+          <div className='animate-pulse flex flex-col items-center'>
+            <div className='h-8 w-8 bg-primary/20 rounded-full mb-4' />
+            <div className='h-4 w-48 bg-muted rounded mb-2' />
+            <div className='h-3 w-32 bg-muted/50 rounded' />
+          </div>
+        </div>
+      ) : filteredTransactions.length === 0 ? (
         <div className='glass-card rounded-lg shadow-lg border border-border p-12 text-center'>
           {transactions.length === 0 &&
           !searchQuery &&
-          !selectedAccountFilter ? (
+          !accountFilter ? (
           // Completely empty - no transactions at all
               <>
                 <div className='text-6xl mb-4 filter grayscale opacity-30'>
@@ -515,7 +593,7 @@ export default function TransactionTable ({
                   {actionType === "select" && onSelectTransaction && (
                     <td className='px-6 py-4 text-center'>
                       <button
-                        onClick={() => onSelectTransaction(transaction.id)}
+                        onClick={() => onSelectTransaction(transaction)}
                         className='mono text-xs px-3 py-1 bg-primary text-primary-foreground rounded border border-primary hover:bg-primary/90 transition-all font-bold tracking-wider'
                       >
                         SELECT

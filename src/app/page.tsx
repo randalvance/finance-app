@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useSWRConfig } from "swr";
 import { useLayout } from "@/components/ClientLayout";
 import TransactionTable from "@/components/TransactionTable";
 import EditTransactionModal from "@/components/EditTransactionModal";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/db/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Account, TransactionWithAccounts, TransactionWithLink, Category, Transaction } from "@/types/transaction";
+import { Account, TransactionWithAccounts, Category, Transaction } from "@/types/transaction";
 
 interface AccountWithStats extends Account {
   transactionCount: number;
@@ -16,26 +17,17 @@ interface AccountWithStats extends Account {
 }
 
 export default function Home () {
+  const { mutate } = useSWRConfig();
   const { setNewTransactionHandler } = useLayout();
   const [accounts, setAccounts] = useState<AccountWithStats[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [transactions, setTransactions] = useState<TransactionWithLink[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithAccounts | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [selectedAccountFilter, setSelectedAccountFilter] = useState<number | null>(null);
-  const [homeSearchQuery, setHomeSearchQuery] = useState("");
-  const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
-  const [customDateRange, setCustomDateRange] = useState<{
-    startDate: string | null;
-    endDate: string | null;
-  }>({ startDate: null, endDate: null });
   const [unlinkedTransferCount, setUnlinkedTransferCount] = useState(0);
 
   useEffect(() => {
     fetchAccounts();
     fetchCategories();
-    fetchTransactions();
     fetchUnlinkedTransferCount();
   }, []);
 
@@ -48,8 +40,6 @@ export default function Home () {
       }
     } catch (error) {
       console.error("Error fetching accounts:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -65,39 +55,12 @@ export default function Home () {
     }
   };
 
-  const fetchTransactions = async (
-    accountId?: number | null,
-    datePreset?: string | null,
-    customRange?: { startDate: string | null; endDate: string | null }
-  ) => {
-    try {
-      const params = new URLSearchParams();
-      if (accountId) params.append("accountId", accountId.toString());
-      if (datePreset) {
-        params.append("datePreset", datePreset);
-        if (datePreset === "CUSTOM" && customRange?.startDate && customRange?.endDate) {
-          params.append("startDate", customRange.startDate);
-          params.append("endDate", customRange.endDate);
-        }
-      }
-
-      const url = `/api/transactions${params.toString() ? "?" + params.toString() : ""}`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data);
-      }
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-    }
-  };
-
   const fetchUnlinkedTransferCount = async () => {
     try {
-      const response = await fetch("/api/transactions/unlinked-transfers");
+      const response = await fetch("/api/transactions/unlinked-count");
       if (response.ok) {
         const data = await response.json();
-        setUnlinkedTransferCount(data.length);
+        setUnlinkedTransferCount(data.count);
       }
     } catch (error) {
       console.error("Error fetching unlinked transfer count:", error);
@@ -115,45 +78,17 @@ export default function Home () {
     return () => setNewTransactionHandler(null);
   }, [setNewTransactionHandler, openTransactionModal]);
 
-  const openEditModal = (transaction: Transaction) => {
+  const openEditModal = useCallback((transaction: Transaction) => {
     setEditingTransaction(transaction);
     setShowTransactionModal(true);
-  };
+  }, []);
 
-  const handleDataChanged = () => {
-    fetchTransactions(selectedAccountFilter, selectedDateFilter, customDateRange);
+  const handleDataChanged = useCallback(() => {
     fetchAccounts();
     fetchUnlinkedTransferCount();
-  };
-
-  const handleDateFilterChange = (preset: string | null) => {
-    setSelectedDateFilter(preset);
-    if (preset !== "CUSTOM") {
-      setCustomDateRange({ startDate: null, endDate: null });
-      fetchTransactions(selectedAccountFilter, preset, undefined);
-    }
-  };
-
-  const handleCustomDateChange = (range: { startDate: string | null; endDate: string | null }) => {
-    setCustomDateRange(range);
-    // Only fetch if both dates are filled
-    if (range.startDate && range.endDate) {
-      // Validate that start date is before or equal to end date
-      if (range.startDate > range.endDate) {
-        alert("Start date must be before or equal to end date");
-        return;
-      }
-      fetchTransactions(selectedAccountFilter, "CUSTOM", range);
-    }
-  };
-
-  const handleClearFilters = () => {
-    setSelectedAccountFilter(null);
-    setHomeSearchQuery("");
-    setSelectedDateFilter(null);
-    setCustomDateRange({ startDate: null, endDate: null });
-    fetchTransactions();
-  };
+    // Only revalidate string keys for /api/transactions; non-string SWR keys are ignored.
+    mutate((key: unknown) => typeof key === "string" && key.startsWith("/api/transactions"));
+  }, [mutate]);
 
   const nonZeroAccounts = accounts.filter(a => a.totalAmount !== 0);
 
@@ -285,46 +220,22 @@ export default function Home () {
             <span className='text-primary'>{">"}</span> TRANSACTION_STREAM
           </h2>
           <div className='mono text-[10px] text-muted-foreground'>
-            LIVE_DATA // {transactions.length} RECORDS
+            LIVE_DATA
           </div>
         </div>
 
-        {loading
-          ? (
-            <div className='terminal-border bg-card/30 rounded p-12 text-center'>
-              <div className='mono text-sm text-muted-foreground animate-pulse'>
-                LOADING TRANSACTION DATA...
-              </div>
-            </div>
-          )
-          : (
-            <TransactionTable
-              transactions={transactions}
-              accounts={accounts}
-              showAccountFilter
-              selectedAccountFilter={selectedAccountFilter}
-              onAccountFilterChange={(accountId) => {
-                setSelectedAccountFilter(accountId);
-                fetchTransactions(accountId, selectedDateFilter, customDateRange);
-              }}
-              showSearchFilter
-              searchQuery={homeSearchQuery}
-              onSearchChange={setHomeSearchQuery}
-              showDateFilter
-              selectedDateFilter={selectedDateFilter}
-              customDateRange={customDateRange}
-              onDateFilterChange={handleDateFilterChange}
-              onCustomDateChange={handleCustomDateChange}
-              onClearFilters={handleClearFilters}
-              showLinkColumn
-              showAccountsColumn
-              maxRows={20}
-              emptyStateMessage={transactions.length === 0 ? "NO TRANSACTIONS // USE [+] NEW_TXN TO BEGIN" : "NO MATCHES FOUND // ADJUST FILTERS"}
-              editable
-              onEditRequested={openEditModal}
-              onDataChanged={handleDataChanged}
-            />
-          )}
+        <TransactionTable
+          showAccountFilter
+          showSearchFilter
+          showDateFilter
+          showLinkColumn
+          showAccountsColumn
+          maxRows={20}
+          emptyStateMessage='NO TRANSACTIONS // USE [+] NEW_TXN TO BEGIN'
+          editable
+          onEditRequested={openEditModal}
+          onDataChanged={handleDataChanged}
+        />
       </div>
 
       {/* Transaction Modal */}
@@ -332,7 +243,6 @@ export default function Home () {
         transaction={editingTransaction}
         accounts={accounts}
         categories={categories}
-        allTransactions={transactions}
         isOpen={showTransactionModal}
         onClose={() => {
           setShowTransactionModal(false);

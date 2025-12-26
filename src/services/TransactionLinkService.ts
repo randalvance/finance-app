@@ -104,60 +104,6 @@ export class TransactionLinkService {
   }
 
   /**
-   * Get all unlinked transfer transactions for a user
-   * Returns transfers that don't have a corresponding link
-   */
-  static async getUnlinkedTransfers (userId: number) {
-    // Get all transfer transactions
-    const transfers = await db.select({
-      id: transactions.id,
-      userId: transactions.userId,
-      sourceAccountId: transactions.sourceAccountId,
-      targetAccountId: transactions.targetAccountId,
-      transactionType: transactions.transactionType,
-      description: transactions.description,
-      amount: transactions.amount,
-      categoryId: transactions.categoryId,
-      date: transactions.date,
-      importId: transactions.importId,
-      createdAt: transactions.createdAt,
-      updatedAt: transactions.updatedAt,
-    })
-      .from(transactions)
-      .where(
-        and(
-          eq(transactions.userId, userId),
-          eq(transactions.transactionType, "Transfer")
-        )
-      );
-
-    // Get all linked transaction IDs
-    const links = await db.select({
-      t1: transactionLinks.transaction1Id,
-      t2: transactionLinks.transaction2Id
-    })
-      .from(transactionLinks)
-      .where(eq(transactionLinks.userId, userId));
-
-    const linkedIds = new Set<number>();
-    links.forEach(link => {
-      linkedIds.add(link.t1);
-      linkedIds.add(link.t2);
-    });
-
-    // Filter out linked transfers
-    return transfers.filter(t => !linkedIds.has(t.id));
-  }
-
-  /**
-   * Get count of unlinked transfers
-   */
-  static async getUnlinkedTransferCount (userId: number): Promise<number> {
-    const unlinked = await this.getUnlinkedTransfers(userId);
-    return unlinked.length;
-  }
-
-  /**
    * Validate if a link is allowed between two transactions
    * Useful for UI validation before attempting to create
    */

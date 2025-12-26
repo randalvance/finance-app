@@ -7,20 +7,27 @@ import type { Currency } from "@/db/schema";
 import {
   Account,
   TransactionWithAccounts,
-  TransactionWithLink,
+  LinkedTransaction,
   Category,
+  TransactionType,
 } from "@/types/transaction";
-import TransactionTable from "@/components/TransactionTable";
+import TransactionLinkSelector, {
+  TransactionLinkSelectorPanel,
+  useTransactionLinkState,
+} from "@/components/TransactionLinkSelector";
 
 interface EditTransactionModalProps {
   transaction:
     | (TransactionWithAccounts & {
-      link?: { id: number; linkedTransactionId: number };
+      link?: {
+        id: number;
+        linkedTransactionId: number;
+        linkedTransaction?: LinkedTransaction;
+      };
     })
     | null; // null = create mode, object = edit mode
   accounts: Account[];
   categories: Category[];
-  allTransactions?: TransactionWithLink[];
 
   isOpen: boolean;
   onClose: () => void;
@@ -36,7 +43,6 @@ export default function EditTransactionModal ({
   transaction,
   accounts,
   categories,
-  allTransactions = [],
   isOpen,
   onClose,
   onSaved,
@@ -60,16 +66,17 @@ export default function EditTransactionModal ({
   const [selectedLinkTransactionId, setSelectedLinkTransactionId] = useState<
     number | null
   >(null);
+  const [selectedLinkTransaction, setSelectedLinkTransaction] = useState<LinkedTransaction | null>(null);
+
+  const {
+    filterByDate,
+    setFilterByDate,
+  } = useTransactionLinkState();
 
   // View state for iOS-style slide navigation
   const [currentView, setCurrentView] = useState<"form" | "linkSelector">(
     "form"
   );
-  const [linkSearchQuery, setLinkSearchQuery] = useState("");
-  const [linkModalAccountFilter, setLinkModalAccountFilter] = useState<
-    number | null
-  >(null);
-  const [filterByDate, setFilterByDate] = useState(true);
 
   // Initialize form data when transaction changes or for create mode
   useEffect(() => {
@@ -91,6 +98,7 @@ export default function EditTransactionModal ({
       setSelectedLinkTransactionId(
         transaction.link?.linkedTransactionId || null
       );
+      setSelectedLinkTransaction(transaction.link?.linkedTransaction || null);
     } else {
       // Create mode - reset to defaults
       setFormData({
@@ -103,6 +111,7 @@ export default function EditTransactionModal ({
         date: new Date().toISOString().split("T")[0],
       });
       setSelectedLinkTransactionId(null);
+      setSelectedLinkTransaction(null);
     }
     // Reset view to form when modal opens/transaction changes
     setCurrentView("form");
@@ -300,32 +309,6 @@ export default function EditTransactionModal ({
     } finally {
       setSubmitting(false);
     }
-  };
-
-  // Get filtered transactions for link selector
-  const getFilteredTransactions = () => {
-    return allTransactions.filter((t) => {
-      // Exclude current transaction
-      if (transaction && t.id === transaction.id) {
-        return false;
-      }
-      // Filter out already linked transactions
-      if (t.link) {
-        return false;
-      }
-      // Filter by date if enabled
-      if (filterByDate && t.date !== formData.date) {
-        return false;
-      }
-      // Filter by search query
-      if (
-        linkSearchQuery &&
-        !t.description.toLowerCase().includes(linkSearchQuery.toLowerCase())
-      ) {
-        return false;
-      }
-      return true;
-    });
   };
 
   return (
@@ -632,73 +615,17 @@ export default function EditTransactionModal ({
               {/* Link Selection - only show if enabled */}
               {showLinkSelection && (
                 <div className='border-t border-border pt-4'>
-                  <label className='mono text-xs text-muted-foreground tracking-wider block mb-2'>
-                    LINK_TO_TRANSACTION
-                  </label>
-                  {selectedLinkTransactionId
-                    ? (
-                      <div className='space-y-2'>
-                        <div className='flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded'>
-                          <div className='flex-1 min-w-0'>
-                            <div className='text-sm text-primary-foreground truncate'>
-                              {
-                                allTransactions.find(
-                                  (t) => t.id === selectedLinkTransactionId
-                                )?.description
-                              }
-                            </div>
-                            <div className='mono text-xs text-muted-foreground mt-1'>
-                              {allTransactions.find(
-                                (t) => t.id === selectedLinkTransactionId
-                              ) && (
-                                <>
-                                  {new Date(
-                                    allTransactions.find(
-                                      (t) => t.id === selectedLinkTransactionId
-                                    )!.date
-                                  ).toLocaleDateString()}{" "}
-                                  - $
-                                  {allTransactions
-                                    .find(
-                                      (t) => t.id === selectedLinkTransactionId
-                                    )!
-                                    .amount.toFixed(2)}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            type='button'
-                            variant='ghost'
-                            size='sm'
-                            onClick={() => setSelectedLinkTransactionId(null)}
-                            className='mono text-[10px] text-destructive'
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          onClick={() => setCurrentView("linkSelector")}
-                          className='mono w-full justify-between text-xs'
-                        >
-                          <span>[CHANGE] LINKED TRANSACTION</span>
-                          <span>→</span>
-                        </Button>
-                      </div>
-                    )
-                    : (
-                      <Button
-                        type='button'
-                        variant='outline'
-                        onClick={() => setCurrentView("linkSelector")}
-                        className='mono w-full justify-between text-xs'
-                      >
-                        <span>[SELECT] TRANSACTION</span>
-                        <span>→</span>
-                      </Button>
-                    )}
+                  <TransactionLinkSelector
+                    selectedTransactionId={selectedLinkTransactionId}
+                    onSelectionChange={(t) => {
+                      setSelectedLinkTransactionId(t?.id || null);
+                      setSelectedLinkTransaction(t);
+                    }}
+                    selectedTransaction={selectedLinkTransaction}
+                    excludeTransactionId={transaction?.id}
+                    currentTransactionDate={formData.date}
+                    onOpenSelector={() => setCurrentView("linkSelector")}
+                  />
                 </div>
               )}
 
@@ -735,76 +662,17 @@ export default function EditTransactionModal ({
                 : "translate-x-full"
             }`}
           >
-            <div className='h-full overflow-hidden flex flex-col'>
-              {/* Date filter checkbox at top */}
-              <div className='px-6 pt-6 pb-2 flex-shrink-0'>
-                {formData.date && (
-                  <div className='flex items-center space-x-2'>
-                    <input
-                      type='checkbox'
-                      id='filterByDate'
-                      checked={filterByDate}
-                      onChange={(e) => setFilterByDate(e.target.checked)}
-                      className='w-4 h-4'
-                    />
-                    <label
-                      htmlFor='filterByDate'
-                      className='mono text-xs text-muted-foreground cursor-pointer'
-                    >
-                      Only show transactions from{" "}
-                      {new Date(formData.date).toLocaleDateString()}
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Full TransactionTable */}
-              <div className='flex-1 overflow-y-auto px-6 pb-6'>
-                <div className='overflow-x-auto'>
-                  <TransactionTable
-                    transactions={getFilteredTransactions()}
-                    accounts={accounts}
-                    showAccountFilter
-                    selectedAccountFilter={linkModalAccountFilter}
-                    onAccountFilterChange={setLinkModalAccountFilter}
-                    showSearchFilter
-                    searchQuery={linkSearchQuery}
-                    onSearchChange={setLinkSearchQuery}
-                    showLinkColumn={false}
-                    showAccountsColumn={false}
-                    showCategoryColumn={false}
-                    maxRows={100}
-                    actionType='select'
-                    onSelectTransaction={(id) => {
-                      setSelectedLinkTransactionId(id);
-                      setCurrentView("form");
-                    }}
-                    filterUnlinkedOnly
-                    emptyStateMessage='NO UNLINKED TRANSACTIONS FOUND'
-                  />
-                </div>
-              </div>
-
-              {/* Record count footer */}
-              <div className='px-6 py-3 border-t border-border bg-muted/30 flex-shrink-0'>
-                <div className='mono text-[10px] text-muted-foreground'>
-                  SHOWING{" "}
-                  {
-                    getFilteredTransactions()
-                      .filter((t) => !t.link)
-                      .filter(
-                        (t) =>
-                          linkSearchQuery === "" ||
-                          t.description
-                            .toLowerCase()
-                            .includes(linkSearchQuery.toLowerCase())
-                      )
-                      .slice(0, 100).length
-                  }{" "}
-                  UNLINKED RECORDS
-                </div>
-              </div>
-            </div>
+            <TransactionLinkSelectorPanel
+              excludeTransactionId={transaction?.id}
+              currentTransactionDate={formData.date}
+              onSelect={(t) => {
+                setSelectedLinkTransactionId(t.id);
+                setSelectedLinkTransaction(t);
+                setCurrentView("form");
+              }}
+              filterByDate={filterByDate}
+              onFilterByDateChange={setFilterByDate}
+            />
           </div>
         </div>
       </div>

@@ -1,38 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useSWRConfig } from "swr";
 import TransactionTable from "@/components/TransactionTable";
 import EditTransactionModal from "@/components/EditTransactionModal";
 import type { TransactionWithLink, Account, Category } from "@/types/transaction";
 
 export default function UnlinkedTransfersPage () {
-  const [transfers, setTransfers] = useState<TransactionWithLink[]>([]);
+  const { mutate } = useSWRConfig();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithLink | null>(null);
-  const [allTransactions, setAllTransactions] = useState<TransactionWithLink[]>([]);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
 
   useEffect(() => {
-    fetchUnlinkedTransfers();
     fetchAccounts();
     fetchCategories();
-    fetchAllTransactions();
   }, []);
-
-  const fetchUnlinkedTransfers = async () => {
-    try {
-      const response = await fetch("/api/transactions/unlinked-transfers");
-      if (response.ok) {
-        const data = await response.json();
-        setTransfers(data);
-      }
-    } catch (error) {
-      console.error("Error fetching unlinked transfers:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchAccounts = async () => {
     try {
@@ -58,75 +42,69 @@ export default function UnlinkedTransfersPage () {
     }
   };
 
-  const fetchAllTransactions = async () => {
-    try {
-      const response = await fetch("/api/transactions");
-      if (response.ok) {
-        const data = await response.json();
-        setAllTransactions(data);
-      }
-    } catch (error) {
-      console.error("Error fetching all transactions:", error);
-    }
-  };
+  const handleDataChanged = useCallback(() => {
+    // Refresh all transaction-related SWR keys
+    mutate((key: unknown) => typeof key === "string" && key.startsWith("/api/transactions"));
+  }, [mutate]);
 
-  const handleDataChanged = () => {
-    fetchUnlinkedTransfers();
-    fetchAllTransactions();
-  };
+  const openEditModal = useCallback((transaction: TransactionWithLink) => {
+    setEditingTransaction(transaction);
+    setShowTransactionModal(true);
+  }, []);
+
+  const transferFilter = useCallback((t: TransactionWithLink) =>
+    t.transactionType === "TransferOut" ||
+    t.transactionType === "TransferIn", []);
 
   return (
     <main className='max-w-[1600px] mx-auto px-6 py-8'>
-      {loading
-        ? (
-          <div className='glass-card rounded-lg p-12 text-center animate-slide-up-fade'>
-            <div className='mono text-sm text-muted-foreground animate-pulse'>LOADING_TRANSFERS...</div>
+      <div className='animate-slide-up-fade'>
+        <div className='mb-6 glass-card p-4 border border-warning/30 rounded-lg'>
+          <div className='flex items-center space-x-3'>
+            <div className='text-2xl'>⚠</div>
+            <div>
+              <p className='mono text-xs font-bold text-warning tracking-wider'>
+                UNLINKED_TRANSFERS_DETECTED
+              </p>
+              <p className='mono text-[10px] text-muted-foreground mt-1'>
+                The following transactions are marked as transfers but are not
+                linked to a corresponding transaction in another account.
+              </p>
+            </div>
           </div>
-        )
-        : transfers.length === 0
-          ? (
-            <div className='glass-card rounded-lg shadow-lg border border-border p-12 text-center animate-slide-up-fade'>
-              <div className='text-6xl mb-4 filter drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]'>✓</div>
-              <h3 className='mono text-sm font-bold text-foreground mb-2 tracking-wider'>ALL_TRANSFERS_LINKED</h3>
-              <p className='mono text-xs text-muted-foreground tracking-wide'>No unlinked transfers found</p>
-            </div>
-          )
-          : (
-            <div className='animate-slide-up-fade'>
-              <div className='mb-6 glass-card p-4 border border-warning/30 rounded-lg'>
-                <div className='flex items-center space-x-3'>
-                  <div className='text-2xl'>⚠</div>
-                  <div>
-                    <p className='mono text-xs font-bold text-warning tracking-wider'>
-                      UNLINKED_TRANSFERS_DETECTED
-                    </p>
-                    <p className='mono text-[10px] text-muted-foreground mt-0.5'>
-                      {transfers.length} transaction{transfers.length !== 1 ? "s" : ""} require linking
-                    </p>
-                  </div>
-                </div>
-              </div>
+        </div>
 
-              <TransactionTable
-                transactions={transfers}
-                accounts={accounts}
-                showLinkColumn={false}
-                showAccountsColumn
-                emptyStateMessage='NO UNLINKED TRANSFERS // ALL LINKED'
-                editable
-                onEditRequested={setEditingTransaction}
-                onDataChanged={handleDataChanged}
-              />
-            </div>
-          )}
+        <div className='flex items-center justify-between mb-4'>
+          <h2 className='mono text-sm font-bold tracking-wider'>
+            <span className='text-warning'>{">"}</span> UNLINKED_TRANSACTIONS
+          </h2>
+        </div>
 
+        <TransactionTable
+          constraints={{ hasLinks: false }}
+          showAccountFilter
+          showSearchFilter
+          showDateFilter
+          showLinkColumn
+          showAccountsColumn
+          editable
+          onEditRequested={openEditModal}
+          onDataChanged={handleDataChanged}
+          customFilter={transferFilter}
+          emptyStateMessage='ALL_TRANSFERS_LINKED'
+        />
+      </div>
+
+      {/* Transaction Modal */}
       <EditTransactionModal
         transaction={editingTransaction}
         accounts={accounts}
         categories={categories}
-        allTransactions={allTransactions}
-        isOpen={!!editingTransaction}
-        onClose={() => setEditingTransaction(null)}
+        isOpen={showTransactionModal}
+        onClose={() => {
+          setShowTransactionModal(false);
+          setEditingTransaction(null);
+        }}
         onSaved={handleDataChanged}
         showLinkSelection
       />

@@ -12,13 +12,15 @@ export async function GET (request: NextRequest) {
     const datePreset = searchParams.get("datePreset");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const hasLinks = searchParams.get("hasLinks");
 
     const transactions = await TransactionService.getAllTransactionsWithLinks(
       userId,
       accountId ? parseInt(accountId) : undefined,
       datePreset || undefined,
       startDate || undefined,
-      endDate || undefined
+      endDate || undefined,
+      hasLinks === "true" ? true : hasLinks === "false" ? false : undefined
     );
 
     return NextResponse.json(transactions);

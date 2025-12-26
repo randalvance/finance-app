@@ -47,17 +47,19 @@ export type TransactionWithAccounts = Transaction & {
 };
 
 // Transaction with link information
+export type LinkedTransaction = {
+  id: number;
+  description: string;
+  amount: number;
+  date: string;
+  transactionType: TransactionType;
+};
+
 export type TransactionWithLink = TransactionWithAccounts & {
   link?: {
     id: number;
     linkedTransactionId: number;
-    linkedTransaction?: {
-      id: number;
-      description: string;
-      amount: number;
-      date: string;
-      transactionType: TransactionType;
-    };
+    linkedTransaction?: LinkedTransaction;
   };
 };
 

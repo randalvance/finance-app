@@ -8,7 +8,7 @@ import {
   TransactionWithLink,
   TransactionType
 } from "@/types/transaction";
-import { eq, desc, and, inArray, or, gte, lte } from "drizzle-orm";
+import { eq, desc, and, inArray, or, gte, lte, exists, notExists, sql } from "drizzle-orm";
 import { calculateDateRange, type DatePreset } from "@/lib/dateUtils";
 
 export class TransactionService {
@@ -277,7 +277,8 @@ export class TransactionService {
     accountId?: number,
     datePreset?: string,
     customStartDate?: string,
-    customEndDate?: string
+    customEndDate?: string,
+    hasLinks?: boolean
   ): Promise<TransactionWithLink[]> {
     // Build base query
     let query = db
@@ -326,6 +327,27 @@ export class TransactionService {
             lte(transactions.date, dateRange.endDate)
           )!
         );
+      }
+    }
+
+    // Apply hasLinks filter if provided
+    if (hasLinks !== undefined) {
+      const linkSubquery = db.select()
+        .from(transactionLinks)
+        .where(
+          and(
+            eq(transactionLinks.userId, userId),
+            or(
+              eq(transactionLinks.transaction1Id, transactions.id),
+              eq(transactionLinks.transaction2Id, transactions.id)
+            )
+          )
+        );
+
+      if (hasLinks) {
+        conditions.push(exists(linkSubquery));
+      } else {
+        conditions.push(notExists(linkSubquery));
       }
     }
 
@@ -466,5 +488,34 @@ export class TransactionService {
         : undefined,
       link: linkMap.get(t.id)
     }));
+  }
+
+  /**
+   * Get count of unlinked transfers for a user
+   */
+  static async getUnlinkedTransferCount (userId: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          inArray(transactions.transactionType, ["TransferOut", "TransferIn"]),
+          notExists(
+            db.select()
+              .from(transactionLinks)
+              .where(
+                and(
+                  eq(transactionLinks.userId, userId),
+                  or(
+                    eq(transactionLinks.transaction1Id, transactions.id),
+                    eq(transactionLinks.transaction2Id, transactions.id)
+                  )
+                )
+              )
+          )
+        )
+      );
+    return Number(result[0]?.count || 0);
   }
 }
