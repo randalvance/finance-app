@@ -6,7 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
-import { Transaction, TransactionWithLink } from "@/types/transaction";
+import { LinkedTransaction, Transaction, TransactionWithLink } from "@/types/transaction";
 
 type ActionType = "select" | "view" | "edit" | "none";
 
@@ -33,7 +33,7 @@ interface TransactionTableProps {
 
   // Actions
   actionType?: ActionType;
-  onSelectTransaction?: (transaction: TransactionWithLink) => void;
+  onSelectTransaction?: (transaction: LinkedTransaction) => void;
   editable?: boolean;
   onEditRequested?: (transaction: Transaction) => void;
   onDataChanged?: () => void;
@@ -593,7 +593,7 @@ export default function TransactionTable ({
                   {actionType === "select" && onSelectTransaction && (
                     <td className='px-6 py-4 text-center'>
                       <button
-                        onClick={() => onSelectTransaction(transaction)}
+                        onClick={() => onSelectTransaction(transaction as LinkedTransaction)}
                         className='mono text-xs px-3 py-1 bg-primary text-primary-foreground rounded border border-primary hover:bg-primary/90 transition-all font-bold tracking-wider'
                       >
                         SELECT

@@ -206,25 +206,25 @@ export function TransactionLinkSelectorPanel ({
 
   return (
     <div className='h-full overflow-hidden flex flex-col'>
-      <div className='px-6 pt-6 pb-2 flex-shrink-0'>
-        {currentTransactionDate && (
-          <div className='flex items-center space-x-2'>
-            <input
-              type='checkbox'
-              id='filterByDate'
-              checked={filterByDate}
-              onChange={(e) => onFilterByDateChange(e.target.checked)}
-              className='w-4 h-4'
-            />
-            <label
-              htmlFor='filterByDate'
-              className='mono text-xs text-muted-foreground cursor-pointer'
-            >
-              Only show transactions from{" "}
-              {new Date(currentTransactionDate).toLocaleDateString()}
-            </label>
-          </div>
-        )}
+      <div className='px-6 pt-4 pb-4 flex-shrink-0 border-b border-border/50'>
+        <div className='flex items-center space-x-2 p-2 bg-primary/5 rounded border border-primary/20'>
+          <input
+            type='checkbox'
+            id='filterByDate'
+            checked={filterByDate}
+            onChange={(e) => onFilterByDateChange(e.target.checked)}
+            className='w-4 h-4 cursor-pointer'
+          />
+          <label
+            htmlFor='filterByDate'
+            className='mono text-xs text-foreground cursor-pointer select-none'
+          >
+            Only show transactions from{" "}
+            {currentTransactionDate
+              ? new Date(currentTransactionDate).toLocaleDateString()
+              : new Date().toLocaleDateString()}
+          </label>
+        </div>
       </div>
 
       <div className='flex-1 overflow-y-auto px-6 pb-6'>
@@ -233,6 +233,7 @@ export function TransactionLinkSelectorPanel ({
             constraints={constraints}
             showAccountFilter
             showSearchFilter
+            showDateFilter
             showLinkColumn={false}
             showAccountsColumn={false}
             showCategoryColumn={false}
