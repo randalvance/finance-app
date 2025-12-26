@@ -24,6 +24,11 @@ interface TransactionTableProps {
   showSearchFilter?: boolean;
   showDateFilter?: boolean;
 
+  // Controlled date filter state (optional)
+  dateFilterPreset?: string | null;
+  dateFilterRange?: { startDate: string | null; endDate: string | null };
+  onDateFilterChange?: (preset: string | null, range: { startDate: string | null; endDate: string | null }) => void;
+
   // Display options
   showLinkColumn?: boolean;
   showAccountsColumn?: boolean;
@@ -74,6 +79,9 @@ export default function TransactionTable ({
   showAccountFilter = false,
   showSearchFilter = false,
   showDateFilter = false,
+  dateFilterPreset,
+  dateFilterRange,
+  onDateFilterChange,
   showLinkColumn = false,
   showAccountsColumn = true,
   showCategoryColumn = true,
@@ -88,14 +96,34 @@ export default function TransactionTable ({
 }: TransactionTableProps) {
   const { isLoaded } = useAuth();
 
-  // Internal filter state
+  // Internal filter state (use controlled props if provided)
   const [accountFilter, setAccountFilter] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [datePreset, setDatePreset] = useState<string | null>(null);
-  const [customDateRange, setCustomDateRange] = useState<{
+  const [internalDatePreset, setInternalDatePreset] = useState<string | null>(null);
+  const [internalCustomDateRange, setInternalCustomDateRange] = useState<{
     startDate: string | null;
     endDate: string | null;
   }>({ startDate: null, endDate: null });
+
+  // Use controlled or internal state
+  const datePreset = dateFilterPreset !== undefined ? dateFilterPreset : internalDatePreset;
+  const customDateRange = dateFilterRange !== undefined ? dateFilterRange : internalCustomDateRange;
+
+  const handleDatePresetChange = (preset: string | null) => {
+    if (onDateFilterChange) {
+      onDateFilterChange(preset, customDateRange);
+    } else {
+      setInternalDatePreset(preset);
+    }
+  };
+
+  const handleCustomDateRangeChange = (range: { startDate: string | null; endDate: string | null }) => {
+    if (onDateFilterChange) {
+      onDateFilterChange(datePreset, range);
+    } else {
+      setInternalCustomDateRange(range);
+    }
+  };
 
   // Build API URL for transactions
   const transactionsApiUrl = useMemo(() => {
@@ -158,8 +186,8 @@ export default function TransactionTable ({
   const handleClearFilters = () => {
     setAccountFilter(null);
     setSearchQuery("");
-    setDatePreset(null);
-    setCustomDateRange({ startDate: null, endDate: null });
+    handleDatePresetChange(null);
+    handleCustomDateRangeChange({ startDate: null, endDate: null });
   };
 
   const handleDelete = async (transaction: TransactionWithLink) => {
@@ -332,7 +360,7 @@ export default function TransactionTable ({
               <select
                 id='date-filter'
                 value={datePreset ?? ""}
-                onChange={(e) => setDatePreset(e.target.value || null)}
+                onChange={(e) => handleDatePresetChange(e.target.value || null)}
                 className='mono w-full px-3 py-2 bg-input border border-border rounded text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all'
               >
                 <option value=''>ALL_TIME</option>
@@ -354,7 +382,7 @@ export default function TransactionTable ({
                     type='date'
                     value={customDateRange.startDate ?? ""}
                     onChange={(e) =>
-                      setCustomDateRange({
+                      handleCustomDateRangeChange({
                         ...customDateRange,
                         startDate: e.target.value || null,
                       })}
@@ -365,7 +393,7 @@ export default function TransactionTable ({
                     type='date'
                     value={customDateRange.endDate ?? ""}
                     onChange={(e) =>
-                      setCustomDateRange({
+                      handleCustomDateRangeChange({
                         ...customDateRange,
                         endDate: e.target.value || null,
                       })}
