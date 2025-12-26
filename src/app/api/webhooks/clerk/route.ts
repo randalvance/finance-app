@@ -1,22 +1,22 @@
-import { Webhook } from 'svix';
-import { headers } from 'next/headers';
-import { WebhookEvent } from '@clerk/nextjs/server';
-import { UserService } from '@/services/UserService';
+import { Webhook } from "svix";
+import { headers } from "next/headers";
+import { WebhookEvent } from "@clerk/nextjs/server";
+import { UserService } from "@/services/UserService";
 
-export async function POST(req: Request) {
+export async function POST (req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
-    throw new Error('Please add CLERK_WEBHOOK_SECRET to .env.local');
+    throw new Error("Please add CLERK_WEBHOOK_SECRET to .env.local");
   }
 
   const headerPayload = await headers();
-  const svix_id = headerPayload.get('svix-id');
-  const svix_timestamp = headerPayload.get('svix-timestamp');
-  const svix_signature = headerPayload.get('svix-signature');
+  const svix_id = headerPayload.get("svix-id");
+  const svix_timestamp = headerPayload.get("svix-timestamp");
+  const svix_signature = headerPayload.get("svix-signature");
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response('Error: Missing svix headers', { status: 400 });
+    return new Response("Error: Missing svix headers", { status: 400 });
   }
 
   const payload = await req.json();
@@ -27,18 +27,18 @@ export async function POST(req: Request) {
 
   try {
     evt = wh.verify(body, {
-      'svix-id': svix_id,
-      'svix-timestamp': svix_timestamp,
-      'svix-signature': svix_signature,
+      "svix-id": svix_id,
+      "svix-timestamp": svix_timestamp,
+      "svix-signature": svix_signature,
     }) as WebhookEvent;
   } catch (err) {
-    console.error('Error verifying webhook:', err);
-    return new Response('Error: Verification failed', { status: 400 });
+    console.error("Error verifying webhook:", err);
+    return new Response("Error: Verification failed", { status: 400 });
   }
 
   const eventType = evt.type;
 
-  if (eventType === 'user.created') {
+  if (eventType === "user.created") {
     const { id, email_addresses, first_name, last_name } = evt.data;
 
     await UserService.createUser({
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     });
   }
 
-  if (eventType === 'user.updated') {
+  if (eventType === "user.updated") {
     const { id, email_addresses, first_name, last_name } = evt.data;
 
     await UserService.updateUser(id, {
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     });
   }
 
-  if (eventType === 'user.deleted') {
+  if (eventType === "user.deleted") {
     const { id } = evt.data;
 
     if (id) {
@@ -67,5 +67,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return new Response('Webhook processed', { status: 200 });
+  return new Response("Webhook processed", { status: 200 });
 }

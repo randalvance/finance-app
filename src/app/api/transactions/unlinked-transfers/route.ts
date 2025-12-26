@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { TransactionLinkService } from '@/services/TransactionLinkService';
-import { requireAuth } from '@/lib/auth';
-import { accounts, categories } from '@/db/schema';
-import { db } from '@/lib/db';
-import { inArray } from 'drizzle-orm';
+import { NextResponse } from "next/server";
+import { TransactionLinkService } from "@/services/TransactionLinkService";
+import { requireAuth } from "@/lib/auth";
+import { accounts, categories } from "@/db/schema";
+import { db } from "@/lib/db";
+import { inArray } from "drizzle-orm";
 
-export async function GET() {
+export async function GET () {
   try {
     const userId = await requireAuth();
     const unlinkedTransfers = await TransactionLinkService.getUnlinkedTransfers(userId);
@@ -49,31 +49,37 @@ export async function GET() {
 
     const enhancedTransfers = unlinkedTransfers.map(t => ({
       ...t,
-      sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId) ? {
-        id: t.sourceAccountId,
-        name: accountMap.get(t.sourceAccountId)!.name,
-        color: accountMap.get(t.sourceAccountId)!.color,
-      } : undefined,
-      targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId) ? {
-        id: t.targetAccountId,
-        name: accountMap.get(t.targetAccountId)!.name,
-        color: accountMap.get(t.targetAccountId)!.color,
-      } : undefined,
-      category: t.categoryId && categoryMap.has(t.categoryId) ? {
-        id: t.categoryId,
-        name: categoryMap.get(t.categoryId)!.name,
-        color: categoryMap.get(t.categoryId)!.color,
-      } : undefined,
+      sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId)
+        ? {
+          id: t.sourceAccountId,
+          name: accountMap.get(t.sourceAccountId)!.name,
+          color: accountMap.get(t.sourceAccountId)!.color,
+        }
+        : undefined,
+      targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId)
+        ? {
+          id: t.targetAccountId,
+          name: accountMap.get(t.targetAccountId)!.name,
+          color: accountMap.get(t.targetAccountId)!.color,
+        }
+        : undefined,
+      category: t.categoryId && categoryMap.has(t.categoryId)
+        ? {
+          id: t.categoryId,
+          name: categoryMap.get(t.categoryId)!.name,
+          color: categoryMap.get(t.categoryId)!.color,
+        }
+        : undefined,
     }));
 
     return NextResponse.json(enhancedTransfers);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error fetching unlinked transfers:', error);
+    console.error("Error fetching unlinked transfers:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch unlinked transfers' },
+      { error: "Failed to fetch unlinked transfers" },
       { status: 500 }
     );
   }

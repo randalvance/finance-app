@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { TransactionService } from '@/services/TransactionService';
-import { CategoryService } from '@/services/categoryService';
-import { requireAuth } from '@/lib/auth';
-import { CreateTransactionData, TRANSACTION_TYPES } from '@/types/transaction';
+import { NextRequest, NextResponse } from "next/server";
+import { TransactionService } from "@/services/TransactionService";
+import { CategoryService } from "@/services/categoryService";
+import { requireAuth } from "@/lib/auth";
+import { CreateTransactionData, TRANSACTION_TYPES } from "@/types/transaction";
 
-export async function GET(request: NextRequest) {
+export async function GET (request: NextRequest) {
   try {
     const userId = await requireAuth();
     const { searchParams } = new URL(request.url);
-    const accountId = searchParams.get('accountId');
-    const datePreset = searchParams.get('datePreset');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const accountId = searchParams.get("accountId");
+    const datePreset = searchParams.get("datePreset");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     const transactions = await TransactionService.getAllTransactionsWithLinks(
       userId,
@@ -23,18 +23,18 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transactions);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error fetching transactions:', error);
+    console.error("Error fetching transactions:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch transactions' },
+      { error: "Failed to fetch transactions" },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST (request: NextRequest) {
   try {
     const userId = await requireAuth();
     const body = await request.json();
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!transaction_type || !description || !amount || (!category && !category_id) || !date) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Validate transaction type
     if (!TRANSACTION_TYPES.includes(transaction_type)) {
       return NextResponse.json(
-        { error: `Invalid transaction type. Must be one of: ${TRANSACTION_TYPES.join(', ')}` },
+        { error: `Invalid transaction type. Must be one of: ${TRANSACTION_TYPES.join(", ")}` },
         { status: 400 }
       );
     }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       categoryId = foundCategory.id;
     } else {
       return NextResponse.json(
-        { error: 'Either category or category_id is required' },
+        { error: "Either category or category_id is required" },
         { status: 400 }
       );
     }
@@ -104,17 +104,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(transaction, { status: 201 });
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message === 'Unauthorized') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      if (error.message === "Unauthorized") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       // Validation errors from TransactionService
-      if (error.message.includes('require') || error.message.includes('must be different')) {
+      if (error.message.includes("require") || error.message.includes("must be different")) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
     }
-    console.error('Error creating transaction:', error);
+    console.error("Error creating transaction:", error);
     return NextResponse.json(
-      { error: 'Failed to create transaction' },
+      { error: "Failed to create transaction" },
       { status: 500 }
     );
   }

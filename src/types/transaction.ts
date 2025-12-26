@@ -1,5 +1,5 @@
-import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, transactionTypeEnum, type Currency } from '@/db/schema';
-import type { InferSelectModel } from 'drizzle-orm';
+import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, transactionTypeEnum, type Currency } from "@/db/schema";
+import type { InferSelectModel } from "drizzle-orm";
 
 // Base types inferred from schema
 export type Account = InferSelectModel<typeof accounts>;
@@ -19,10 +19,10 @@ export const TRANSACTION_TYPES = transactionTypeEnum;
 
 // Display names for transaction types
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
-  Debit: 'Debit',
-  TransferOut: 'Transfer Out',
-  Credit: 'Credit',
-  TransferIn: 'Transfer In',
+  Debit: "Debit",
+  TransferOut: "Transfer Out",
+  Credit: "Credit",
+  TransferIn: "Transfer In",
 } as const;
 
 // Enhanced transaction type with account information for display
@@ -65,7 +65,7 @@ export type TransactionWithLink = TransactionWithAccounts & {
 // Amount sign convention: Debit/TransferOut = negative, Credit/TransferIn = positive
 export type CreateDebitData = {
   userId: number;
-  transactionType: 'Debit';
+  transactionType: "Debit";
   sourceAccountId: number;
   targetAccountId?: number | null;
   description: string;
@@ -76,7 +76,7 @@ export type CreateDebitData = {
 
 export type CreateTransferOutData = {
   userId: number;
-  transactionType: 'TransferOut';
+  transactionType: "TransferOut";
   sourceAccountId: number;
   targetAccountId: number;
   description: string;
@@ -87,7 +87,7 @@ export type CreateTransferOutData = {
 
 export type CreateCreditData = {
   userId: number;
-  transactionType: 'Credit';
+  transactionType: "Credit";
   sourceAccountId?: number | null;
   targetAccountId: number;
   description: string;
@@ -98,7 +98,7 @@ export type CreateCreditData = {
 
 export type CreateTransferInData = {
   userId: number;
-  transactionType: 'TransferIn';
+  transactionType: "TransferIn";
   sourceAccountId: number;
   targetAccountId: number;
   description: string;
@@ -132,7 +132,7 @@ export interface CreateAccountData {
   currency?: Currency;
 }
 
-export interface UpdateAccountData extends Partial<Omit<CreateAccountData, 'userId'>> {
+export interface UpdateAccountData extends Partial<Omit<CreateAccountData, "userId">> {
   id: number;
 }
 
@@ -144,22 +144,22 @@ export interface CreateCategoryData {
   defaultTransactionType?: TransactionType;
 }
 
-export interface UpdateCategoryData extends Partial<Omit<CreateCategoryData, 'userId'>> {
+export interface UpdateCategoryData extends Partial<Omit<CreateCategoryData, "userId">> {
   id: number;
 }
 
 // Import Source types
-export type ImportStatus = 'draft' | 'completed' | 'failed';
+export type ImportStatus = "draft" | "completed" | "failed";
 
 // Field mapping types for CSV import
 export type TransactionFieldType =
-  | 'date'
-  | 'debit'
-  | 'credit'
-  | 'description'
-  | 'reference';
+  | "date"
+  | "debit"
+  | "credit"
+  | "description"
+  | "reference";
 
-export type FieldDataType = 'string' | 'date' | 'number';
+export type FieldDataType = "string" | "date" | "number";
 
 export interface FieldMapping {
   sourceColumn: string;           // CSV header name
@@ -187,7 +187,7 @@ export interface CreateImportSourceData {
   accountIds?: number[];  // Account IDs to associate with this import source
 }
 
-export interface UpdateImportSourceData extends Partial<Omit<CreateImportSourceData, 'userId'>> {
+export interface UpdateImportSourceData extends Partial<Omit<CreateImportSourceData, "userId">> {
   id: number;
   accountIds?: number[];  // Account IDs to associate with this import source
 }

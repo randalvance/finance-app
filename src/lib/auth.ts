@@ -1,7 +1,7 @@
-import { currentUser } from '@clerk/nextjs/server';
-import { UserService } from '@/services/UserService';
+import { currentUser } from "@clerk/nextjs/server";
+import { UserService } from "@/services/UserService";
 
-export async function getAuthenticatedUserId(): Promise<number | null> {
+export async function getAuthenticatedUserId (): Promise<number | null> {
   const clerkUser = await currentUser();
 
   if (!clerkUser) {
@@ -9,7 +9,7 @@ export async function getAuthenticatedUserId(): Promise<number | null> {
   }
 
   let dbUser = await UserService.getUserByClerkId(clerkUser.id);
-  
+
   // Auto-create user if authenticated with Clerk but not in database
   // This handles cases where webhooks aren't configured (e.g., development)
   if (!dbUser && clerkUser.id) {
@@ -21,15 +21,15 @@ export async function getAuthenticatedUserId(): Promise<number | null> {
       lastName: clerkUser.lastName || null,
     });
   }
-  
+
   return dbUser?.id || null;
 }
 
-export async function requireAuth(): Promise<number> {
+export async function requireAuth (): Promise<number> {
   const userId = await getAuthenticatedUserId();
 
   if (!userId) {
-    throw new Error('Unauthorized');
+    throw new Error("Unauthorized");
   }
 
   return userId;

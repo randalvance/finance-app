@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, createContext, useContext, ReactNode } from 'react';
-import AppHeader from './AppHeader';
+import { useState, createContext, useContext, ReactNode } from "react";
+import AppHeader from "./AppHeader";
 
 interface LayoutContextType {
   openNewTransaction: () => void;
@@ -10,15 +10,15 @@ interface LayoutContextType {
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
-export function useLayout() {
+export function useLayout () {
   const context = useContext(LayoutContext);
   if (!context) {
-    throw new Error('useLayout must be used within ClientLayout');
+    throw new Error("useLayout must be used within ClientLayout");
   }
   return context;
 }
 
-export default function ClientLayout({ children }: { children: ReactNode }) {
+export default function ClientLayout ({ children }: { children: ReactNode }) {
   const [newTransactionHandler, setNewTransactionHandler] = useState<(() => void) | null>(null);
 
   const openNewTransaction = () => {

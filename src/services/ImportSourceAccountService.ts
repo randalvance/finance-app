@@ -1,13 +1,13 @@
-import { db } from '@/lib/db';
-import { importSourceAccounts, accounts } from '@/db/schema';
-import { Account } from '@/types/transaction';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { db } from "@/lib/db";
+import { importSourceAccounts, accounts } from "@/db/schema";
+import { Account } from "@/types/transaction";
+import { eq, and, inArray, sql } from "drizzle-orm";
 
 export class ImportSourceAccountService {
   /**
    * Get all accounts associated with an import source
    */
-  static async getAssociatedAccounts(
+  static async getAssociatedAccounts (
     importSourceId: number,
     userId: number
   ): Promise<Account[]> {
@@ -38,7 +38,7 @@ export class ImportSourceAccountService {
    * Set account associations for an import source
    * Replaces all existing associations with the new set
    */
-  static async setAccountAssociations(
+  static async setAccountAssociations (
     importSourceId: number,
     accountIds: number[],
     userId: number
@@ -81,7 +81,7 @@ export class ImportSourceAccountService {
   /**
    * Delete all associations for an import source
    */
-  static async deleteAssociations(importSourceId: number): Promise<void> {
+  static async deleteAssociations (importSourceId: number): Promise<void> {
     await db
       .delete(importSourceAccounts)
       .where(eq(importSourceAccounts.importSourceId, importSourceId));
@@ -90,7 +90,7 @@ export class ImportSourceAccountService {
   /**
    * Check if an import source has any account associations
    */
-  static async hasAssociations(importSourceId: number): Promise<boolean> {
+  static async hasAssociations (importSourceId: number): Promise<boolean> {
     const result = await db
       .select({ count: sql<number>`count(*)` })
       .from(importSourceAccounts)

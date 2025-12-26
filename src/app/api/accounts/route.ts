@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { AccountService } from '@/services/accountService';
-import { requireAuth } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { AccountService } from "@/services/accountService";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+export async function GET () {
   try {
     const userId = await requireAuth();
     const accounts = await AccountService.getAllAccounts(userId);
@@ -22,18 +22,18 @@ export async function GET() {
 
     return NextResponse.json(enrichedAccounts);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error fetching accounts:', error);
+    console.error("Error fetching accounts:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch accounts' },
+      { error: "Failed to fetch accounts" },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST (request: NextRequest) {
   try {
     const userId = await requireAuth();
     const body = await request.json();
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (!name) {
       return NextResponse.json(
-        { error: 'Account name is required' },
+        { error: "Account name is required" },
         { status: 400 }
       );
     }
@@ -56,12 +56,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(account, { status: 201 });
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error creating account:', error);
+    console.error("Error creating account:", error);
     return NextResponse.json(
-      { error: 'Failed to create account' },
+      { error: "Failed to create account" },
       { status: 500 }
     );
   }
