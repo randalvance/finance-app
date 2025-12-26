@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { BalanceHistoryService } from "@/services/BalanceHistoryService";
 import { AccountService } from "@/services/accountService";
 import { requireAuth } from "@/lib/auth";
 
@@ -18,6 +19,7 @@ export async function GET (
       );
     }
 
+    // Verify account belongs to user
     const account = await AccountService.getAccountById(accountId, userId);
     if (!account) {
       return NextResponse.json(
@@ -26,20 +28,21 @@ export async function GET (
       );
     }
 
-    return NextResponse.json(account);
+    const balances = await BalanceHistoryService.getAllBalances(accountId, userId);
+    return NextResponse.json(balances);
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Error fetching account:", error);
+    console.error("Error fetching balances:", error);
     return NextResponse.json(
-      { error: "Failed to fetch account" },
+      { error: "Failed to fetch balance history" },
       { status: 500 }
     );
   }
 }
 
-export async function PUT (
+export async function POST (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -55,18 +58,8 @@ export async function PUT (
       );
     }
 
-    const body = await request.json();
-    // Convert is_investment_account to isInvestmentAccount for the service
-    const { is_investment_account, ...otherData } = body;
-    const account = await AccountService.updateAccount(
-      {
-        id: accountId,
-        ...otherData,
-        ...(is_investment_account !== undefined && { isInvestmentAccount: is_investment_account }),
-      },
-      userId
-    );
-
+    // Verify account belongs to user
+    const account = await AccountService.getAccountById(accountId, userId);
     if (!account) {
       return NextResponse.json(
         { error: "Account not found" },
@@ -74,51 +67,42 @@ export async function PUT (
       );
     }
 
-    return NextResponse.json(account);
-  } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    console.error("Error updating account:", error);
-    return NextResponse.json(
-      { error: "Failed to update account" },
-      { status: 500 }
-    );
-  }
-}
+    const body = await request.json();
+    const { date, currency, amount } = body;
 
-export async function DELETE (
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const userId = await requireAuth();
-    const { id } = await params;
-    const accountId = parseInt(id);
-
-    if (isNaN(accountId)) {
+    // Validate required fields
+    if (!date || !currency || amount === undefined) {
       return NextResponse.json(
-        { error: "Invalid account ID" },
+        { error: "Date, currency, and amount are required" },
         { status: 400 }
       );
     }
 
-    const deleted = await AccountService.deleteAccount(accountId, userId);
-    if (!deleted) {
+    // Validate currency
+    const validCurrencies = ["USD", "SGD", "EUR", "JPY", "PHP"];
+    if (!validCurrencies.includes(currency)) {
       return NextResponse.json(
-        { error: "Account not found" },
-        { status: 404 }
+        { error: `Invalid currency. Supported currencies: ${validCurrencies.join(", ")}` },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json({ message: "Account deleted successfully" });
+    const balance = await BalanceHistoryService.createBalance({
+      userId,
+      accountId,
+      date,
+      currency,
+      amount: parseFloat(amount),
+    });
+
+    return NextResponse.json(balance, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Error deleting account:", error);
+    console.error("Error creating balance:", error);
     return NextResponse.json(
-      { error: "Failed to delete account. Make sure there are no transactions associated with it." },
+      { error: "Failed to create balance entry" },
       { status: 500 }
     );
   }

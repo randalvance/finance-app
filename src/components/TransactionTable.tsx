@@ -13,6 +13,7 @@ type ActionType = "select" | "view" | "edit" | "none";
 export interface FilterConstraints {
   dateEquals?: string; // YYYY-MM-DD - for TransactionLinkSelector
   hasLinks?: boolean; // For unlinked-transfers page
+  excludeInvestments?: boolean; // For unlinked-transfers page
 }
 
 interface TransactionTableProps {
@@ -122,6 +123,10 @@ export default function TransactionTable ({
 
     if (constraints?.hasLinks !== undefined) {
       params.append("hasLinks", constraints.hasLinks.toString());
+    }
+
+    if (constraints?.excludeInvestments !== undefined) {
+      params.append("excludeInvestments", constraints.excludeInvestments.toString());
     }
 
     // Apply user filters

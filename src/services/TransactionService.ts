@@ -8,7 +8,7 @@ import {
   TransactionWithLink,
   TransactionType
 } from "@/types/transaction";
-import { eq, desc, and, inArray, or, gte, lte, exists, notExists, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, or, gte, lte, exists, notExists, sql, notInArray, isNull } from "drizzle-orm";
 import { calculateDateRange, type DatePreset } from "@/lib/dateUtils";
 
 export class TransactionService {
@@ -278,7 +278,8 @@ export class TransactionService {
     datePreset?: string,
     customStartDate?: string,
     customEndDate?: string,
-    hasLinks?: boolean
+    hasLinks?: boolean,
+    excludeInvestments?: boolean
   ): Promise<TransactionWithLink[]> {
     // Build base query
     let query = db
@@ -348,6 +349,35 @@ export class TransactionService {
         conditions.push(exists(linkSubquery));
       } else {
         conditions.push(notExists(linkSubquery));
+      }
+    }
+
+    // Exclude investment account transactions if requested
+    if (excludeInvestments) {
+      const investmentAccountIds = await db
+        .select({ id: accounts.id })
+        .from(accounts)
+        .where(
+          and(
+            eq(accounts.userId, userId),
+            eq(accounts.isInvestmentAccount, "true")
+          )
+        );
+
+      const investmentIds = investmentAccountIds.map(a => a.id);
+      if (investmentIds.length > 0) {
+        conditions.push(
+          and(
+            or(
+              isNull(transactions.sourceAccountId),
+              notInArray(transactions.sourceAccountId, investmentIds)
+            ),
+            or(
+              isNull(transactions.targetAccountId),
+              notInArray(transactions.targetAccountId, investmentIds)
+            )
+          )!
+        );
       }
     }
 

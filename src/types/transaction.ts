@@ -1,4 +1,4 @@
-import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, transactionTypeEnum, type Currency } from "@/db/schema";
+import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, exchangeRates, accountBalances, transactionTypeEnum, type Currency } from "@/db/schema";
 import type { InferSelectModel } from "drizzle-orm";
 
 // Base types inferred from schema
@@ -10,6 +10,8 @@ export type ImportSource = InferSelectModel<typeof importSources>;
 export type Import = InferSelectModel<typeof imports>;
 export type ImportSourceAccount = InferSelectModel<typeof importSourceAccounts>;
 export type TransactionLink = InferSelectModel<typeof transactionLinks>;
+export type ExchangeRate = InferSelectModel<typeof exchangeRates>;
+export type AccountBalance = InferSelectModel<typeof accountBalances>;
 
 // Transaction type enum - imported from schema as source of truth
 export type TransactionType = typeof transactionTypeEnum[number];
@@ -132,9 +134,23 @@ export interface CreateAccountData {
   description?: string;
   color?: string;
   currency?: Currency;
+  isInvestmentAccount?: boolean;
 }
 
 export interface UpdateAccountData extends Partial<Omit<CreateAccountData, "userId">> {
+  id: number;
+}
+
+// Account Balance DTOs
+export interface CreateAccountBalanceData {
+  userId: number;
+  accountId: number;
+  date: string;
+  currency: Currency;
+  amount: number;
+}
+
+export interface UpdateAccountBalanceData extends Partial<Omit<CreateAccountBalanceData, "userId" | "accountId">> {
   id: number;
 }
 
@@ -254,4 +270,24 @@ export interface TransactionLinkInfo {
   transaction1Id: number;
   transaction2Id: number;
   createdAt: Date | null;
+}
+// Exchange Rate DTOs
+export interface CreateExchangeRateData {
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  date: string;
+  source?: string;
+}
+
+export interface ExchangeRateApiResponse {
+  result: string;
+  documentation?: string;
+  terms_of_use?: string;
+  time_last_update_unix?: number;
+  time_last_update_utc?: string;
+  time_next_update_unix?: number;
+  time_next_update_utc?: string;
+  base_code: string;
+  conversion_rates: Record<string, number>;
 }

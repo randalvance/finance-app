@@ -71,6 +71,20 @@
       "when": 1766656525145,
       "tag": "0009_late_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1766758111538,
+      "tag": "0010_aromatic_stryfe",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1766758134713,
+      "tag": "0011_open_tiger_shark",
+      "breakpoints": true
     }
   ]
 }

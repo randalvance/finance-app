@@ -81,7 +81,7 @@ export default function UnlinkedTransfersPage () {
         </div>
 
         <TransactionTable
-          constraints={{ hasLinks: false }}
+          constraints={{ hasLinks: false, excludeInvestments: true }}
           showAccountFilter
           showSearchFilter
           showDateFilter
