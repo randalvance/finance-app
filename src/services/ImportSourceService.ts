@@ -1,11 +1,11 @@
-import { db } from '@/lib/db';
-import { importSources } from '@/db/schema';
-import { ImportSource, CreateImportSourceData, UpdateImportSourceData, ImportSourceWithAccounts } from '@/types/transaction';
-import { eq, and, asc } from 'drizzle-orm';
-import { ImportSourceAccountService } from './ImportSourceAccountService';
+import { db } from "@/lib/db";
+import { importSources } from "@/db/schema";
+import { ImportSource, CreateImportSourceData, UpdateImportSourceData, ImportSourceWithAccounts } from "@/types/transaction";
+import { eq, and, asc } from "drizzle-orm";
+import { ImportSourceAccountService } from "./ImportSourceAccountService";
 
 export class ImportSourceService {
-  static async getAllImportSources(userId: number): Promise<ImportSource[]> {
+  static async getAllImportSources (userId: number): Promise<ImportSource[]> {
     const result = await db.select()
       .from(importSources)
       .where(eq(importSources.userId, userId))
@@ -13,14 +13,14 @@ export class ImportSourceService {
     return result;
   }
 
-  static async getImportSourceById(id: number, userId: number): Promise<ImportSource | null> {
+  static async getImportSourceById (id: number, userId: number): Promise<ImportSource | null> {
     const result = await db.select()
       .from(importSources)
       .where(and(eq(importSources.id, id), eq(importSources.userId, userId)));
     return result[0] || null;
   }
 
-  static async getImportSourceWithAccounts(
+  static async getImportSourceWithAccounts (
     id: number,
     userId: number
   ): Promise<ImportSourceWithAccounts | null> {
@@ -35,7 +35,7 @@ export class ImportSourceService {
     };
   }
 
-  static async getAllImportSourcesWithAccounts(userId: number): Promise<ImportSourceWithAccounts[]> {
+  static async getAllImportSourcesWithAccounts (userId: number): Promise<ImportSourceWithAccounts[]> {
     const sources = await this.getAllImportSources(userId);
 
     // Fetch associations for all sources in parallel
@@ -55,7 +55,7 @@ export class ImportSourceService {
     return sourcesWithAccounts;
   }
 
-  static async createImportSource(data: CreateImportSourceData): Promise<ImportSource> {
+  static async createImportSource (data: CreateImportSourceData): Promise<ImportSource> {
     const result = await db.insert(importSources).values({
       userId: data.userId,
       name: data.name,
@@ -77,7 +77,7 @@ export class ImportSourceService {
     return source;
   }
 
-  static async updateImportSource(data: UpdateImportSourceData, userId: number): Promise<ImportSource | null> {
+  static async updateImportSource (data: UpdateImportSourceData, userId: number): Promise<ImportSource | null> {
     const updateData: Partial<typeof importSources.$inferInsert> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
@@ -103,7 +103,7 @@ export class ImportSourceService {
     return source;
   }
 
-  static async deleteImportSource(id: number, userId: number): Promise<boolean> {
+  static async deleteImportSource (id: number, userId: number): Promise<boolean> {
     const result = await db.delete(importSources)
       .where(and(eq(importSources.id, id), eq(importSources.userId, userId)))
       .returning();

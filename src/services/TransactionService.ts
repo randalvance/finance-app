@@ -1,5 +1,5 @@
-import { db } from '@/lib/db';
-import { transactions, accounts, transactionLinks, categories, type Currency } from '@/db/schema';
+import { db } from "@/lib/db";
+import { transactions, accounts, transactionLinks, categories, type Currency } from "@/db/schema";
 import {
   Transaction,
   CreateTransactionData,
@@ -7,41 +7,41 @@ import {
   TransactionWithAccounts,
   TransactionWithLink,
   TransactionType
-} from '@/types/transaction';
-import { eq, desc, and, inArray, or, gte, lte } from 'drizzle-orm';
-import { calculateDateRange, type DatePreset } from '@/lib/dateUtils';
+} from "@/types/transaction";
+import { eq, desc, and, inArray, or, gte, lte } from "drizzle-orm";
+import { calculateDateRange, type DatePreset } from "@/lib/dateUtils";
 
 export class TransactionService {
   /**
    * Validates transaction data based on type
    * Throws error if validation fails
    */
-  private static validateTransactionData(data: CreateTransactionData): void {
+  private static validateTransactionData (data: CreateTransactionData): void {
     switch (data.transactionType) {
-      case 'Debit':
+      case "Debit":
         if (!data.sourceAccountId) {
-          throw new Error('Debit transactions require a source account');
+          throw new Error("Debit transactions require a source account");
         }
         break;
-      case 'TransferOut':
+      case "TransferOut":
         if (!data.sourceAccountId || !data.targetAccountId) {
-          throw new Error('Transfer Out transactions require both source and target accounts');
+          throw new Error("Transfer Out transactions require both source and target accounts");
         }
         if (data.sourceAccountId === data.targetAccountId) {
-          throw new Error('Source and target accounts must be different for transfers');
+          throw new Error("Source and target accounts must be different for transfers");
         }
         break;
-      case 'Credit':
+      case "Credit":
         if (!data.targetAccountId) {
-          throw new Error('Credit transactions require a target account');
+          throw new Error("Credit transactions require a target account");
         }
         break;
-      case 'TransferIn':
+      case "TransferIn":
         if (!data.sourceAccountId || !data.targetAccountId) {
-          throw new Error('Transfer In transactions require both source and target accounts');
+          throw new Error("Transfer In transactions require both source and target accounts");
         }
         if (data.sourceAccountId === data.targetAccountId) {
-          throw new Error('Source and target accounts must be different for transfers');
+          throw new Error("Source and target accounts must be different for transfers");
         }
         break;
     }
@@ -51,13 +51,13 @@ export class TransactionService {
    * Auto-apply sign to amount based on transaction type
    * Debit/TransferOut → negative, Credit/TransferIn → positive
    */
-  private static applyAmountSign(transactionType: TransactionType, amount: number): number {
+  private static applyAmountSign (transactionType: TransactionType, amount: number): number {
     switch (transactionType) {
-      case 'Debit':
-      case 'TransferOut':
+      case "Debit":
+      case "TransferOut":
         return -Math.abs(amount); // Force negative
-      case 'Credit':
-      case 'TransferIn':
+      case "Credit":
+      case "TransferIn":
         return Math.abs(amount); // Force positive
       default:
         return amount;
@@ -67,7 +67,7 @@ export class TransactionService {
   /**
    * Get all transactions with account information
    */
-  static async getAllTransactions(userId: number): Promise<TransactionWithAccounts[]> {
+  static async getAllTransactions (userId: number): Promise<TransactionWithAccounts[]> {
     const result = await db
       .select({
         id: transactions.id,
@@ -134,30 +134,36 @@ export class TransactionService {
     // Map transactions with account and category details
     return result.map(t => ({
       ...t,
-      sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId) ? {
-        id: t.sourceAccountId,
-        name: accountMap.get(t.sourceAccountId)!.name,
-        color: accountMap.get(t.sourceAccountId)!.color,
-        currency: accountMap.get(t.sourceAccountId)!.currency,
-      } : undefined,
-      targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId) ? {
-        id: t.targetAccountId,
-        name: accountMap.get(t.targetAccountId)!.name,
-        color: accountMap.get(t.targetAccountId)!.color,
-        currency: accountMap.get(t.targetAccountId)!.currency,
-      } : undefined,
-      category: t.categoryId && categoryMap.has(t.categoryId) ? {
-        id: t.categoryId,
-        name: categoryMap.get(t.categoryId)!.name,
-        color: categoryMap.get(t.categoryId)!.color,
-      } : undefined,
+      sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId)
+        ? {
+          id: t.sourceAccountId,
+          name: accountMap.get(t.sourceAccountId)!.name,
+          color: accountMap.get(t.sourceAccountId)!.color,
+          currency: accountMap.get(t.sourceAccountId)!.currency,
+        }
+        : undefined,
+      targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId)
+        ? {
+          id: t.targetAccountId,
+          name: accountMap.get(t.targetAccountId)!.name,
+          color: accountMap.get(t.targetAccountId)!.color,
+          currency: accountMap.get(t.targetAccountId)!.currency,
+        }
+        : undefined,
+      category: t.categoryId && categoryMap.has(t.categoryId)
+        ? {
+          id: t.categoryId,
+          name: categoryMap.get(t.categoryId)!.name,
+          color: categoryMap.get(t.categoryId)!.color,
+        }
+        : undefined,
     }));
   }
 
   /**
    * Get transaction by ID
    */
-  static async getTransactionById(id: number, userId: number): Promise<Transaction | null> {
+  static async getTransactionById (id: number, userId: number): Promise<Transaction | null> {
     const result = await db
       .select()
       .from(transactions)
@@ -168,7 +174,7 @@ export class TransactionService {
   /**
    * Create a new transaction
    */
-  static async createTransaction(data: CreateTransactionData): Promise<Transaction> {
+  static async createTransaction (data: CreateTransactionData): Promise<Transaction> {
     // Validate before insertion
     this.validateTransactionData(data);
 
@@ -192,7 +198,7 @@ export class TransactionService {
   /**
    * Update a transaction
    */
-  static async updateTransaction(data: UpdateTransactionData, userId: number): Promise<Transaction | null> {
+  static async updateTransaction (data: UpdateTransactionData, userId: number): Promise<Transaction | null> {
     // Fetch current record for validation and sign application
     const current = await this.getTransactionById(data.id, userId);
     if (!current) {
@@ -243,7 +249,7 @@ export class TransactionService {
   /**
    * Delete transaction
    */
-  static async deleteTransaction(id: number, userId: number): Promise<boolean> {
+  static async deleteTransaction (id: number, userId: number): Promise<boolean> {
     const result = await db.delete(transactions)
       .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
       .returning();
@@ -253,7 +259,7 @@ export class TransactionService {
   /**
    * Get transactions by type
    */
-  static async getTransactionsByType(type: TransactionType, userId: number): Promise<Transaction[]> {
+  static async getTransactionsByType (type: TransactionType, userId: number): Promise<Transaction[]> {
     const result = await db
       .select()
       .from(transactions)
@@ -266,7 +272,7 @@ export class TransactionService {
    * Get all transactions with account AND link information
    * Optionally filter by account ID and date range
    */
-  static async getAllTransactionsWithLinks(
+  static async getAllTransactionsWithLinks (
     userId: number,
     accountId?: number,
     datePreset?: string,
@@ -307,9 +313,9 @@ export class TransactionService {
     // Apply date filter if provided
     if (datePreset) {
       let dateRange;
-      if (datePreset === 'CUSTOM' && customStartDate && customEndDate) {
+      if (datePreset === "CUSTOM" && customStartDate && customEndDate) {
         dateRange = { startDate: customStartDate, endDate: customEndDate };
-      } else if (datePreset !== 'CUSTOM') {
+      } else if (datePreset !== "CUSTOM") {
         dateRange = calculateDateRange(datePreset as DatePreset);
       }
 
@@ -435,23 +441,29 @@ export class TransactionService {
     // Map results with accounts, categories, and links
     return result.map(t => ({
       ...t,
-      sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId) ? {
-        id: t.sourceAccountId,
-        name: accountMap.get(t.sourceAccountId)!.name,
-        color: accountMap.get(t.sourceAccountId)!.color,
-        currency: accountMap.get(t.sourceAccountId)!.currency,
-      } : undefined,
-      targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId) ? {
-        id: t.targetAccountId,
-        name: accountMap.get(t.targetAccountId)!.name,
-        color: accountMap.get(t.targetAccountId)!.color,
-        currency: accountMap.get(t.targetAccountId)!.currency,
-      } : undefined,
-      category: t.categoryId && categoryMap.has(t.categoryId) ? {
-        id: t.categoryId,
-        name: categoryMap.get(t.categoryId)!.name,
-        color: categoryMap.get(t.categoryId)!.color,
-      } : undefined,
+      sourceAccount: t.sourceAccountId && accountMap.has(t.sourceAccountId)
+        ? {
+          id: t.sourceAccountId,
+          name: accountMap.get(t.sourceAccountId)!.name,
+          color: accountMap.get(t.sourceAccountId)!.color,
+          currency: accountMap.get(t.sourceAccountId)!.currency,
+        }
+        : undefined,
+      targetAccount: t.targetAccountId && accountMap.has(t.targetAccountId)
+        ? {
+          id: t.targetAccountId,
+          name: accountMap.get(t.targetAccountId)!.name,
+          color: accountMap.get(t.targetAccountId)!.color,
+          currency: accountMap.get(t.targetAccountId)!.currency,
+        }
+        : undefined,
+      category: t.categoryId && categoryMap.has(t.categoryId)
+        ? {
+          id: t.categoryId,
+          name: categoryMap.get(t.categoryId)!.name,
+          color: categoryMap.get(t.categoryId)!.color,
+        }
+        : undefined,
       link: linkMap.get(t.id)
     }));
   }

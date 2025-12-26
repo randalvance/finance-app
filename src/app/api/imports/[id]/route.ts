@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ImportService } from '@/services/ImportService';
-import { requireAuth } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { ImportService } from "@/services/ImportService";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET(
+export async function GET (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -12,25 +12,25 @@ export async function GET(
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const importRecord = await ImportService.getImportById(id, userId);
     if (!importRecord) {
-      return NextResponse.json({ error: 'Import not found' }, { status: 404 });
+      return NextResponse.json({ error: "Import not found" }, { status: 404 });
     }
 
     return NextResponse.json(importRecord);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error fetching import:', error);
-    return NextResponse.json({ error: 'Failed to fetch import' }, { status: 500 });
+    console.error("Error fetching import:", error);
+    return NextResponse.json({ error: "Failed to fetch import" }, { status: 500 });
   }
 }
 
-export async function PUT(
+export async function PUT (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -40,7 +40,7 @@ export async function PUT(
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -56,20 +56,20 @@ export async function PUT(
     );
 
     if (!importRecord) {
-      return NextResponse.json({ error: 'Import not found' }, { status: 404 });
+      return NextResponse.json({ error: "Import not found" }, { status: 404 });
     }
 
     return NextResponse.json(importRecord);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error updating import:', error);
-    return NextResponse.json({ error: 'Failed to update import' }, { status: 500 });
+    console.error("Error updating import:", error);
+    return NextResponse.json({ error: "Failed to update import" }, { status: 500 });
   }
 }
 
-export async function DELETE(
+export async function DELETE (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -79,20 +79,20 @@ export async function DELETE(
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const success = await ImportService.deleteImport(id, userId);
     if (!success) {
-      return NextResponse.json({ error: 'Import not found' }, { status: 404 });
+      return NextResponse.json({ error: "Import not found" }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error deleting import:', error);
-    return NextResponse.json({ error: 'Failed to delete import' }, { status: 500 });
+    console.error("Error deleting import:", error);
+    return NextResponse.json({ error: "Failed to delete import" }, { status: 500 });
   }
 }

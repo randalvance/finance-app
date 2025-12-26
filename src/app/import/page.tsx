@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import ConfirmButton from '@/components/ConfirmButton';
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import ConfirmButton from "@/components/ConfirmButton";
 
 interface ImportSource {
   id: number;
@@ -30,7 +30,7 @@ interface PreviewTransaction {
   date: string;
   description: string;
   amount: number;
-  transactionType: 'Debit' | 'Credit' | 'TransferOut' | 'TransferIn';
+  transactionType: "Debit" | "Credit" | "TransferOut" | "TransferIn";
   sourceAccountId: number | null;
   targetAccountId: number | null;
   categoryId?: number | null;
@@ -50,7 +50,7 @@ interface Import {
   createdAt: string;
 }
 
-export default function ImportPage() {
+export default function ImportPage () {
   const [importSources, setImportSources] = useState<ImportSource[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -64,7 +64,7 @@ export default function ImportPage() {
   const [currentImportRecord, setCurrentImportRecord] = useState<Import | null>(null);
   const [previewTransactions, setPreviewTransactions] = useState<PreviewTransaction[]>([]);
   const [categoryMappings, setCategoryMappings] = useState<Record<string, number>>({});
-  const [filename, setFilename] = useState<string>('');
+  const [filename, setFilename] = useState<string>("");
 
   // Selection state using Set for O(1) operations
   const [selectedTempIds, setSelectedTempIds] = useState<Set<string>>(new Set());
@@ -88,10 +88,10 @@ export default function ImportPage() {
   const fetchData = async () => {
     try {
       const [sourcesRes, accountsRes, categoriesRes, importsRes] = await Promise.all([
-        fetch('/api/import-sources'),
-        fetch('/api/accounts'),
-        fetch('/api/categories'),
-        fetch('/api/imports'),
+        fetch("/api/import-sources"),
+        fetch("/api/accounts"),
+        fetch("/api/categories"),
+        fetch("/api/imports"),
       ]);
 
       if (sourcesRes.ok) setImportSources(await sourcesRes.json());
@@ -99,10 +99,10 @@ export default function ImportPage() {
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (importsRes.ok) {
         const imports = await importsRes.json();
-        setDraftImports(imports.filter((imp: Import) => imp.status === 'draft' || imp.status === 'completed'));
+        setDraftImports(imports.filter((imp: Import) => imp.status === "draft" || imp.status === "completed"));
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -117,19 +117,19 @@ export default function ImportPage() {
 
   const handleParseCSV = async () => {
     if (!csvFile || !selectedSourceId || !selectedAccountId) {
-      alert('Please select a file, import source, and default account');
+      alert("Please select a file, import source, and default account");
       return;
     }
 
     setParsing(true);
     try {
       const formData = new FormData();
-      formData.append('file', csvFile);
-      formData.append('import_source_id', selectedSourceId.toString());
-      formData.append('default_account_id', selectedAccountId.toString());
+      formData.append("file", csvFile);
+      formData.append("import_source_id", selectedSourceId.toString());
+      formData.append("default_account_id", selectedAccountId.toString());
 
-      const response = await fetch('/api/imports/parse', {
-        method: 'POST',
+      const response = await fetch("/api/imports/parse", {
+        method: "POST",
         body: formData,
       });
 
@@ -144,11 +144,11 @@ export default function ImportPage() {
         fetchData();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to parse CSV');
+        alert(error.error || "Failed to parse CSV");
       }
     } catch (error) {
-      console.error('Error parsing CSV:', error);
-      alert('Failed to parse CSV');
+      console.error("Error parsing CSV:", error);
+      alert("Failed to parse CSV");
     } finally {
       setParsing(false);
     }
@@ -167,27 +167,27 @@ export default function ImportPage() {
     setPreviewTransactions(prev => prev.map(tx => {
       if (tx.tempId !== tempId) return tx;
 
-      let defaultType = category.defaultTransactionType as 'Debit' | 'Credit' | 'TransferOut' | 'TransferIn' | 'Transfer';
+      let defaultType = category.defaultTransactionType as "Debit" | "Credit" | "TransferOut" | "TransferIn" | "Transfer";
       let newSourceAccountId: number | null = tx.sourceAccountId;
       let newTargetAccountId: number | null = tx.targetAccountId;
 
       // Convert generic 'Transfer' from category to specific TransferOut/TransferIn based on original type
-      if (defaultType === 'Transfer') {
-        defaultType = (tx.transactionType === 'Debit' || tx.transactionType === 'TransferOut') ? 'TransferOut' : 'TransferIn';
+      if (defaultType === "Transfer") {
+        defaultType = (tx.transactionType === "Debit" || tx.transactionType === "TransferOut") ? "TransferOut" : "TransferIn";
       }
 
       // Only auto-populate accounts if selectedAccountId is available
       if (selectedAccountId) {
-        if (defaultType === 'Debit') {
+        if (defaultType === "Debit") {
           newSourceAccountId = selectedAccountId;
           newTargetAccountId = null;
-        } else if (defaultType === 'Credit') {
+        } else if (defaultType === "Credit") {
           newSourceAccountId = null;
           newTargetAccountId = selectedAccountId;
-        } else if (defaultType === 'TransferOut') {
+        } else if (defaultType === "TransferOut") {
           newSourceAccountId = selectedAccountId;
           newTargetAccountId = null;
-        } else if (defaultType === 'TransferIn') {
+        } else if (defaultType === "TransferIn") {
           newSourceAccountId = null;
           newTargetAccountId = selectedAccountId;
         }
@@ -195,7 +195,7 @@ export default function ImportPage() {
 
       return {
         ...tx,
-        transactionType: defaultType as 'Debit' | 'Credit' | 'TransferOut' | 'TransferIn',
+        transactionType: defaultType as "Debit" | "Credit" | "TransferOut" | "TransferIn",
         sourceAccountId: newSourceAccountId,
         targetAccountId: newTargetAccountId,
         categoryId,
@@ -203,11 +203,11 @@ export default function ImportPage() {
     }));
   };
 
-  const handleAccountChange = (tempId: string, field: 'source' | 'target', accountId: number | null) => {
+  const handleAccountChange = (tempId: string, field: "source" | "target", accountId: number | null) => {
     setPreviewTransactions(prev => prev.map(tx => {
       if (tx.tempId !== tempId) return tx;
 
-      if (field === 'source') {
+      if (field === "source") {
         return { ...tx, sourceAccountId: accountId };
       } else {
         return { ...tx, targetAccountId: accountId };
@@ -277,7 +277,7 @@ export default function ImportPage() {
     if (!bulkSourceAccountId || selectedTempIds.size === 0) return;
 
     setPreviewTransactions(prev => prev.map(tx => {
-      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Credit') {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== "Credit") {
         return { ...tx, sourceAccountId: bulkSourceAccountId };
       }
       return tx;
@@ -291,7 +291,7 @@ export default function ImportPage() {
     if (!bulkTargetAccountId || selectedTempIds.size === 0) return;
 
     setPreviewTransactions(prev => prev.map(tx => {
-      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== 'Debit') {
+      if (selectedTempIds.has(tx.tempId) && tx.transactionType !== "Debit") {
         return { ...tx, targetAccountId: bulkTargetAccountId };
       }
       return tx;
@@ -305,31 +305,31 @@ export default function ImportPage() {
 
     try {
       const response = await fetch(`/api/imports/${currentImportId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           preview_data: {
             transactions: previewTransactions,
             categoryMappings
           },
-          status: 'draft'
+          status: "draft"
         }),
       });
 
       if (response.ok) {
         if (showSuccessAlert) {
-          alert('Progress saved!');
+          alert("Progress saved!");
           fetchData();
         }
         return true;
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to save progress');
+        alert(error.error || "Failed to save progress");
         return false;
       }
     } catch (error) {
-      console.error('Error saving draft:', error);
-      alert('Failed to save progress');
+      console.error("Error saving draft:", error);
+      alert("Failed to save progress");
       return false;
     }
   };
@@ -342,7 +342,7 @@ export default function ImportPage() {
 
   const handleResumeDraft = async (importRecord: Import) => {
     if (!importRecord.previewData) {
-      alert('This draft has no preview data. Please re-upload the CSV file.');
+      alert("This draft has no preview data. Please re-upload the CSV file.");
       return;
     }
 
@@ -354,23 +354,23 @@ export default function ImportPage() {
 
     // Scroll to preview section
     setTimeout(() => {
-      const previewSection = document.querySelector('h2');
-      if (previewSection && previewSection.textContent?.includes('Preview')) {
-        previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const previewSection = document.querySelector("h2");
+      if (previewSection && previewSection.textContent?.includes("Preview")) {
+        previewSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }, 100);
   };
 
   const handleDeleteDraft = async (id: number, status: string) => {
-    const message = status === 'completed'
-      ? 'Are you sure you want to delete this completed import? This will also delete all associated transactions.'
-      : 'Are you sure you want to delete this draft import?';
-    
+    const message = status === "completed"
+      ? "Are you sure you want to delete this completed import? This will also delete all associated transactions."
+      : "Are you sure you want to delete this draft import?";
+
     if (!confirm(message)) return;
 
     try {
       const response = await fetch(`/api/imports/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
@@ -380,16 +380,16 @@ export default function ImportPage() {
           setCurrentImportRecord(null);
           setPreviewTransactions([]);
           setCategoryMappings({});
-          setFilename('');
+          setFilename("");
         }
         fetchData();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to delete import');
+        alert(error.error || "Failed to delete import");
       }
     } catch (error) {
-      console.error('Error deleting import:', error);
-      alert('Failed to delete import');
+      console.error("Error deleting import:", error);
+      alert("Failed to delete import");
     }
   };
 
@@ -405,13 +405,13 @@ export default function ImportPage() {
 
     // Validate account assignments based on transaction type
     const invalidTransactions = previewTransactions.filter(tx => {
-      if (tx.transactionType === 'Debit') {
+      if (tx.transactionType === "Debit") {
         return !tx.sourceAccountId;
-      } else if (tx.transactionType === 'Credit') {
+      } else if (tx.transactionType === "Credit") {
         return !tx.targetAccountId;
-      } else if (tx.transactionType === 'TransferOut') {
+      } else if (tx.transactionType === "TransferOut") {
         return !tx.sourceAccountId;
-      } else if (tx.transactionType === 'TransferIn') {
+      } else if (tx.transactionType === "TransferIn") {
         return !tx.targetAccountId;
       }
       return false;
@@ -419,19 +419,19 @@ export default function ImportPage() {
 
     if (invalidTransactions.length > 0) {
       const errorMessages = invalidTransactions.map(tx => {
-        if (tx.transactionType === 'Debit' && !tx.sourceAccountId) {
+        if (tx.transactionType === "Debit" && !tx.sourceAccountId) {
           return `Debit transaction "${tx.description}" missing source account`;
-        } else if (tx.transactionType === 'Credit' && !tx.targetAccountId) {
+        } else if (tx.transactionType === "Credit" && !tx.targetAccountId) {
           return `Credit transaction "${tx.description}" missing target account`;
-        } else if (tx.transactionType === 'TransferOut' && !tx.sourceAccountId) {
+        } else if (tx.transactionType === "TransferOut" && !tx.sourceAccountId) {
           return `Transfer Out transaction "${tx.description}" missing source account`;
-        } else if (tx.transactionType === 'TransferIn' && !tx.targetAccountId) {
+        } else if (tx.transactionType === "TransferIn" && !tx.targetAccountId) {
           return `Transfer In transaction "${tx.description}" missing target account`;
         }
-        return '';
+        return "";
       }).filter(msg => msg);
 
-      alert(`Invalid account assignments:\n\n${errorMessages.join('\n')}`);
+      alert(`Invalid account assignments:\n\n${errorMessages.join("\n")}`);
       return;
     }
 
@@ -446,15 +446,15 @@ export default function ImportPage() {
 
       // Then complete the import
       const response = await fetch(`/api/imports/${currentImportId}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category_mappings: categoryMappings,
         }),
       });
 
       if (response.ok) {
-        alert('Import completed successfully!');
+        alert("Import completed successfully!");
         // Reset form
         setCsvFile(null);
         setPreviewTransactions([]);
@@ -462,16 +462,16 @@ export default function ImportPage() {
         setSelectedSourceId(null);
         setSelectedAccountId(null);
         setCurrentImportId(null);
-        setFilename('');
+        setFilename("");
         // Refresh data
         fetchData();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to import transactions');
+        alert(error.error || "Failed to import transactions");
       }
     } catch (error) {
-      console.error('Error importing:', error);
-      alert('Failed to import transactions');
+      console.error("Error importing:", error);
+      alert("Failed to import transactions");
     } finally {
       setImporting(false);
     }
@@ -501,375 +501,379 @@ export default function ImportPage() {
   };
 
   return (
-    <main className="max-w-[1600px] mx-auto px-6 py-8">
-        {loading ? (
-          <div className="glass-card rounded-lg p-12 text-center">
-            <div className="mono text-sm text-muted-foreground animate-pulse">LOADING_DATA...</div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Upload Form */}
-            <div className="glass-card rounded-lg shadow-lg border border-border p-6 animate-slide-up-fade">
-              <h2 className="mono text-sm font-bold tracking-wider text-primary mb-4">UPLOAD_CSV</h2>
+    <main className='max-w-[1600px] mx-auto px-6 py-8'>
+      {loading ? (
+        <div className='glass-card rounded-lg p-12 text-center'>
+          <div className='mono text-sm text-muted-foreground animate-pulse'>LOADING_DATA...</div>
+        </div>
+      ) : (
+        <div className='space-y-6'>
+          {/* Upload Form */}
+          <div className='glass-card rounded-lg shadow-lg border border-border p-6 animate-slide-up-fade'>
+            <h2 className='mono text-sm font-bold tracking-wider text-primary mb-4'>UPLOAD_CSV</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Import Source *
-                  </label>
-                  <select
-                    value={selectedSourceId || ''}
-                    onChange={(e) => setSelectedSourceId(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Select import source...</option>
-                    {importSources.map(source => (
-                      <option key={source.id} value={source.id}>
-                        {source.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Default Account *
-                  </label>
-                  <select
-                    value={selectedAccountId || ''}
-                    onChange={(e) => setSelectedAccountId(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">Select account...</option>
-                    {getSelectableAccounts().map(account => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedSourceId && (() => {
-                    const selectedSource = importSources.find(s => s.id === selectedSourceId);
-                    const hasAssociations = selectedSource?.associatedAccounts && selectedSource.associatedAccounts.length > 0;
-
-                    return hasAssociations && selectedSource?.associatedAccounts ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Showing {selectedSource.associatedAccounts.length} account(s) associated with this import source
-                      </p>
-                    ) : null;
-                  })()}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    CSV File *
-                  </label>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileSelect}
-                    className="w-full px-3 py-2 bg-input border border-border rounded-md text-foreground file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
-                  />
-                </div>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              <div>
+                <label className='block text-sm font-medium text-muted-foreground mb-2'>
+                  Import Source *
+                </label>
+                <select
+                  value={selectedSourceId || ""}
+                  onChange={(e) => setSelectedSourceId(parseInt(e.target.value))}
+                  className='w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
+                >
+                  <option value=''>Select import source...</option>
+                  {importSources.map(source => (
+                    <option key={source.id} value={source.id}>
+                      {source.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="mt-4">
-                <Button
-                  onClick={handleParseCSV}
-                  disabled={!csvFile || !selectedSourceId || !selectedAccountId || parsing}
-                  className="mono text-xs font-bold tracking-wider terminal-border bg-primary hover:bg-primary/90"
+              <div>
+                <label className='block text-sm font-medium text-muted-foreground mb-2'>
+                  Default Account *
+                </label>
+                <select
+                  value={selectedAccountId || ""}
+                  onChange={(e) => setSelectedAccountId(parseInt(e.target.value))}
+                  className='w-full px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
                 >
-                  {parsing ? 'PROCESSING...' : 'PARSE_CSV'}
-                </Button>
+                  <option value=''>Select account...</option>
+                  {getSelectableAccounts().map(account => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedSourceId && (() => {
+                  const selectedSource = importSources.find(s => s.id === selectedSourceId);
+                  const hasAssociations = selectedSource?.associatedAccounts && selectedSource.associatedAccounts.length > 0;
+
+                  return hasAssociations && selectedSource?.associatedAccounts
+                    ? (
+                      <p className='mt-1 text-xs text-muted-foreground'>
+                        Showing {selectedSource.associatedAccounts.length} account(s) associated with this import source
+                      </p>
+                    )
+                    : null;
+                })()}
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-muted-foreground mb-2'>
+                  CSV File *
+                </label>
+                <input
+                  type='file'
+                  accept='.csv'
+                  onChange={handleFileSelect}
+                  className='w-full px-3 py-2 bg-input border border-border rounded-md text-foreground file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer'
+                />
               </div>
             </div>
 
-            {/* Saved Imports */}
-            {draftImports.length > 0 && (
-              <div className="glass-card rounded-lg shadow-lg border border-border p-6 animate-slide-up-fade" style={{ animationDelay: '100ms' }}>
-                <h2 className="mono text-sm font-bold tracking-wider text-primary mb-4">SAVED_IMPORTS</h2>
-                <div className="space-y-2">
-                  {draftImports.map((imp) => {
-                    const mapped = imp.previewData
-                      ? Object.values(imp.previewData.categoryMappings).filter((v: unknown) => (v as number) > 0).length
-                      : 0;
-                    const total = imp.totalRows;
+            <div className='mt-4'>
+              <Button
+                onClick={handleParseCSV}
+                disabled={!csvFile || !selectedSourceId || !selectedAccountId || parsing}
+                className='mono text-xs font-bold tracking-wider terminal-border bg-primary hover:bg-primary/90'
+              >
+                {parsing ? "PROCESSING..." : "PARSE_CSV"}
+              </Button>
+            </div>
+          </div>
 
-                    return (
-                      <div
-                        key={imp.id}
-                        className="flex items-center justify-between p-4 bg-muted/30 rounded-md border border-border hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium text-foreground">{imp.filename}</div>
-                            {imp.status === 'completed' && (
-                              <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-900/30 text-green-400 border border-green-900/50">
-                                Completed
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {mapped} of {total} categories mapped • Created {new Date(imp.createdAt).toLocaleDateString()}
-                          </div>
+          {/* Saved Imports */}
+          {draftImports.length > 0 && (
+            <div className='glass-card rounded-lg shadow-lg border border-border p-6 animate-slide-up-fade' style={{ animationDelay: "100ms" }}>
+              <h2 className='mono text-sm font-bold tracking-wider text-primary mb-4'>SAVED_IMPORTS</h2>
+              <div className='space-y-2'>
+                {draftImports.map((imp) => {
+                  const mapped = imp.previewData
+                    ? Object.values(imp.previewData.categoryMappings).filter((v: unknown) => (v as number) > 0).length
+                    : 0;
+                  const total = imp.totalRows;
+
+                  return (
+                    <div
+                      key={imp.id}
+                      className='flex items-center justify-between p-4 bg-muted/30 rounded-md border border-border hover:bg-muted/50 transition-colors'
+                    >
+                      <div className='flex-1'>
+                        <div className='flex items-center gap-2'>
+                          <div className='font-medium text-foreground'>{imp.filename}</div>
+                          {imp.status === "completed" && (
+                            <span className='px-2 py-0.5 rounded text-xs font-medium bg-green-900/30 text-green-400 border border-green-900/50'>
+                              Completed
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleResumeDraft(imp)}
-                            className="mono text-xs px-3 py-2 text-primary hover:bg-primary/10 rounded border border-primary/30 hover:border-primary transition-all"
-                          >
-                            {imp.status === 'completed' ? 'VIEW' : 'RESUME'}
-                          </button>
-                          <ConfirmButton
-                            buttonText="DELETE"
-                            onConfirm={() => handleDeleteDraft(imp.id, imp.status)}
-                            buttonClassName="mono text-xs px-3 py-2 text-destructive hover:bg-destructive/10 rounded border border-destructive/30 hover:border-destructive transition-all"
-                          />
+                        <div className='text-sm text-muted-foreground'>
+                          {mapped} of {total} categories mapped • Created {new Date(imp.createdAt).toLocaleDateString()}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className='flex items-center space-x-2'>
+                        <button
+                          onClick={() => handleResumeDraft(imp)}
+                          className='mono text-xs px-3 py-2 text-primary hover:bg-primary/10 rounded border border-primary/30 hover:border-primary transition-all'
+                        >
+                          {imp.status === "completed" ? "VIEW" : "RESUME"}
+                        </button>
+                        <ConfirmButton
+                          buttonText='DELETE'
+                          onConfirm={() => handleDeleteDraft(imp.id, imp.status)}
+                          buttonClassName='mono text-xs px-3 py-2 text-destructive hover:bg-destructive/10 rounded border border-destructive/30 hover:border-destructive transition-all'
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Preview Table */}
-            {previewTransactions.length > 0 && (
-              <div className="bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border overflow-hidden">
-                <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-bold text-foreground">
-                        Preview: {filename}
-                      </h2>
-                      {currentImportRecord?.status === 'completed' && (
-                        <span className="px-3 py-1 rounded-md text-sm font-medium bg-green-900/30 text-green-400 border border-green-900/50">
-                          Viewing Completed Import (Read-Only)
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {getMappedCount()} of {previewTransactions.length} categories mapped
-                    </p>
+          {/* Preview Table */}
+          {previewTransactions.length > 0 && (
+            <div className='bg-card/50 backdrop-blur-md rounded-lg shadow-lg border border-border overflow-hidden'>
+              <div className='px-6 py-4 border-b border-border flex items-center justify-between bg-muted/20'>
+                <div>
+                  <div className='flex items-center gap-3'>
+                    <h2 className='text-xl font-bold text-foreground'>
+                      Preview: {filename}
+                    </h2>
+                    {currentImportRecord?.status === "completed" && (
+                      <span className='px-3 py-1 rounded-md text-sm font-medium bg-green-900/30 text-green-400 border border-green-900/50'>
+                        Viewing Completed Import (Read-Only)
+                      </span>
+                    )}
                   </div>
-                  {currentImportRecord?.status !== 'completed' && (
-                    <div className="flex items-center space-x-3">
-                      <Button
-                        onClick={handleSaveDraft}
-                        disabled={saving}
-                        variant="outline"
-                      >
-                        {saving ? 'Saving...' : 'Save Draft'}
-                      </Button>
-                      <Button
-                        onClick={handleImport}
-                        disabled={importing || getMappedCount() < previewTransactions.length}
-                        className="shadow-[0_0_15px_rgba(168,85,247,0.3)]"
-                      >
-                        {importing ? 'Importing...' : 'Confirm Import'}
-                      </Button>
-                    </div>
-                  )}
+                  <p className='text-sm text-muted-foreground mt-1'>
+                    {getMappedCount()} of {previewTransactions.length} categories mapped
+                  </p>
                 </div>
-
-                {/* Bulk Controls Panel */}
-                {previewTransactions.length > 0 && currentImportRecord?.status !== 'completed' && (
-                  <div className="px-6 py-4 border-b border-border bg-muted/20">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="text-sm font-medium text-foreground">
-                        {selectedTempIds.size} of {previewTransactions.length} rows selected
-                      </div>
-                      <Button
-                        onClick={handleClearSelection}
-                        variant="outline"
-                        size="sm"
-                        disabled={selectedTempIds.size === 0}
-                      >
-                        Uncheck All
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Bulk Category Update */}
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={bulkCategoryId || ''}
-                          onChange={(e) => setBulkCategoryId(e.target.value ? parseInt(e.target.value) : null)}
-                          className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                          disabled={selectedTempIds.size === 0}
-                        >
-                          <option value="">Select category...</option>
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          onClick={handleBulkCategoryUpdate}
-                          disabled={!bulkCategoryId || selectedTempIds.size === 0}
-                          size="sm"
-                        >
-                          Update
-                        </Button>
-                      </div>
-
-                      {/* Bulk Source Account Update */}
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={bulkSourceAccountId || ''}
-                          onChange={(e) => setBulkSourceAccountId(e.target.value ? parseInt(e.target.value) : null)}
-                          className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                          disabled={selectedTempIds.size === 0}
-                        >
-                          <option value="">Select source account...</option>
-                          {accounts.map(acc => (
-                            <option key={acc.id} value={acc.id}>
-                              {acc.name}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          onClick={handleBulkSourceAccountUpdate}
-                          disabled={!bulkSourceAccountId || selectedTempIds.size === 0}
-                          size="sm"
-                        >
-                          Update
-                        </Button>
-                      </div>
-
-                      {/* Bulk Target Account Update */}
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={bulkTargetAccountId || ''}
-                          onChange={(e) => setBulkTargetAccountId(e.target.value ? parseInt(e.target.value) : null)}
-                          className="flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                          disabled={selectedTempIds.size === 0}
-                        >
-                          <option value="">Select target account...</option>
-                          {accounts.map(acc => (
-                            <option key={acc.id} value={acc.id}>
-                              {acc.name}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          onClick={handleBulkTargetAccountUpdate}
-                          disabled={!bulkTargetAccountId || selectedTempIds.size === 0}
-                          size="sm"
-                        >
-                          Update
-                        </Button>
-                      </div>
-                    </div>
+                {currentImportRecord?.status !== "completed" && (
+                  <div className='flex items-center space-x-3'>
+                    <Button
+                      onClick={handleSaveDraft}
+                      disabled={saving}
+                      variant='outline'
+                    >
+                      {saving ? "Saving..." : "Save Draft"}
+                    </Button>
+                    <Button
+                      onClick={handleImport}
+                      disabled={importing || getMappedCount() < previewTransactions.length}
+                      className='shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                    >
+                      {importing ? "Importing..." : "Confirm Import"}
+                    </Button>
                   </div>
                 )}
+              </div>
 
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-border">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="px-4 py-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedTempIds.size === previewTransactions.length}
-                            ref={(el) => {
-                              if (el) {
-                                el.indeterminate = selectedTempIds.size > 0 &&
+              {/* Bulk Controls Panel */}
+              {previewTransactions.length > 0 && currentImportRecord?.status !== "completed" && (
+                <div className='px-6 py-4 border-b border-border bg-muted/20'>
+                  <div className='flex items-center justify-between mb-4'>
+                    <div className='text-sm font-medium text-foreground'>
+                      {selectedTempIds.size} of {previewTransactions.length} rows selected
+                    </div>
+                    <Button
+                      onClick={handleClearSelection}
+                      variant='outline'
+                      size='sm'
+                      disabled={selectedTempIds.size === 0}
+                    >
+                      Uncheck All
+                    </Button>
+                  </div>
+                  <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                    {/* Bulk Category Update */}
+                    <div className='flex items-center gap-2'>
+                      <select
+                        value={bulkCategoryId || ""}
+                        onChange={(e) => setBulkCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                        className='flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
+                        disabled={selectedTempIds.size === 0}
+                      >
+                        <option value=''>Select category...</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        onClick={handleBulkCategoryUpdate}
+                        disabled={!bulkCategoryId || selectedTempIds.size === 0}
+                        size='sm'
+                      >
+                        Update
+                      </Button>
+                    </div>
+
+                    {/* Bulk Source Account Update */}
+                    <div className='flex items-center gap-2'>
+                      <select
+                        value={bulkSourceAccountId || ""}
+                        onChange={(e) => setBulkSourceAccountId(e.target.value ? parseInt(e.target.value) : null)}
+                        className='flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
+                        disabled={selectedTempIds.size === 0}
+                      >
+                        <option value=''>Select source account...</option>
+                        {accounts.map(acc => (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        onClick={handleBulkSourceAccountUpdate}
+                        disabled={!bulkSourceAccountId || selectedTempIds.size === 0}
+                        size='sm'
+                      >
+                        Update
+                      </Button>
+                    </div>
+
+                    {/* Bulk Target Account Update */}
+                    <div className='flex items-center gap-2'>
+                      <select
+                        value={bulkTargetAccountId || ""}
+                        onChange={(e) => setBulkTargetAccountId(e.target.value ? parseInt(e.target.value) : null)}
+                        className='flex-1 px-3 py-2 bg-input border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring'
+                        disabled={selectedTempIds.size === 0}
+                      >
+                        <option value=''>Select target account...</option>
+                        {accounts.map(acc => (
+                          <option key={acc.id} value={acc.id}>
+                            {acc.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        onClick={handleBulkTargetAccountUpdate}
+                        disabled={!bulkTargetAccountId || selectedTempIds.size === 0}
+                        size='sm'
+                      >
+                        Update
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className='overflow-x-auto'>
+                <table className='min-w-full divide-y divide-border'>
+                  <thead className='bg-muted/50'>
+                    <tr>
+                      <th className='px-4 py-3 text-center'>
+                        <input
+                          type='checkbox'
+                          checked={selectedTempIds.size === previewTransactions.length}
+                          ref={(el) => {
+                            if (el) {
+                              el.indeterminate = selectedTempIds.size > 0 &&
                                                   selectedTempIds.size < previewTransactions.length;
-                              }
+                            }
+                          }}
+                          onChange={handleToggleAll}
+                          disabled={currentImportRecord?.status === "completed"}
+                          aria-label='Select all transactions'
+                        />
+                      </th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Date
+                      </th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Description
+                      </th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Type
+                      </th>
+                      <th className='px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Amount
+                      </th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Category
+                      </th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Source Account
+                      </th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Target Account
+                      </th>
+                      <th className='px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Raw
+                      </th>
+                      <th className='px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider'>
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className='divide-y divide-border'>
+                    {previewTransactions.map((tx) => (
+                      <tr
+                        key={tx.tempId}
+                        className='hover:bg-muted/30 transition-colors cursor-pointer'
+                        onClick={() => handleToggleSelection(tx.tempId)}
+                      >
+                        <td className='px-4 py-3 text-center'>
+                          <input
+                            type='checkbox'
+                            checked={selectedTempIds.has(tx.tempId)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleToggleSelection(tx.tempId);
                             }}
-                            onChange={handleToggleAll}
-                            disabled={currentImportRecord?.status === 'completed'}
-                            aria-label="Select all transactions"
+                            disabled={currentImportRecord?.status === "completed"}
                           />
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Description
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Type
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Category
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Source Account
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Target Account
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Raw
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {previewTransactions.map((tx) => (
-                        <tr
-                          key={tx.tempId}
-                          className="hover:bg-muted/30 transition-colors cursor-pointer"
-                          onClick={() => handleToggleSelection(tx.tempId)}
-                        >
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedTempIds.has(tx.tempId)}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleToggleSelection(tx.tempId);
-                              }}
-                              disabled={currentImportRecord?.status === 'completed'}
-                            />
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                            {tx.date}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-foreground max-w-xs">
-                            <div className="line-clamp-2">{tx.description}</div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                tx.transactionType === 'Debit'
-                                  ? 'bg-red-900/30 text-red-400 border border-red-900/50'
-                                  : tx.transactionType === 'Credit'
-                                  ? 'bg-green-900/30 text-green-400 border border-green-900/50'
-                                  : 'bg-blue-900/30 text-blue-400 border border-blue-900/50'
-                              }`}
-                            >
-                              {tx.transactionType}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-foreground font-mono">
-                            ${tx.amount.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {currentImportRecord?.status === 'completed' ? (
-                              <span className="text-sm text-muted-foreground">
-                                {categories.find(cat => cat.id === categoryMappings[tx.tempId])?.name || 'None'}
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap text-sm text-muted-foreground'>
+                          {tx.date}
+                        </td>
+                        <td className='px-4 py-3 text-sm text-foreground max-w-xs'>
+                          <div className='line-clamp-2'>{tx.description}</div>
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap'>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              tx.transactionType === "Debit"
+                                ? "bg-red-900/30 text-red-400 border border-red-900/50"
+                                : tx.transactionType === "Credit"
+                                  ? "bg-green-900/30 text-green-400 border border-green-900/50"
+                                  : "bg-blue-900/30 text-blue-400 border border-blue-900/50"
+                            }`}
+                          >
+                            {tx.transactionType}
+                          </span>
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap text-sm text-right text-foreground font-mono'>
+                          ${tx.amount.toFixed(2)}
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap'>
+                          {currentImportRecord?.status === "completed"
+                            ? (
+                              <span className='text-sm text-muted-foreground'>
+                                {categories.find(cat => cat.id === categoryMappings[tx.tempId])?.name || "None"}
                               </span>
-                            ) : (
+                            )
+                            : (
                               <select
-                                value={categoryMappings[tx.tempId] || ''}
+                                value={categoryMappings[tx.tempId] || ""}
                                 onChange={(e) => {
                                   e.stopPropagation();
                                   handleCategoryChange(tx.tempId, parseInt(e.target.value));
                                 }}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                                   !categoryMappings[tx.tempId] || categoryMappings[tx.tempId] === 0
-                                    ? 'border-destructive'
-                                    : 'border-border'
+                                    ? "border-destructive"
+                                    : "border-border"
                                 }`}
                               >
-                                <option value="">Select category...</option>
+                                <option value=''>Select category...</option>
                                 {categories.map(cat => (
                                   <option key={cat.id} value={cat.id}>
                                     {cat.name}
@@ -877,27 +881,29 @@ export default function ImportPage() {
                                 ))}
                               </select>
                             )}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {currentImportRecord?.status === 'completed' ? (
-                              <span className="text-sm text-muted-foreground">
-                                {accounts.find(acc => acc.id === tx.sourceAccountId)?.name || 'None'}
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap'>
+                          {currentImportRecord?.status === "completed"
+                            ? (
+                              <span className='text-sm text-muted-foreground'>
+                                {accounts.find(acc => acc.id === tx.sourceAccountId)?.name || "None"}
                               </span>
-                            ) : (
+                            )
+                            : (
                               <select
-                                value={tx.sourceAccountId || ''}
+                                value={tx.sourceAccountId || ""}
                                 onChange={(e) => {
                                   e.stopPropagation();
-                                  handleAccountChange(tx.tempId, 'source', e.target.value ? parseInt(e.target.value) : null);
+                                  handleAccountChange(tx.tempId, "source", e.target.value ? parseInt(e.target.value) : null);
                                 }}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                                  (tx.transactionType === 'Debit' || tx.transactionType === 'TransferOut') && !tx.sourceAccountId
-                                    ? 'border-destructive'
-                                    : 'border-border'
+                                  (tx.transactionType === "Debit" || tx.transactionType === "TransferOut") && !tx.sourceAccountId
+                                    ? "border-destructive"
+                                    : "border-border"
                                 }`}
-                                disabled={tx.transactionType === 'Credit'}
+                                disabled={tx.transactionType === "Credit"}
                               >
-                                <option value="">None</option>
+                                <option value=''>None</option>
                                 {accounts.map(acc => (
                                   <option key={acc.id} value={acc.id}>
                                     {acc.name}
@@ -905,27 +911,29 @@ export default function ImportPage() {
                                 ))}
                               </select>
                             )}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {currentImportRecord?.status === 'completed' ? (
-                              <span className="text-sm text-muted-foreground">
-                                {accounts.find(acc => acc.id === tx.targetAccountId)?.name || 'None'}
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap'>
+                          {currentImportRecord?.status === "completed"
+                            ? (
+                              <span className='text-sm text-muted-foreground'>
+                                {accounts.find(acc => acc.id === tx.targetAccountId)?.name || "None"}
                               </span>
-                            ) : (
+                            )
+                            : (
                               <select
-                                value={tx.targetAccountId || ''}
+                                value={tx.targetAccountId || ""}
                                 onChange={(e) => {
                                   e.stopPropagation();
-                                  handleAccountChange(tx.tempId, 'target', e.target.value ? parseInt(e.target.value) : null);
+                                  handleAccountChange(tx.tempId, "target", e.target.value ? parseInt(e.target.value) : null);
                                 }}
                                 className={`w-full px-2 py-1 bg-input border rounded text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                                  (tx.transactionType === 'Credit' || tx.transactionType === 'TransferIn') && !tx.targetAccountId
-                                    ? 'border-destructive'
-                                    : 'border-border'
+                                  (tx.transactionType === "Credit" || tx.transactionType === "TransferIn") && !tx.targetAccountId
+                                    ? "border-destructive"
+                                    : "border-border"
                                 }`}
-                                disabled={tx.transactionType === 'Debit'}
+                                disabled={tx.transactionType === "Debit"}
                               >
-                                <option value="">None</option>
+                                <option value=''>None</option>
                                 {accounts.map(acc => (
                                   <option key={acc.id} value={acc.id}>
                                     {acc.name}
@@ -933,72 +941,72 @@ export default function ImportPage() {
                                 ))}
                               </select>
                             )}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-center">
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedRawData(tx.rawCsvRow || null);
-                                setShowRawDataModal(true);
-                              }}
-                              variant="outline"
-                              size="sm"
-                              title="View original CSV data"
-                            >
-                              📄 View
-                            </Button>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-center">
-                            {currentImportRecord?.status !== 'completed' && (
-                              <span onClick={(e) => e.stopPropagation()}>
-                                <ConfirmButton
-                                  buttonText="Delete"
-                                  onConfirm={() => handleDeletePreviewRow(tx.tempId)}
-                                  buttonClassName="px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm"
-                                />
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap text-center'>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedRawData(tx.rawCsvRow || null);
+                              setShowRawDataModal(true);
+                            }}
+                            variant='outline'
+                            size='sm'
+                            title='View original CSV data'
+                          >
+                            📄 View
+                          </Button>
+                        </td>
+                        <td className='px-4 py-3 whitespace-nowrap text-center'>
+                          {currentImportRecord?.status !== "completed" && (
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <ConfirmButton
+                                buttonText='Delete'
+                                onConfirm={() => handleDeletePreviewRow(tx.tempId)}
+                                buttonClassName='px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm'
+                              />
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* Raw Data Modal */}
+      {/* Raw Data Modal */}
       {showRawDataModal && selectedRawData && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-card rounded-lg shadow-2xl border border-border max-w-3xl w-full max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-foreground">Original CSV Data</h3>
+        <div className='fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50'>
+          <div className='bg-card rounded-lg shadow-2xl border border-border max-w-3xl w-full max-h-[80vh] flex flex-col'>
+            <div className='px-6 py-4 border-b border-border flex items-center justify-between'>
+              <h3 className='text-lg font-semibold text-foreground'>Original CSV Data</h3>
               <button
                 onClick={() => {
                   setShowRawDataModal(false);
                   setSelectedRawData(null);
                 }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className='text-muted-foreground hover:text-foreground transition-colors'
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-6 overflow-auto flex-1">
-              <pre className="bg-muted/30 rounded-lg p-4 overflow-x-auto text-sm text-muted-foreground font-mono border border-border">
-{JSON.stringify(selectedRawData, null, 2)}
+            <div className='p-6 overflow-auto flex-1'>
+              <pre className='bg-muted/30 rounded-lg p-4 overflow-x-auto text-sm text-muted-foreground font-mono border border-border'>
+                {JSON.stringify(selectedRawData, null, 2)}
               </pre>
             </div>
 
-            <div className="px-6 py-4 border-t border-border flex justify-end space-x-3">
+            <div className='px-6 py-4 border-t border-border flex justify-end space-x-3'>
               <Button
                 onClick={() => {
                   navigator.clipboard.writeText(JSON.stringify(selectedRawData, null, 2));
-                  alert('Copied to clipboard!');
+                  alert("Copied to clipboard!");
                 }}
-                variant="outline"
+                variant='outline'
               >
                 📋 Copy JSON
               </Button>
@@ -1007,7 +1015,7 @@ export default function ImportPage() {
                   setShowRawDataModal(false);
                   setSelectedRawData(null);
                 }}
-                variant="outline"
+                variant='outline'
               >
                 Close
               </Button>

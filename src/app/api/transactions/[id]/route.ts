@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { TransactionService } from '@/services/TransactionService';
-import { CategoryService } from '@/services/categoryService';
-import { requireAuth } from '@/lib/auth';
-import { TransactionType } from '@/types/transaction';
+import { NextRequest, NextResponse } from "next/server";
+import { TransactionService } from "@/services/TransactionService";
+import { CategoryService } from "@/services/categoryService";
+import { requireAuth } from "@/lib/auth";
+import { TransactionType } from "@/types/transaction";
 
-export async function GET(
+export async function GET (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -14,7 +14,7 @@ export async function GET(
     const id = parseInt(idParam);
     if (isNaN(id)) {
       return NextResponse.json(
-        { error: 'Invalid transaction ID' },
+        { error: "Invalid transaction ID" },
         { status: 400 }
       );
     }
@@ -22,25 +22,25 @@ export async function GET(
     const transaction = await TransactionService.getTransactionById(id, userId);
     if (!transaction) {
       return NextResponse.json(
-        { error: 'Transaction not found' },
+        { error: "Transaction not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(transaction);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error fetching transaction:', error);
+    console.error("Error fetching transaction:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch transaction' },
+      { error: "Failed to fetch transaction" },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
+export async function PUT (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -50,7 +50,7 @@ export async function PUT(
     const id = parseInt(idParam);
     if (isNaN(id)) {
       return NextResponse.json(
-        { error: 'Invalid transaction ID' },
+        { error: "Invalid transaction ID" },
         { status: 400 }
       );
     }
@@ -96,7 +96,7 @@ export async function PUT(
 
     if (!transaction) {
       return NextResponse.json(
-        { error: 'Transaction not found' },
+        { error: "Transaction not found" },
         { status: 404 }
       );
     }
@@ -104,23 +104,23 @@ export async function PUT(
     return NextResponse.json(transaction);
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message === 'Unauthorized') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      if (error.message === "Unauthorized") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       // Validation errors
-      if (error.message.includes('require') || error.message.includes('must be different')) {
+      if (error.message.includes("require") || error.message.includes("must be different")) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
     }
-    console.error('Error updating transaction:', error);
+    console.error("Error updating transaction:", error);
     return NextResponse.json(
-      { error: 'Failed to update transaction' },
+      { error: "Failed to update transaction" },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(
+export async function DELETE (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -130,7 +130,7 @@ export async function DELETE(
     const id = parseInt(idParam);
     if (isNaN(id)) {
       return NextResponse.json(
-        { error: 'Invalid transaction ID' },
+        { error: "Invalid transaction ID" },
         { status: 400 }
       );
     }
@@ -138,19 +138,19 @@ export async function DELETE(
     const deleted = await TransactionService.deleteTransaction(id, userId);
     if (!deleted) {
       return NextResponse.json(
-        { error: 'Transaction not found' },
+        { error: "Transaction not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ message: 'Transaction deleted successfully' });
+    return NextResponse.json({ message: "Transaction deleted successfully" });
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error deleting transaction:', error);
+    console.error("Error deleting transaction:", error);
     return NextResponse.json(
-      { error: 'Failed to delete transaction' },
+      { error: "Failed to delete transaction" },
       { status: 500 }
     );
   }

@@ -10,7 +10,7 @@ export interface TransactionTypeToggleProps {
   className?: string;
 }
 
-export function TransactionTypeToggle({
+export function TransactionTypeToggle ({
   value,
   onValueChange,
   disabled = false,
@@ -20,9 +20,9 @@ export function TransactionTypeToggle({
 
   const getButtonClasses = (type: TransactionType) => {
     const isSelected = value === type;
-    
+
     const baseClasses = "px-4 py-2 rounded-md border transition-colors font-medium text-sm";
-    
+
     if (disabled) {
       return cn(baseClasses, "opacity-50 cursor-not-allowed bg-muted text-muted-foreground border-border");
     }
@@ -46,7 +46,7 @@ export function TransactionTypeToggle({
       {types.map((type) => (
         <button
           key={type}
-          type="button"
+          type='button'
           disabled={disabled}
           onClick={() => onValueChange(type)}
           className={getButtonClasses(type)}

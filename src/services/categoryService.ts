@@ -1,10 +1,10 @@
-import { db } from '@/lib/db';
-import { categories } from '@/db/schema';
-import { Category, CreateCategoryData, UpdateCategoryData } from '@/types/transaction';
-import { eq, asc, and, inArray } from 'drizzle-orm';
+import { db } from "@/lib/db";
+import { categories } from "@/db/schema";
+import { Category, CreateCategoryData, UpdateCategoryData } from "@/types/transaction";
+import { eq, asc, and, inArray } from "drizzle-orm";
 
 export class CategoryService {
-  static async getAllCategories(userId: number): Promise<Category[]> {
+  static async getAllCategories (userId: number): Promise<Category[]> {
     const result = await db.select()
       .from(categories)
       .where(eq(categories.userId, userId))
@@ -12,14 +12,14 @@ export class CategoryService {
     return result;
   }
 
-  static async getCategoryById(id: number, userId: number): Promise<Category | null> {
+  static async getCategoryById (id: number, userId: number): Promise<Category | null> {
     const result = await db.select()
       .from(categories)
       .where(and(eq(categories.id, id), eq(categories.userId, userId)));
     return result[0] || null;
   }
 
-  static async getCategoriesByIds(ids: number[], userId: number): Promise<Category[]> {
+  static async getCategoriesByIds (ids: number[], userId: number): Promise<Category[]> {
     if (ids.length === 0) return [];
     const result = await db.select()
       .from(categories)
@@ -27,17 +27,17 @@ export class CategoryService {
     return result;
   }
 
-  static async createCategory(data: CreateCategoryData): Promise<Category> {
+  static async createCategory (data: CreateCategoryData): Promise<Category> {
     const result = await db.insert(categories).values({
       userId: data.userId,
       name: data.name,
-      color: data.color || '#6366f1',
-      defaultTransactionType: data.defaultTransactionType || 'Debit',
+      color: data.color || "#6366f1",
+      defaultTransactionType: data.defaultTransactionType || "Debit",
     }).returning();
     return result[0];
   }
 
-  static async updateCategory(data: UpdateCategoryData, userId: number): Promise<Category | null> {
+  static async updateCategory (data: UpdateCategoryData, userId: number): Promise<Category | null> {
     const updateData: Partial<typeof categories.$inferInsert> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.color !== undefined) updateData.color = data.color;
@@ -50,7 +50,7 @@ export class CategoryService {
     return result[0] || null;
   }
 
-  static async deleteCategory(id: number, userId: number): Promise<boolean> {
+  static async deleteCategory (id: number, userId: number): Promise<boolean> {
     const result = await db.delete(categories)
       .where(and(eq(categories.id, id), eq(categories.userId, userId)))
       .returning();

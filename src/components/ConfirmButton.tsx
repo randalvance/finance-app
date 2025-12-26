@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 interface ConfirmButtonProps {
   onConfirm: () => void;
@@ -10,11 +10,11 @@ interface ConfirmButtonProps {
   timeout?: number; // in milliseconds
 }
 
-export default function ConfirmButton({
+export default function ConfirmButton ({
   onConfirm,
   buttonText,
-  buttonClassName = 'px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm font-medium shadow-sm',
-  confirmText = 'Sure?',
+  buttonClassName = "px-3 py-1.5 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors text-sm font-medium shadow-sm",
+  confirmText = "Sure?",
   timeout = 5000, // 5 seconds default
 }: ConfirmButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -30,7 +30,7 @@ export default function ConfirmButton({
     }
 
     startTimeRef.current = Date.now();
-    
+
     const updateProgress = () => {
       const elapsed = Date.now() - startTimeRef.current;
       const newProgress = Math.min((elapsed / timeout) * 100, 100);
@@ -84,43 +84,43 @@ export default function ConfirmButton({
 
   return (
     <button onClick={handleClick} className={buttonClassName}>
-      <span className="grid items-center justify-center">
+      <span className='grid items-center justify-center'>
         {/* Confirmation State */}
         <span
           className={`col-start-1 row-start-1 flex items-center gap-2 transition-opacity duration-200 ${
-            showConfirm ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            showConfirm ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
           <span>{confirmText}</span>
-          <svg width="20" height="20">
+          <svg width='20' height='20'>
             <circle
-              cx="10"
-              cy="10"
-              r="8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              opacity="0.3"
+              cx='10'
+              cy='10'
+              r='8'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              opacity='0.3'
             />
             <circle
-              cx="10"
-              cy="10"
-              r="8"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+              cx='10'
+              cy='10'
+              r='8'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              transform="rotate(-90 10 10)"
-              className="transition-all duration-75"
+              transform='rotate(-90 10 10)'
+              className='transition-all duration-75'
             />
             {showCountdown && (
               <text
-                x="10"
-                y="10"
-                textAnchor="middle"
-                dominantBaseline="central"
-                className="text-[10px] font-bold fill-current"
+                x='10'
+                y='10'
+                textAnchor='middle'
+                dominantBaseline='central'
+                className='text-[10px] font-bold fill-current'
               >
                 {remainingSeconds}
               </text>
@@ -131,7 +131,7 @@ export default function ConfirmButton({
         {/* Original State */}
         <span
           className={`col-start-1 row-start-1 transition-opacity duration-200 ${
-            showConfirm ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            showConfirm ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
           {buttonText}

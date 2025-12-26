@@ -1,12 +1,12 @@
 export type DatePreset =
-  | 'THIS_MONTH'
-  | 'LAST_MONTH'
-  | 'THIS_QUARTER'
-  | 'LAST_QUARTER'
-  | 'THIS_YEAR'
-  | 'LAST_YEAR'
-  | 'LAST_30_DAYS'
-  | 'LAST_90_DAYS';
+  | "THIS_MONTH"
+  | "LAST_MONTH"
+  | "THIS_QUARTER"
+  | "LAST_QUARTER"
+  | "THIS_YEAR"
+  | "LAST_YEAR"
+  | "LAST_30_DAYS"
+  | "LAST_90_DAYS";
 
 export interface DateRange {
   startDate: string; // YYYY-MM-DD
@@ -18,13 +18,13 @@ export interface DateRange {
  * @param preset The preset period to calculate
  * @returns DateRange object with startDate and endDate in YYYY-MM-DD format
  */
-export function calculateDateRange(preset: DatePreset): DateRange {
+export function calculateDateRange (preset: DatePreset): DateRange {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
 
   switch (preset) {
-    case 'THIS_MONTH': {
+    case "THIS_MONTH": {
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0);
       return {
@@ -33,7 +33,7 @@ export function calculateDateRange(preset: DatePreset): DateRange {
       };
     }
 
-    case 'LAST_MONTH': {
+    case "LAST_MONTH": {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0);
       return {
@@ -42,7 +42,7 @@ export function calculateDateRange(preset: DatePreset): DateRange {
       };
     }
 
-    case 'THIS_QUARTER': {
+    case "THIS_QUARTER": {
       const quarterStartMonth = Math.floor(month / 3) * 3;
       const startDate = new Date(year, quarterStartMonth, 1);
       const endDate = new Date(year, quarterStartMonth + 3, 0);
@@ -52,7 +52,7 @@ export function calculateDateRange(preset: DatePreset): DateRange {
       };
     }
 
-    case 'LAST_QUARTER': {
+    case "LAST_QUARTER": {
       const currentQuarterStartMonth = Math.floor(month / 3) * 3;
       const lastQuarterStartMonth = currentQuarterStartMonth - 3;
       const startDate = new Date(year, lastQuarterStartMonth, 1);
@@ -63,7 +63,7 @@ export function calculateDateRange(preset: DatePreset): DateRange {
       };
     }
 
-    case 'THIS_YEAR': {
+    case "THIS_YEAR": {
       const startDate = new Date(year, 0, 1);
       const endDate = new Date(year, 11, 31);
       return {
@@ -72,7 +72,7 @@ export function calculateDateRange(preset: DatePreset): DateRange {
       };
     }
 
-    case 'LAST_YEAR': {
+    case "LAST_YEAR": {
       const startDate = new Date(year - 1, 0, 1);
       const endDate = new Date(year - 1, 11, 31);
       return {
@@ -81,7 +81,7 @@ export function calculateDateRange(preset: DatePreset): DateRange {
       };
     }
 
-    case 'LAST_30_DAYS': {
+    case "LAST_30_DAYS": {
       const endDate = new Date(today);
       const startDate = new Date(today);
       startDate.setDate(startDate.getDate() - 30);
@@ -91,7 +91,7 @@ export function calculateDateRange(preset: DatePreset): DateRange {
       };
     }
 
-    case 'LAST_90_DAYS': {
+    case "LAST_90_DAYS": {
       const endDate = new Date(today);
       const startDate = new Date(today);
       startDate.setDate(startDate.getDate() - 90);
@@ -111,9 +111,9 @@ export function calculateDateRange(preset: DatePreset): DateRange {
 /**
  * Format a Date object as YYYY-MM-DD
  */
-function formatDate(date: Date): string {
+function formatDate (date: Date): string {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }

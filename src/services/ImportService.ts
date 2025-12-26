@@ -1,5 +1,5 @@
-import { db } from '@/lib/db';
-import { imports, transactions } from '@/db/schema';
+import { db } from "@/lib/db";
+import { imports, transactions } from "@/db/schema";
 import {
   Import,
   CreateImportData,
@@ -10,36 +10,36 @@ import {
   ImportPreviewData,
   FieldMapping,
   TransactionFieldType
-} from '@/types/transaction';
-import { eq, and, desc } from 'drizzle-orm';
-import { parse as parseDate, format } from 'date-fns';
+} from "@/types/transaction";
+import { eq, and, desc } from "drizzle-orm";
+import { parse as parseDate, format } from "date-fns";
 
 export class ImportService {
   /**
    * Validate field mappings configuration
    */
-  static validateFieldMappings(mappings: FieldMapping[]): { valid: boolean; errors: string[] } {
+  static validateFieldMappings (mappings: FieldMapping[]): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
     // 1. Check for required fields
-    const hasDate = mappings.some(m => m.transactionField === 'date');
-    const hasDescription = mappings.some(m => m.transactionField === 'description');
+    const hasDate = mappings.some(m => m.transactionField === "date");
+    const hasDescription = mappings.some(m => m.transactionField === "description");
 
-    if (!hasDate) errors.push('date field mapping is required');
-    if (!hasDescription) errors.push('description field mapping is required');
+    if (!hasDate) errors.push("date field mapping is required");
+    if (!hasDescription) errors.push("description field mapping is required");
 
     // 2. Check for amount fields (must have debit/credit fields)
-    const hasDebit = mappings.some(m => m.transactionField === 'debit');
-    const hasCredit = mappings.some(m => m.transactionField === 'credit');
+    const hasDebit = mappings.some(m => m.transactionField === "debit");
+    const hasCredit = mappings.some(m => m.transactionField === "credit");
 
     if (!hasDebit && !hasCredit) {
-      errors.push('Must have at least one of debit or credit field mappings');
+      errors.push("Must have at least one of debit or credit field mappings");
     }
 
     // 3. Check date field has format
-    const dateMapping = mappings.find(m => m.transactionField === 'date');
+    const dateMapping = mappings.find(m => m.transactionField === "date");
     if (dateMapping && !dateMapping.format) {
-      errors.push('date field must have format specified');
+      errors.push("date field must have format specified");
     }
 
     // 4. Check for duplicate mappings (same transactionField mapped twice)
@@ -67,8 +67,8 @@ export class ImportService {
       if (fields.length > 1) {
         // Allow same source column for debit AND credit (signed amount column)
         const isDebitCreditPair = fields.length === 2 &&
-                                   fields.includes('debit') &&
-                                   fields.includes('credit');
+                                   fields.includes("debit") &&
+                                   fields.includes("credit");
 
         if (!isDebitCreditPair) {
           errors.push(`Source column "${source}" is mapped multiple times`);
@@ -78,13 +78,13 @@ export class ImportService {
 
     // 6. Validate data types match fields
     mappings.forEach(m => {
-      if (m.transactionField === 'date' && m.dataType !== 'date') {
+      if (m.transactionField === "date" && m.dataType !== "date") {
         errors.push('date field must have dataType "date"');
       }
-      if ((m.transactionField === 'debit' || m.transactionField === 'credit') && m.dataType !== 'number') {
+      if ((m.transactionField === "debit" || m.transactionField === "credit") && m.dataType !== "number") {
         errors.push(`${m.transactionField} field must have dataType "number"`);
       }
-      if ((m.transactionField === 'description' || m.transactionField === 'reference') && m.dataType !== 'string') {
+      if ((m.transactionField === "description" || m.transactionField === "reference") && m.dataType !== "string") {
         errors.push(`${m.transactionField} field must have dataType "string"`);
       }
     });
@@ -94,15 +94,16 @@ export class ImportService {
       errors
     };
   }
+
   /**
    * Parse CSV content based on import source config
    */
-  static parseCSV(csvContent: string, config: ImportSourceConfig): ParsedCSVRow[] {
-    const lines = csvContent.split('\n');
+  static parseCSV (csvContent: string, config: ImportSourceConfig): ParsedCSVRow[] {
+    const lines = csvContent.split("\n");
     const dataLines = lines.slice(config.startingLine - 1); // Convert 1-based to 0-based
 
     if (dataLines.length === 0) {
-      throw new Error('No data found in CSV after starting line');
+      throw new Error("No data found in CSV after starting line");
     }
 
     // Parse header row
@@ -127,14 +128,14 @@ export class ImportService {
     });
 
     // Verify required mappings exist
-    const dateMapping = mappingIndex.get('date');
-    const descMapping = mappingIndex.get('description');
+    const dateMapping = mappingIndex.get("date");
+    const descMapping = mappingIndex.get("description");
 
     if (!dateMapping) {
-      throw new Error('date field mapping is required');
+      throw new Error("date field mapping is required");
     }
     if (!descMapping) {
-      throw new Error('description field mapping is required');
+      throw new Error("description field mapping is required");
     }
 
     // Parse data rows
@@ -149,7 +150,7 @@ export class ImportService {
       // Build raw row object
       const rawRow: Record<string, string> = {};
       headers.forEach((header, idx) => {
-        rawRow[header] = values[idx] || '';
+        rawRow[header] = values[idx] || "";
       });
 
       // Parse date
@@ -165,8 +166,8 @@ export class ImportService {
       }
 
       // Parse amounts
-      const debitMapping = mappingIndex.get('debit');
-      const creditMapping = mappingIndex.get('credit');
+      const debitMapping = mappingIndex.get("debit");
+      const creditMapping = mappingIndex.get("credit");
 
       let debitAmount: number | null = null;
       let creditAmount: number | null = null;
@@ -210,11 +211,11 @@ export class ImportService {
       }
 
       // Build description from available fields
-      const descValue = values[descMapping.idx]?.trim() || '';
-      const refMapping = mappingIndex.get('reference');
-      const refValue = refMapping ? values[refMapping.idx]?.trim() : '';
+      const descValue = values[descMapping.idx]?.trim() || "";
+      const refMapping = mappingIndex.get("reference");
+      const refValue = refMapping ? values[refMapping.idx]?.trim() : "";
 
-      let description = '';
+      let description = "";
       if (descValue && refValue) {
         description = `${refValue} - ${descValue}`;
       } else if (refValue) {
@@ -222,11 +223,11 @@ export class ImportService {
       } else if (descValue) {
         description = descValue;
       } else {
-        description = 'NULL';
+        description = "NULL";
       }
 
       parsedRows.push({
-        date: format(parsedDateObj, 'yyyy-MM-dd'),
+        date: format(parsedDateObj, "yyyy-MM-dd"),
         description,
         debitAmount,
         creditAmount,
@@ -240,9 +241,9 @@ export class ImportService {
   /**
    * Parse CSV line handling quoted fields
    */
-  private static parseCSVLine(line: string): string[] {
+  private static parseCSVLine (line: string): string[] {
     const result: string[] = [];
-    let current = '';
+    let current = "";
     let inQuotes = false;
 
     for (let i = 0; i < line.length; i++) {
@@ -250,9 +251,9 @@ export class ImportService {
 
       if (char === '"') {
         inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
+      } else if (char === "," && !inQuotes) {
         result.push(current.trim());
-        current = '';
+        current = "";
       } else {
         current += char;
       }
@@ -265,8 +266,8 @@ export class ImportService {
   /**
    * Parse amount string to number
    */
-  private static parseAmount(amountStr: string): number | null {
-    const cleaned = amountStr.replace(/[^0-9.-]/g, '');
+  private static parseAmount (amountStr: string): number | null {
+    const cleaned = amountStr.replace(/[^0-9.-]/g, "");
     const parsed = parseFloat(cleaned);
     return isNaN(parsed) ? null : Math.abs(parsed);
   }
@@ -274,8 +275,8 @@ export class ImportService {
   /**
    * Parse signed amount string to number (preserves sign)
    */
-  private static parseSignedAmount(amountStr: string): number | null {
-    const cleaned = amountStr.replace(/[^0-9.-]/g, '');
+  private static parseSignedAmount (amountStr: string): number | null {
+    const cleaned = amountStr.replace(/[^0-9.-]/g, "");
     const parsed = parseFloat(cleaned);
     return isNaN(parsed) ? null : parsed; // Keep the sign!
   }
@@ -283,7 +284,7 @@ export class ImportService {
   /**
    * Convert parsed CSV rows to preview transactions
    */
-  static rowsToPreviewTransactions(
+  static rowsToPreviewTransactions (
     rows: ParsedCSVRow[],
     defaultAccountId: number
   ): PreviewTransaction[] {
@@ -292,7 +293,7 @@ export class ImportService {
       date: row.date,
       description: row.description,
       amount: row.debitAmount || row.creditAmount || 0,
-      transactionType: row.debitAmount ? ('Debit' as const) : ('Credit' as const),
+      transactionType: row.debitAmount ? ("Debit" as const) : ("Credit" as const),
       sourceAccountId: row.debitAmount ? defaultAccountId : null,
       targetAccountId: row.creditAmount ? defaultAccountId : null,
       rawCsvRow: row.rawRow,
@@ -302,7 +303,7 @@ export class ImportService {
   /**
    * Create draft import
    */
-  static async createDraftImport(data: CreateImportData): Promise<Import> {
+  static async createDraftImport (data: CreateImportData): Promise<Import> {
     const result = await db.insert(imports).values({
       userId: data.userId,
       importSourceId: data.importSourceId,
@@ -320,7 +321,7 @@ export class ImportService {
   /**
    * Update import (for saving draft progress)
    */
-  static async updateImport(data: UpdateImportData, userId: number): Promise<Import | null> {
+  static async updateImport (data: UpdateImportData, userId: number): Promise<Import | null> {
     const updateData: Partial<typeof imports.$inferInsert> = {};
     if (data.status !== undefined) updateData.status = data.status;
     if (data.previewData !== undefined) updateData.previewData = data.previewData;
@@ -338,7 +339,7 @@ export class ImportService {
   /**
    * Complete import - create transactions and update status
    */
-  static async completeImport(
+  static async completeImport (
     importId: number,
     categoryMappings: Record<string, number>,
     userId: number
@@ -346,7 +347,7 @@ export class ImportService {
     // Get import record
     const importRecord = await this.getImportById(importId, userId);
     if (!importRecord || !importRecord.previewData) {
-      throw new Error('Import not found or missing preview data');
+      throw new Error("Import not found or missing preview data");
     }
 
     const previewData = importRecord.previewData as ImportPreviewData;
@@ -361,17 +362,17 @@ export class ImportService {
       }
 
       // Validate account assignments based on transaction type
-      if (preview.transactionType === 'Debit' && !preview.sourceAccountId) {
+      if (preview.transactionType === "Debit" && !preview.sourceAccountId) {
         errors.push(`Debit transaction "${preview.description}" is missing source account`);
-      } else if (preview.transactionType === 'TransferOut') {
+      } else if (preview.transactionType === "TransferOut") {
         if (!preview.sourceAccountId || !preview.targetAccountId) {
           errors.push(`Transfer Out transaction "${preview.description}" is missing source or target account`);
         } else if (preview.sourceAccountId === preview.targetAccountId) {
           errors.push(`Transfer Out transaction "${preview.description}" has same source and target account`);
         }
-      } else if (preview.transactionType === 'Credit' && !preview.targetAccountId) {
+      } else if (preview.transactionType === "Credit" && !preview.targetAccountId) {
         errors.push(`Credit transaction "${preview.description}" is missing target account`);
-      } else if (preview.transactionType === 'TransferIn') {
+      } else if (preview.transactionType === "TransferIn") {
         if (!preview.sourceAccountId || !preview.targetAccountId) {
           errors.push(`Transfer In transaction "${preview.description}" is missing source or target account`);
         } else if (preview.sourceAccountId === preview.targetAccountId) {
@@ -381,13 +382,13 @@ export class ImportService {
     });
 
     if (errors.length > 0) {
-      throw new Error(`Validation errors:\n${errors.join('\n')}`);
+      throw new Error(`Validation errors:\n${errors.join("\n")}`);
     }
 
     // Prepare transaction data
     const transactionValues = previewTransactions.map(preview => {
       // Make amounts negative for Debit and TransferOut transactions
-      const amount = (preview.transactionType === 'Debit' || preview.transactionType === 'TransferOut')
+      const amount = (preview.transactionType === "Debit" || preview.transactionType === "TransferOut")
         ? -Math.abs(preview.amount)
         : Math.abs(preview.amount);
 
@@ -412,7 +413,7 @@ export class ImportService {
     // Update import status
     const result = await db.update(imports)
       .set({
-        status: 'completed',
+        status: "completed",
         importedRows: transactionValues.length,
         completedAt: new Date(),
       })
@@ -425,7 +426,7 @@ export class ImportService {
   /**
    * Get all imports for a user
    */
-  static async getAllImports(userId: number): Promise<Import[]> {
+  static async getAllImports (userId: number): Promise<Import[]> {
     const result = await db.select()
       .from(imports)
       .where(eq(imports.userId, userId))
@@ -436,7 +437,7 @@ export class ImportService {
   /**
    * Get import by ID
    */
-  static async getImportById(id: number, userId: number): Promise<Import | null> {
+  static async getImportById (id: number, userId: number): Promise<Import | null> {
     const result = await db.select()
       .from(imports)
       .where(and(eq(imports.id, id), eq(imports.userId, userId)));
@@ -446,7 +447,7 @@ export class ImportService {
   /**
    * Delete import (for draft imports)
    */
-  static async deleteImport(id: number, userId: number): Promise<boolean> {
+  static async deleteImport (id: number, userId: number): Promise<boolean> {
     const result = await db.delete(imports)
       .where(and(eq(imports.id, id), eq(imports.userId, userId)))
       .returning();

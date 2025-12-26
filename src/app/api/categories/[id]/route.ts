@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import { CategoryService } from '@/services/categoryService';
-import { requireAuth } from '@/lib/auth';
-import { TransactionType } from '@/types/transaction';
+import { NextResponse } from "next/server";
+import { CategoryService } from "@/services/categoryService";
+import { requireAuth } from "@/lib/auth";
+import { TransactionType } from "@/types/transaction";
 
-export async function GET(
+export async function GET (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -11,28 +11,28 @@ export async function GET(
     const userId = await requireAuth();
     const { id } = await context.params;
     const category = await CategoryService.getCategoryById(parseInt(id), userId);
-    
+
     if (!category) {
       return NextResponse.json(
-        { error: 'Category not found' },
+        { error: "Category not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(category);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error fetching category:', error);
+    console.error("Error fetching category:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch category' },
+      { error: "Failed to fetch category" },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
+export async function PUT (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -62,25 +62,25 @@ export async function PUT(
 
     if (!category) {
       return NextResponse.json(
-        { error: 'Category not found' },
+        { error: "Category not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(category);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error updating category:', error);
+    console.error("Error updating category:", error);
     return NextResponse.json(
-      { error: 'Failed to update category' },
+      { error: "Failed to update category" },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(
+export async function DELETE (
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
@@ -88,22 +88,22 @@ export async function DELETE(
     const userId = await requireAuth();
     const { id } = await context.params;
     const success = await CategoryService.deleteCategory(parseInt(id), userId);
-    
+
     if (!success) {
       return NextResponse.json(
-        { error: 'Category not found' },
+        { error: "Category not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error deleting category:', error);
+    console.error("Error deleting category:", error);
     return NextResponse.json(
-      { error: 'Failed to delete category' },
+      { error: "Failed to delete category" },
       { status: 500 }
     );
   }

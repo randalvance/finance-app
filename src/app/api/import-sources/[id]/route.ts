@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ImportSourceService } from '@/services/ImportSourceService';
-import { requireAuth } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { ImportSourceService } from "@/services/ImportSourceService";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET(
+export async function GET (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -12,25 +12,25 @@ export async function GET(
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const source = await ImportSourceService.getImportSourceWithAccounts(id, userId);
     if (!source) {
-      return NextResponse.json({ error: 'Import source not found' }, { status: 404 });
+      return NextResponse.json({ error: "Import source not found" }, { status: 404 });
     }
 
     return NextResponse.json(source);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error fetching import source:', error);
-    return NextResponse.json({ error: 'Failed to fetch import source' }, { status: 500 });
+    console.error("Error fetching import source:", error);
+    return NextResponse.json({ error: "Failed to fetch import source" }, { status: 500 });
   }
 }
 
-export async function PUT(
+export async function PUT (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -40,7 +40,7 @@ export async function PUT(
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -51,14 +51,14 @@ export async function PUT(
     if (account_ids !== undefined) {
       if (!Array.isArray(account_ids)) {
         return NextResponse.json(
-          { error: 'account_ids must be an array' },
+          { error: "account_ids must be an array" },
           { status: 400 }
         );
       }
       accountIds = account_ids.map((id: unknown) => {
         const parsed = parseInt(String(id));
         if (isNaN(parsed)) {
-          throw new Error('Invalid account ID');
+          throw new Error("Invalid account ID");
         }
         return parsed;
       });
@@ -70,20 +70,20 @@ export async function PUT(
     );
 
     if (!source) {
-      return NextResponse.json({ error: 'Import source not found' }, { status: 404 });
+      return NextResponse.json({ error: "Import source not found" }, { status: 404 });
     }
 
     return NextResponse.json(source);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error updating import source:', error);
-    return NextResponse.json({ error: 'Failed to update import source' }, { status: 500 });
+    console.error("Error updating import source:", error);
+    return NextResponse.json({ error: "Failed to update import source" }, { status: 500 });
   }
 }
 
-export async function DELETE(
+export async function DELETE (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -93,20 +93,20 @@ export async function DELETE(
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const success = await ImportSourceService.deleteImportSource(id, userId);
     if (!success) {
-      return NextResponse.json({ error: 'Import source not found' }, { status: 404 });
+      return NextResponse.json({ error: "Import source not found" }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error('Error deleting import source:', error);
-    return NextResponse.json({ error: 'Failed to delete import source' }, { status: 500 });
+    console.error("Error deleting import source:", error);
+    return NextResponse.json({ error: "Failed to delete import source" }, { status: 500 });
   }
 }

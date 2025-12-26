@@ -34,25 +34,25 @@ export const viewport = {
   themeColor: "#111827",
 };
 
-export default function RootLayout({
+export default function RootLayout ({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang='en'>
         <head>
-          <link rel="icon" href="/favicon.ico" />
-          <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          <meta name="apple-mobile-web-app-title" content="Finance App" />
+          <link rel='icon' href='/favicon.ico' />
+          <link rel='apple-touch-icon' href='/icons/icon-192x192.png' />
+          <meta name='apple-mobile-web-app-capable' content='yes' />
+          <meta name='apple-mobile-web-app-status-bar-style' content='default' />
+          <meta name='apple-mobile-web-app-title' content='Finance App' />
         </head>
         <body
           className={`${jetbrainsMono.variable} ${ibmPlexSans.variable} antialiased`}
         >
-          <div className="min-h-screen bg-background text-foreground noise-bg grid-bg">
+          <div className='min-h-screen bg-background text-foreground noise-bg grid-bg'>
             <ClientLayout>
               {children}
             </ClientLayout>

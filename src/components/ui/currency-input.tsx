@@ -10,15 +10,15 @@ export interface CurrencyInputProps
 export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ currencySymbol = "$", className, ...props }, ref) => {
     return (
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+      <div className='relative'>
+        <span className='absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none'>
           {currencySymbol}
         </span>
         <Input
           ref={ref}
-          type="number"
-          step="0.01"
-          min="0"
+          type='number'
+          step='0.01'
+          min='0'
           className={cn("pl-8", className)}
           {...props}
         />

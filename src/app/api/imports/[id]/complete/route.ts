@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ImportService } from '@/services/ImportService';
-import { requireAuth } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { ImportService } from "@/services/ImportService";
+import { requireAuth } from "@/lib/auth";
 
-export async function POST(
+export async function POST (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -12,7 +12,7 @@ export async function POST(
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -20,7 +20,7 @@ export async function POST(
 
     if (!category_mappings) {
       return NextResponse.json(
-        { error: 'Category mappings are required' },
+        { error: "Category mappings are required" },
         { status: 400 }
       );
     }
@@ -37,18 +37,18 @@ export async function POST(
     const importRecord = await ImportService.completeImport(id, category_mappings, userId);
 
     if (!importRecord) {
-      return NextResponse.json({ error: 'Import not found' }, { status: 404 });
+      return NextResponse.json({ error: "Import not found" }, { status: 404 });
     }
 
     return NextResponse.json(importRecord, { status: 201 });
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message === 'Unauthorized') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      if (error.message === "Unauthorized") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    console.error('Error completing import:', error);
-    return NextResponse.json({ error: 'Failed to complete import' }, { status: 500 });
+    console.error("Error completing import:", error);
+    return NextResponse.json({ error: "Failed to complete import" }, { status: 500 });
   }
 }
