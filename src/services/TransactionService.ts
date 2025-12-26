@@ -8,7 +8,7 @@ import {
   TransactionWithLink,
   TransactionType
 } from "@/types/transaction";
-import { eq, desc, and, inArray, or, gte, lte } from "drizzle-orm";
+import { eq, desc, and, inArray, or, gte, lte, sql } from "drizzle-orm";
 import { calculateDateRange, type DatePreset } from "@/lib/dateUtils";
 
 export class TransactionService {
@@ -277,7 +277,9 @@ export class TransactionService {
     accountId?: number,
     datePreset?: string,
     customStartDate?: string,
-    customEndDate?: string
+    customEndDate?: string,
+    limit?: number,
+    offset?: number
   ): Promise<TransactionWithLink[]> {
     // Build base query
     let query = db
@@ -331,6 +333,14 @@ export class TransactionService {
 
     // Apply where conditions
     query = query.where(and(...conditions)) as typeof query;
+
+    // Apply pagination
+    if (limit !== undefined) {
+      query = query.limit(limit) as typeof query;
+    }
+    if (offset !== undefined) {
+      query = query.offset(offset) as typeof query;
+    }
 
     const result = await query.orderBy(desc(transactions.date), desc(transactions.createdAt));
 
@@ -466,5 +476,56 @@ export class TransactionService {
         : undefined,
       link: linkMap.get(t.id)
     }));
+  }
+
+  /**
+   * Get total count of transactions matching the same filters as getAllTransactionsWithLinks
+   */
+  static async getTransactionCount (
+    userId: number,
+    accountId?: number,
+    datePreset?: string,
+    customStartDate?: string,
+    customEndDate?: string
+  ): Promise<number> {
+    // Build where conditions (same as getAllTransactionsWithLinks)
+    const conditions = [eq(transactions.userId, userId)];
+
+    // Apply account filter if provided
+    if (accountId !== undefined) {
+      conditions.push(
+        or(
+          eq(transactions.sourceAccountId, accountId),
+          eq(transactions.targetAccountId, accountId)
+        )!
+      );
+    }
+
+    // Apply date filter if provided
+    if (datePreset) {
+      let dateRange;
+      if (datePreset === "CUSTOM" && customStartDate && customEndDate) {
+        dateRange = { startDate: customStartDate, endDate: customEndDate };
+      } else if (datePreset !== "CUSTOM") {
+        dateRange = calculateDateRange(datePreset as DatePreset);
+      }
+
+      if (dateRange) {
+        conditions.push(
+          and(
+            gte(transactions.date, dateRange.startDate),
+            lte(transactions.date, dateRange.endDate)
+          )!
+        );
+      }
+    }
+
+    // Execute count query
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(transactions)
+      .where(and(...conditions));
+
+    return result[0]?.count || 0;
   }
 }
