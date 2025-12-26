@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/currency";
 import type { Currency } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
@@ -172,9 +173,28 @@ export default function TransactionTable ({
     filteredTransactions = filteredTransactions.filter(customFilter);
   }
 
-  if (maxRows) {
-    filteredTransactions = filteredTransactions.slice(0, maxRows);
-  }
+  const [displayLimit, setDisplayLimit] = useState(maxRows || 20);
+  const [isEnd, setIsEnd] = useState(false);
+
+  // Reset display limit when filters change or maxRows changes
+  useEffect(() => {
+    setDisplayLimit(maxRows || 20);
+    setIsEnd(false);
+  }, [maxRows, searchQuery, selectedAccountFilter, selectedDateFilter, filterUnlinkedOnly, transactions]);
+
+  const displayedTransactions = filteredTransactions.slice(0, displayLimit);
+
+  const handleLoadMore = () => {
+    const prevCount = displayedTransactions.length;
+    const nextLimit = displayLimit + (maxRows || 20);
+    const nextCount = filteredTransactions.slice(0, nextLimit).length;
+
+    setDisplayLimit(nextLimit);
+
+    if (nextCount === prevCount) {
+      setIsEnd(true);
+    }
+  };
 
   return (
     <div className='space-y-4'>
@@ -366,7 +386,7 @@ export default function TransactionTable ({
               </tr>
             </thead>
             <tbody className='divide-y divide-border/30'>
-              {filteredTransactions.map((transaction) => (
+              {displayedTransactions.map((transaction) => (
                 <tr
                   key={transaction.id}
                   className='hover:bg-primary/5 transition-all duration-200 group'
@@ -524,6 +544,22 @@ export default function TransactionTable ({
           </table>
         </div>
       )}
+
+      {/* Load More Pagination */}
+      <div className='flex justify-center pt-4'>
+        {isEnd ? (
+          <div className='mono text-xs text-muted-foreground py-3 tracking-widest'>
+            THAT'S ALL
+          </div>
+        ) : (
+          <button
+            onClick={handleLoadMore}
+            className='mono text-xs px-6 py-3 bg-background border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary transition-all rounded font-bold tracking-widest shadow-lg'
+          >
+            [LOAD_MORE_TRANSACTIONS]
+          </button>
+        )}
+      </div>
     </div>
   );
 }
