@@ -197,11 +197,50 @@ export function TransactionLinkSelectorPanel ({
   filterByDate: boolean;
   onFilterByDateChange: (filter: boolean) => void;
 }) {
+  const [datePreset, setDatePreset] = useState<string | null>(
+    filterByDate && currentTransactionDate ? "CUSTOM" : null
+  );
+  const [customDateRange, setCustomDateRange] = useState<{
+    startDate: string | null;
+    endDate: string | null;
+  }>({
+    startDate: filterByDate && currentTransactionDate ? currentTransactionDate : null,
+    endDate: filterByDate && currentTransactionDate ? currentTransactionDate : null,
+  });
+
+  // Sync date filter with checkbox
+  const handleCheckboxChange = (checked: boolean) => {
+    onFilterByDateChange(checked);
+    if (checked && currentTransactionDate) {
+      setDatePreset("CUSTOM");
+      setCustomDateRange({
+        startDate: currentTransactionDate,
+        endDate: currentTransactionDate,
+      });
+    } else {
+      setDatePreset(null);
+      setCustomDateRange({ startDate: null, endDate: null });
+    }
+  };
+
+  const handleDateFilterChange = (
+    preset: string | null,
+    range: { startDate: string | null; endDate: string | null }
+  ) => {
+    setDatePreset(preset);
+    setCustomDateRange(range);
+    // Update checkbox based on whether custom date matches parent transaction date
+    if (preset === "CUSTOM" && currentTransactionDate &&
+        range.startDate === currentTransactionDate &&
+        range.endDate === currentTransactionDate) {
+      onFilterByDateChange(true);
+    } else if (preset === null || preset === "") {
+      onFilterByDateChange(false);
+    }
+  };
+
   const constraints = {
     hasLinks: false,
-    ...(filterByDate && currentTransactionDate
-      ? { dateEquals: currentTransactionDate }
-      : {}),
   };
 
   return (
@@ -212,7 +251,7 @@ export function TransactionLinkSelectorPanel ({
             type='checkbox'
             id='filterByDate'
             checked={filterByDate}
-            onChange={(e) => onFilterByDateChange(e.target.checked)}
+            onChange={(e) => handleCheckboxChange(e.target.checked)}
             className='w-4 h-4 cursor-pointer'
           />
           <label
@@ -234,6 +273,9 @@ export function TransactionLinkSelectorPanel ({
             showAccountFilter
             showSearchFilter
             showDateFilter
+            dateFilterPreset={datePreset}
+            dateFilterRange={customDateRange}
+            onDateFilterChange={handleDateFilterChange}
             showLinkColumn={false}
             showAccountsColumn={false}
             showCategoryColumn={false}
