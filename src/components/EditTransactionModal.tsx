@@ -9,7 +9,6 @@ import {
   TransactionWithAccounts,
   LinkedTransaction,
   Category,
-  TransactionType,
 } from "@/types/transaction";
 import TransactionLinkSelector, {
   TransactionLinkSelectorPanel,
