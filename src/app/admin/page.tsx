@@ -21,6 +21,7 @@ interface Account {
   description: string | null;
   color: string;
   currency: string;
+  isInvestmentAccount?: string;
   created_at: string;
 }
 
@@ -65,7 +66,8 @@ export default function AdminPage () {
     name: "",
     description: "",
     color: "#3b82f6",
-    currency: "USD" as Currency
+    currency: "USD" as Currency,
+    isInvestmentAccount: false
   });
 
   // Category modal state
@@ -141,11 +143,12 @@ export default function AdminPage () {
         name: account.name,
         description: account.description || "",
         color: account.color,
-        currency: account.currency as Currency
+        currency: account.currency as Currency,
+        isInvestmentAccount: account.isInvestmentAccount === "true"
       });
     } else {
       setEditingAccount(null);
-      setAccountFormData({ name: "", description: "", color: "#3b82f6", currency: "USD" });
+      setAccountFormData({ name: "", description: "", color: "#3b82f6", currency: "USD", isInvestmentAccount: false });
     }
     setShowAccountModal(true);
   };
@@ -164,13 +167,19 @@ export default function AdminPage () {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(accountFormData),
+        body: JSON.stringify({
+          name: accountFormData.name,
+          description: accountFormData.description,
+          color: accountFormData.color,
+          currency: accountFormData.currency,
+          is_investment_account: accountFormData.isInvestmentAccount
+        }),
       });
 
       if (response.ok) {
         setShowAccountModal(false);
         setEditingAccount(null);
-        setAccountFormData({ name: "", description: "", color: "#3b82f6", currency: "USD" });
+        setAccountFormData({ name: "", description: "", color: "#3b82f6", currency: "USD", isInvestmentAccount: false });
         fetchAccounts();
       } else {
         const error = await response.json();
@@ -442,6 +451,7 @@ export default function AdminPage () {
                       <TableHead className='mono text-[10px] font-bold text-primary uppercase tracking-widest'>NAME</TableHead>
                       <TableHead className='mono text-[10px] font-bold text-primary uppercase tracking-widest'>DESCRIPTION</TableHead>
                       <TableHead className='mono text-[10px] font-bold text-primary uppercase tracking-widest'>CURRENCY</TableHead>
+                      <TableHead className='mono text-[10px] font-bold text-primary uppercase tracking-widest'>TYPE</TableHead>
                       <TableHead className='mono text-[10px] font-bold text-primary uppercase tracking-widest'>COLOR</TableHead>
                       <TableHead className='mono text-[10px] text-center font-bold text-primary uppercase tracking-widest'>ACTIONS</TableHead>
                     </TableRow>
@@ -465,9 +475,22 @@ export default function AdminPage () {
                           <span className='text-sm text-muted-foreground'>{account.currency}</span>
                         </TableCell>
                         <TableCell>
+                          {account.isInvestmentAccount === "true"
+                            ? <span className='mono text-xs px-2 py-1 bg-accent/20 text-accent rounded border border-accent/30'>INVESTMENT</span>
+                            : <span className='text-sm text-muted-foreground'>REGULAR</span>}
+                        </TableCell>
+                        <TableCell>
                           <span className='mono text-xs text-muted-foreground'>{account.color}</span>
                         </TableCell>
-                        <TableCell className='text-center'>
+                        <TableCell className='text-center space-x-1'>
+                          {account.isInvestmentAccount === "true" && (
+                            <a
+                              href={`/accounts/${account.id}/balance-history`}
+                              className='mono text-xs px-2 py-1 text-secondary hover:bg-secondary/10 rounded border border-secondary/30 hover:border-secondary transition-all inline-block'
+                            >
+                              HISTORY
+                            </a>
+                          )}
                           <button
                             onClick={() => openAccountModal(account)}
                             className='mono text-xs px-2 py-1 text-primary hover:bg-primary/10 rounded border border-primary/30 hover:border-primary transition-all mr-2'
@@ -686,6 +709,20 @@ export default function AdminPage () {
                 </select>
               </div>
 
+              <div className='flex items-center space-x-3'>
+                <input
+                  type='checkbox'
+                  id='account-investment'
+                  checked={accountFormData.isInvestmentAccount}
+                  onChange={(e) => setAccountFormData({ ...accountFormData, isInvestmentAccount: e.target.checked })}
+                  className='w-4 h-4 rounded border border-border focus:outline-none focus:ring-2 focus:ring-primary transition-all'
+                />
+                <label htmlFor='account-investment' className='mono text-xs font-bold text-primary cursor-pointer'>
+                  INVESTMENT_ACCOUNT
+                </label>
+                <span className='text-xs text-muted-foreground'>(Manual balance tracking)</span>
+              </div>
+
               <div className='flex justify-end space-x-3 pt-4'>
                 <Button
                   type='button'
@@ -693,7 +730,7 @@ export default function AdminPage () {
                   onClick={() => {
                     setShowAccountModal(false);
                     setEditingAccount(null);
-                    setAccountFormData({ name: "", description: "", color: "#3b82f6", currency: "USD" });
+                    setAccountFormData({ name: "", description: "", color: "#3b82f6", currency: "USD", isInvestmentAccount: false });
                   }}
                   disabled={submitting}
                   className='mono text-xs'

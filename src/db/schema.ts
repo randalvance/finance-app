@@ -29,6 +29,7 @@ export const accounts = pgTable("accounts", {
   description: text("description"),
   color: varchar("color", { length: 7 }).default("#6366f1"),
   currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+  isInvestmentAccount: varchar("is_investment_account").default("false").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 }, (table) => ({
@@ -38,6 +39,26 @@ export const accounts = pgTable("accounts", {
   currencyCheck: check(
     "currency_check",
     sql`${table.currency} IN (${sql.raw(currencyEnum.map(c => `'${c.replace(/'/g, "''")}'`).join(", "))})`
+  )
+}));
+
+export const accountBalances = pgTable("account_balances", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  accountId: integer("account_id").notNull().references(() => accounts.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull(),
+  amount: numericDecimal("amount").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+}, (table) => ({
+  accountIdx: index("idx_account_balances_account").on(table.accountId),
+  userIdx: index("idx_account_balances_user").on(table.userId),
+  dateIdx: index("idx_account_balances_date").on(table.date),
+  accountDateIdx: index("idx_account_balances_account_date").on(table.accountId, table.date),
+  currencyCheck: check(
+    "account_balances_currency_check",
+    sql`${table.currency} IN ('USD', 'SGD', 'EUR', 'JPY', 'PHP')`
   )
 }));
 
@@ -176,4 +197,21 @@ export const transactionLinks = pgTable("transaction_links", {
   userIdIdx: index("idx_transaction_links_user").on(table.userId),
   // Unique constraint: prevent duplicate links
   uniqueLink: unique().on(table.transaction1Id, table.transaction2Id)
+}));
+// Exchange rates table for caching fetched rates
+export const exchangeRates = pgTable("exchange_rates", {
+  id: serial("id").primaryKey(),
+  fromCurrency: varchar("from_currency", { length: 3 }).notNull(),
+  toCurrency: varchar("to_currency", { length: 3 }).notNull(),
+  rate: numericDecimal("rate").notNull(),
+  date: date("date").notNull(),
+  source: varchar("source", { length: 50 }).default("exchangerate-api"),
+  createdAt: timestamp("created_at").defaultNow()
+}, (table) => ({
+  // Unique constraint: one rate per currency pair per date
+  uniqueRatePerDay: unique().on(table.fromCurrency, table.toCurrency, table.date),
+  // Indexes for performance
+  dateIdx: index("idx_exchange_rates_date").on(table.date),
+  currencyPairIdx: index("idx_exchange_rates_pair").on(table.fromCurrency, table.toCurrency),
+  baseCurrencyIdx: index("idx_exchange_rates_base").on(table.fromCurrency)
 }));

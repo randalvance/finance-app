@@ -13,6 +13,7 @@ export async function GET (request: NextRequest) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const hasLinks = searchParams.get("hasLinks");
+    const excludeInvestments = searchParams.get("excludeInvestments");
 
     const transactions = await TransactionService.getAllTransactionsWithLinks(
       userId,
@@ -20,7 +21,8 @@ export async function GET (request: NextRequest) {
       datePreset || undefined,
       startDate || undefined,
       endDate || undefined,
-      hasLinks === "true" ? true : hasLinks === "false" ? false : undefined
+      hasLinks === "true" ? true : hasLinks === "false" ? false : undefined,
+      excludeInvestments === "true" ? true : excludeInvestments === "false" ? false : undefined
     );
 
     return NextResponse.json(transactions);
