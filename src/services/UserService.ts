@@ -56,4 +56,15 @@ export class UserService {
       .returning();
     return result.length > 0;
   }
+
+  static async updateDisplayCurrency (clerkId: string, displayCurrency: string): Promise<User | null> {
+    const result = await db.update(users)
+      .set({
+        displayCurrency,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.clerkId, clerkId))
+      .returning();
+    return result[0] || null;
+  }
 }

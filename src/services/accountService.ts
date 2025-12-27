@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
-import { accounts, transactions } from "@/db/schema";
+import { accounts, transactions, type Currency } from "@/db/schema";
 import { Account, CreateAccountData, UpdateAccountData } from "@/types/transaction";
 import { eq, sql, and, or, asc } from "drizzle-orm";
 import { BalanceHistoryService } from "./BalanceHistoryService";
+import { ExchangeRateService } from "./ExchangeRateService";
 
 export class AccountService {
   static async getAllAccounts (userId: number): Promise<Account[]> {
@@ -119,5 +120,37 @@ export class AccountService {
     // Since debits are negative and credits are positive, this is actually:
     // credits (positive) + debits (negative) = net balance
     return creditAmount + debitAmount;
+  }
+
+  static async getAccountTotalAmountConverted (
+    accountId: number,
+    userId: number,
+    displayCurrency: Currency
+  ): Promise<{ amount: number; originalCurrency: Currency }> {
+    const account = await this.getAccountById(accountId, userId);
+    if (!account) {
+      return { amount: 0, originalCurrency: displayCurrency };
+    }
+
+    const originalAmount = await this.getAccountTotalAmount(accountId, userId);
+
+    // If already in display currency, return as-is
+    if (account.currency === displayCurrency) {
+      return { amount: originalAmount, originalCurrency: account.currency as Currency };
+    }
+
+    // Convert to display currency using today's rate
+    try {
+      const convertedAmount = await ExchangeRateService.convertAmount(
+        originalAmount,
+        account.currency,
+        displayCurrency
+      );
+      return { amount: convertedAmount, originalCurrency: account.currency as Currency };
+    } catch (error) {
+      // If conversion fails, return original amount
+      console.error("Failed to convert amount:", error);
+      return { amount: originalAmount, originalCurrency: account.currency as Currency };
+    }
   }
 }

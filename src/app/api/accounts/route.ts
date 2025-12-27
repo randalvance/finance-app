@@ -1,21 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AccountService } from "@/services/accountService";
+import { UserService } from "@/services/UserService";
 import { requireAuth } from "@/lib/auth";
+import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET () {
   try {
     const userId = await requireAuth();
+    const user = await currentUser();
+    if (!user?.id) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    // Get user's display currency
+    const dbUser = await UserService.getUserByClerkId(user.id);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 });
+    }
+
     const accounts = await AccountService.getAllAccounts(userId);
 
-    // Enrich accounts with transaction counts and totals
+    // Enrich accounts with transaction counts and converted totals
     const enrichedAccounts = await Promise.all(
       accounts.map(async (account) => {
         const transactionCount = await AccountService.getAccountTransactionCount(account.id, userId);
-        const totalAmount = await AccountService.getAccountTotalAmount(account.id, userId);
+        const { amount: totalAmount, originalCurrency } = await AccountService.getAccountTotalAmountConverted(
+          account.id,
+          userId,
+          dbUser.displayCurrency as import("@/db/schema").Currency
+        );
         return {
           ...account,
           transactionCount,
           totalAmount,
+          originalCurrency,
+          displayCurrency: dbUser.displayCurrency,
         };
       })
     );

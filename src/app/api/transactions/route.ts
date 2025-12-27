@@ -3,10 +3,23 @@ import { TransactionService } from "@/services/TransactionService";
 import { CategoryService } from "@/services/categoryService";
 import { requireAuth } from "@/lib/auth";
 import { CreateTransactionData, TRANSACTION_TYPES } from "@/types/transaction";
+import { UserService } from "@/services/UserService";
+import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET (request: NextRequest) {
   try {
     const userId = await requireAuth();
+    const user = await currentUser();
+    if (!user?.id) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    // Get user's display currency
+    const dbUser = await UserService.getUserByClerkId(user.id);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 });
+    }
+
     const { searchParams } = new URL(request.url);
     const accountId = searchParams.get("accountId");
     const datePreset = searchParams.get("datePreset");
@@ -15,8 +28,9 @@ export async function GET (request: NextRequest) {
     const hasLinks = searchParams.get("hasLinks");
     const excludeInvestments = searchParams.get("excludeInvestments");
 
-    const transactions = await TransactionService.getAllTransactionsWithLinks(
+    const transactions = await TransactionService.getAllTransactionsWithLinksConverted(
       userId,
+      dbUser.displayCurrency as import("@/db/schema").Currency,
       accountId ? parseInt(accountId) : undefined,
       datePreset || undefined,
       startDate || undefined,

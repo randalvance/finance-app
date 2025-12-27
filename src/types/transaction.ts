@@ -272,9 +272,9 @@ export interface TransactionLinkInfo {
   createdAt: Date | null;
 }
 // Exchange Rate DTOs
+// All rates are USD-based (USD → currency)
 export interface CreateExchangeRateData {
-  fromCurrency: string;
-  toCurrency: string;
+  currency: string;
   rate: number;
   date: string;
   source?: string;
@@ -290,4 +290,25 @@ export interface ExchangeRateApiResponse {
   time_next_update_utc?: string;
   base_code: string;
   conversion_rates: Record<string, number>;
+}
+
+// Currency conversion metadata for API responses
+export interface CurrencyConversionInfo {
+  amount: number;              // Converted amount
+  originalAmount: number;      // Original amount before conversion
+  originalCurrency: Currency;  // Currency of original amount
+  displayCurrency: Currency;   // User's display currency
+  conversionApplied: boolean;  // Whether conversion was applied
+  conversionDate: string;      // Date used for exchange rate
+  conversionFailed?: boolean;  // True if rate not found, fallback used
+}
+
+// Enhanced transaction with converted amount
+export interface TransactionWithConvertedAmount extends TransactionWithLink {
+  convertedAmount: CurrencyConversionInfo;
+}
+
+// Enhanced balance entry with converted amount
+export interface AccountBalanceWithConvertedAmount extends AccountBalance {
+  convertedAmount: CurrencyConversionInfo;
 }

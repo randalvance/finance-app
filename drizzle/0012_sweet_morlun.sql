@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "display_currency" varchar(3) DEFAULT 'USD' NOT NULL;

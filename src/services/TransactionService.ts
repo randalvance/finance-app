@@ -6,10 +6,12 @@ import {
   UpdateTransactionData,
   TransactionWithAccounts,
   TransactionWithLink,
-  TransactionType
+  TransactionType,
+  TransactionWithConvertedAmount
 } from "@/types/transaction";
 import { eq, desc, and, inArray, or, gte, lte, exists, notExists, sql, notInArray, isNull } from "drizzle-orm";
 import { calculateDateRange, type DatePreset } from "@/lib/dateUtils";
+import { ExchangeRateService } from "./ExchangeRateService";
 
 export class TransactionService {
   /**
@@ -547,5 +549,74 @@ export class TransactionService {
         )
       );
     return Number(result[0]?.count || 0);
+  }
+
+  /**
+   * Get all transactions with links and converted amounts
+   * Currency conversion strategy:
+   * - Debit: Convert from sourceAccount currency
+   * - Credit: Convert from targetAccount currency
+   * - TransferOut/TransferIn: Convert from sourceAccount currency
+   */
+  static async getAllTransactionsWithLinksConverted (
+    userId: number,
+    displayCurrency: Currency,
+    accountId?: number,
+    datePreset?: string,
+    customStartDate?: string,
+    customEndDate?: string,
+    hasLinks?: boolean,
+    excludeInvestments?: boolean
+  ): Promise<TransactionWithConvertedAmount[]> {
+    // Get base transactions with accounts and links
+    const transactions = await this.getAllTransactionsWithLinks(
+      userId,
+      accountId,
+      datePreset,
+      customStartDate,
+      customEndDate,
+      hasLinks,
+      excludeInvestments
+    );
+
+    // Batch convert amounts
+    const transactionsWithConversion = await Promise.all(
+      transactions.map(async (transaction) => {
+        // Determine source currency based on transaction type
+        let sourceCurrency: Currency;
+
+        switch (transaction.transactionType) {
+          case "Debit":
+          case "TransferOut":
+            // Use source account currency
+            sourceCurrency = transaction.sourceAccount?.currency || "USD";
+            break;
+          case "Credit":
+            // Use target account currency
+            sourceCurrency = transaction.targetAccount?.currency || "USD";
+            break;
+          case "TransferIn":
+            // Use source account currency (where money came from)
+            sourceCurrency = transaction.sourceAccount?.currency || "USD";
+            break;
+          default:
+            sourceCurrency = "USD";
+        }
+
+        // Convert amount using today's exchange rate
+        const convertedAmount = await ExchangeRateService.convertAmountWithMetadata(
+          Math.abs(transaction.amount), // Use absolute value for display
+          sourceCurrency,
+          displayCurrency
+        );
+
+        return {
+          ...transaction,
+          convertedAmount,
+        };
+      })
+    );
+
+    return transactionsWithConversion;
   }
 }

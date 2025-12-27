@@ -18,6 +18,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull(),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
+  displayCurrency: varchar("display_currency", { length: 3 }).notNull().default("USD"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });
@@ -198,20 +199,20 @@ export const transactionLinks = pgTable("transaction_links", {
   // Unique constraint: prevent duplicate links
   uniqueLink: unique().on(table.transaction1Id, table.transaction2Id)
 }));
-// Exchange rates table for caching fetched rates
+// Exchange rates table for caching USD-based rates only
+// All rates are stored as USD → currency (e.g., USD → SGD, USD → EUR)
+// Cross-rates are computed on-the-fly using these USD-based rates
 export const exchangeRates = pgTable("exchange_rates", {
   id: serial("id").primaryKey(),
-  fromCurrency: varchar("from_currency", { length: 3 }).notNull(),
-  toCurrency: varchar("to_currency", { length: 3 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull(),
   rate: numericDecimal("rate").notNull(),
   date: date("date").notNull(),
   source: varchar("source", { length: 50 }).default("exchangerate-api"),
   createdAt: timestamp("created_at").defaultNow()
 }, (table) => ({
-  // Unique constraint: one rate per currency pair per date
-  uniqueRatePerDay: unique().on(table.fromCurrency, table.toCurrency, table.date),
+  // Unique constraint: one rate per currency per date
+  uniqueRatePerDay: unique().on(table.currency, table.date),
   // Indexes for performance
   dateIdx: index("idx_exchange_rates_date").on(table.date),
-  currencyPairIdx: index("idx_exchange_rates_pair").on(table.fromCurrency, table.toCurrency),
-  baseCurrencyIdx: index("idx_exchange_rates_base").on(table.fromCurrency)
+  currencyIdx: index("idx_exchange_rates_currency").on(table.currency)
 }));

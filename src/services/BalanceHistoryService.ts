@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-import { accountBalances } from "@/db/schema";
-import { AccountBalance, CreateAccountBalanceData, UpdateAccountBalanceData } from "@/types/transaction";
+import { accountBalances, type Currency } from "@/db/schema";
+import { AccountBalance, CreateAccountBalanceData, UpdateAccountBalanceData, AccountBalanceWithConvertedAmount } from "@/types/transaction";
 import { eq, and, desc } from "drizzle-orm";
+import { ExchangeRateService } from "./ExchangeRateService";
 
 export class BalanceHistoryService {
   static async getAllBalances (accountId: number, userId: number): Promise<AccountBalance[]> {
@@ -81,5 +82,36 @@ export class BalanceHistoryService {
       .where(and(eq(accountBalances.id, id), eq(accountBalances.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  /**
+   * Get all balance entries for an account with amounts converted to display currency.
+   * Uses historical exchange rates based on balance entry date.
+   */
+  static async getAllBalancesConverted (
+    accountId: number,
+    userId: number,
+    displayCurrency: Currency
+  ): Promise<AccountBalanceWithConvertedAmount[]> {
+    // Get base balance entries
+    const balances = await this.getAllBalances(accountId, userId);
+
+    // Convert each balance entry using today's exchange rate
+    const balancesWithConversion = await Promise.all(
+      balances.map(async (balance) => {
+        const convertedAmount = await ExchangeRateService.convertAmountWithMetadata(
+          balance.amount,
+          balance.currency as Currency,
+          displayCurrency
+        );
+
+        return {
+          ...balance,
+          convertedAmount,
+        };
+      })
+    );
+
+    return balancesWithConversion;
   }
 }
