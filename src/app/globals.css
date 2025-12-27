@@ -469,4 +469,118 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.1),
       0 0 0 1px rgba(168, 85, 247, 0.1);
   }
+
+  /* Excluded transaction row styling */
+  .transaction-row-excluded {
+    opacity: 0.65;
+    filter: grayscale(40%);
+  }
+
+  .transaction-row-excluded > td {
+    position: relative;
+  }
+
+  .transaction-row-excluded > td::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(239, 68, 68, 0.08) 10px,
+      rgba(239, 68, 68, 0.08) 12px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .dark .transaction-row-excluded > td::before {
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(239, 68, 68, 0.1) 10px,
+      rgba(239, 68, 68, 0.1) 12px
+    );
+  }
+
+  /* Ensure cell content appears above the overlay */
+  .transaction-row-excluded > td > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .transaction-row-excluded .transaction-amount,
+  .transaction-row-excluded .transaction-description {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    text-decoration-color: currentColor;
+  }
+
+  /* Exclusion badge */
+  .exclusion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: rgb(239, 68, 68);
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .dark .exclusion-badge {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  /* Exclude/Include toggle button */
+  .exclude-toggle-btn {
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    background: transparent;
+    color: hsl(var(--primary));
+    border: 1.5px solid hsl(var(--primary));
+    cursor: pointer;
+    transition: none;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .exclude-toggle-btn:hover {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Status indicator for computation summary */
+  .computation-excluded-count {
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 4px 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: rgb(239, 68, 68);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .computation-excluded-count::before {
+    content: '[X]';
+    font-weight: 900;
+  }
 }

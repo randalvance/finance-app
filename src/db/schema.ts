@@ -216,3 +216,32 @@ export const exchangeRates = pgTable("exchange_rates", {
   dateIdx: index("idx_exchange_rates_date").on(table.date),
   currencyIdx: index("idx_exchange_rates_currency").on(table.currency)
 }));
+
+// Computations table
+export const computations = pgTable("computations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+}, (table) => ({
+  uniqueUserComputation: unique().on(table.userId, table.name),
+  userIdx: index("idx_computations_user").on(table.userId)
+}));
+
+// Junction table for many-to-many relationship
+export const computationTransactions = pgTable("computation_transactions", {
+  computationId: integer("computation_id")
+    .notNull()
+    .references(() => computations.id, { onDelete: "cascade" }),
+  transactionId: integer("transaction_id")
+    .notNull()
+    .references(() => transactions.id, { onDelete: "cascade" }),
+  isExcluded: integer("is_excluded").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow()
+}, (table) => ({
+  pk: primaryKey({ columns: [table.computationId, table.transactionId] }),
+  computationIdx: index("idx_computation_transactions_computation").on(table.computationId),
+  transactionIdx: index("idx_computation_transactions_transaction").on(table.transactionId)
+}));

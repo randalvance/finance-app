@@ -53,6 +53,16 @@ export default function AppHeader ({ onNewTransaction }: AppHeaderProps) {
               IMPORT
             </Link>
             <Link
+              href='/computations'
+              className={`mono text-xs px-3 py-2 rounded border transition-all duration-200 ${
+                pathname.startsWith("/computations")
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border hover:border-primary hover:text-primary"
+              }`}
+            >
+              COMPUTATIONS
+            </Link>
+            <Link
               href='/admin'
               className={`mono text-xs px-3 py-2 rounded border transition-all duration-200 ${
                 pathname === "/admin"

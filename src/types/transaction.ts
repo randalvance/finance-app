@@ -1,4 +1,4 @@
-import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, exchangeRates, accountBalances, transactionTypeEnum, type Currency } from "@/db/schema";
+import { accounts, transactions, categories, users, importSources, imports, importSourceAccounts, transactionLinks, exchangeRates, accountBalances, computations, computationTransactions, transactionTypeEnum, type Currency } from "@/db/schema";
 import type { InferSelectModel } from "drizzle-orm";
 
 // Base types inferred from schema
@@ -63,6 +63,23 @@ export type TransactionWithLink = TransactionWithAccounts & {
     linkedTransactionId: number;
     linkedTransaction?: LinkedTransaction;
   };
+};
+
+// Currency conversion info
+export interface CurrencyConversionInfo {
+  amount: number;
+  originalAmount: number;
+  originalCurrency: Currency;
+  displayCurrency: Currency;
+  conversionApplied: boolean;
+  conversionDate: string;
+  rate?: number;
+  conversionFailed?: boolean;
+}
+
+// Transaction with converted amount
+export type TransactionWithConvertedAmount = TransactionWithLink & {
+  convertedAmount: CurrencyConversionInfo;
 };
 
 // Discriminated unions for create operations with type-safe validation
@@ -153,6 +170,11 @@ export interface CreateAccountBalanceData {
 export interface UpdateAccountBalanceData extends Partial<Omit<CreateAccountBalanceData, "userId" | "accountId">> {
   id: number;
 }
+
+// Account Balance with converted amount
+export type AccountBalanceWithConvertedAmount = AccountBalance & {
+  convertedAmount: CurrencyConversionInfo;
+};
 
 // Category DTOs
 export interface CreateCategoryData {
@@ -292,23 +314,38 @@ export interface ExchangeRateApiResponse {
   conversion_rates: Record<string, number>;
 }
 
-// Currency conversion metadata for API responses
-export interface CurrencyConversionInfo {
-  amount: number;              // Converted amount
-  originalAmount: number;      // Original amount before conversion
-  originalCurrency: Currency;  // Currency of original amount
-  displayCurrency: Currency;   // User's display currency
-  conversionApplied: boolean;  // Whether conversion was applied
-  conversionDate: string;      // Date used for exchange rate
-  conversionFailed?: boolean;  // True if rate not found, fallback used
+// Computations types
+export type Computation = InferSelectModel<typeof computations>;
+export type ComputationTransaction = InferSelectModel<typeof computationTransactions>;
+
+// Enhanced type with transaction details
+export type ComputationWithTransactions = Computation & {
+  transactions: TransactionWithAccounts[];
+  transactionCount: number;
+  excludedTransactionIds: number[];
+};
+
+// Aggregation result type
+export interface ComputationAggregation {
+  totalCredits: number;
+  totalDebits: number;
+  netBalance: number;
+  transactionCount: number;
+  creditCount: number;
+  debitCount: number;
 }
 
-// Enhanced transaction with converted amount
-export interface TransactionWithConvertedAmount extends TransactionWithLink {
-  convertedAmount: CurrencyConversionInfo;
+// DTOs
+export interface CreateComputationData {
+  userId: number;
+  name: string;
+  description?: string;
+  transactionIds?: number[];
 }
 
-// Enhanced balance entry with converted amount
-export interface AccountBalanceWithConvertedAmount extends AccountBalance {
-  convertedAmount: CurrencyConversionInfo;
+export interface UpdateComputationData {
+  id: number;
+  name?: string;
+  description?: string;
+  transactionIds?: number[];
 }
