@@ -1,1 +1,0 @@
-ALTER TABLE "computation_transactions" ADD COLUMN "is_excluded" integer DEFAULT 0 NOT NULL;

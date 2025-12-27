@@ -1,2 +1,0 @@
-ALTER TABLE "accounts" ADD COLUMN "currency" varchar(3) DEFAULT 'USD' NOT NULL;--> statement-breakpoint
-ALTER TABLE "accounts" ADD CONSTRAINT "currency_check" CHECK ("accounts"."currency" IN ('USD', 'SGD', 'EUR', 'JPY', 'PHP'));
