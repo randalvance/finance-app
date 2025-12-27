@@ -3,7 +3,7 @@
 A modern financial transaction tracking application for managing transactions across multiple accounts with categorization and analytics. Built with Next.js 15, PostgreSQL, Drizzle ORM, and Clerk authentication.
 
 ## Features
-
+ 
 - 📊 **Multi-Account Tracking**: Track transactions across multiple accounts with custom colors
 - 💾 **Drizzle ORM**: Type-safe database operations with automatic migrations
 - 🔐 **Clerk Authentication**: Secure user authentication with webhooks
