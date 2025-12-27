@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { formatCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
 import { LinkedTransaction, Transaction, TransactionWithLink, TransactionWithConvertedAmount } from "@/types/transaction";
+import type { Currency } from "@/db/schema";
 
 type ActionType = "select" | "view" | "edit" | "none";
 
@@ -45,6 +46,16 @@ interface TransactionTableProps {
 
   // Client-side custom filtering (for edge cases)
   customFilter?: (transaction: Transaction) => boolean;
+
+  // Multi-select mode
+  multiSelectMode?: boolean;
+  selectedTransactionIds?: Set<number>;
+  onSelectionChange?: (selectedIds: Set<number>) => void;
+
+  // Exclusion mode (for computations)
+  excludedTransactionIds?: Set<number>;
+  onToggleExclude?: (transactionId: number) => void;
+  showExcludeButton?: boolean;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -93,8 +104,19 @@ export default function TransactionTable ({
   onEditRequested,
   onDataChanged,
   customFilter,
+  multiSelectMode = false,
+  selectedTransactionIds,
+  onSelectionChange,
+  excludedTransactionIds,
+  onToggleExclude,
+  showExcludeButton = false,
 }: TransactionTableProps) {
   const { isLoaded } = useAuth();
+
+  // Internal selection state if not controlled
+  const [internalSelection, setInternalSelection] = useState<Set<number>>(new Set());
+  const selectedIds = selectedTransactionIds !== undefined ? selectedTransactionIds : internalSelection;
+  const handleSelectionChange = onSelectionChange || setInternalSelection;
 
   // Internal filter state (use controlled props if provided)
   const [accountFilter, setAccountFilter] = useState<number | null>(null);
@@ -192,6 +214,25 @@ export default function TransactionTable ({
     setSearchQuery("");
     handleDatePresetChange(null);
     handleCustomDateRangeChange({ startDate: null, endDate: null });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(displayedTransactions.map(t => t.id));
+      handleSelectionChange(allIds);
+    } else {
+      handleSelectionChange(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    const newSelection = new Set(selectedIds);
+    if (checked) {
+      newSelection.add(id);
+    } else {
+      newSelection.delete(id);
+    }
+    handleSelectionChange(newSelection);
   };
 
   const handleDelete = async (transaction: TransactionWithLink) => {
@@ -461,6 +502,16 @@ export default function TransactionTable ({
           <table className='min-w-full divide-y divide-border/50'>
             <thead className='glass bg-muted/30 border-b border-primary/20'>
               <tr>
+                {multiSelectMode && (
+                  <th className='px-6 py-3 text-left'>
+                    <input
+                      type='checkbox'
+                      className='w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary'
+                      checked={displayedTransactions.length > 0 && displayedTransactions.every(t => selectedIds.has(t.id))}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
+                  </th>
+                )}
                 <th className='mono px-6 py-3 text-left text-[10px] font-bold text-primary uppercase tracking-widest'>
                   DATE
                 </th>
@@ -488,7 +539,7 @@ export default function TransactionTable ({
                 <th className='mono px-6 py-3 text-right text-[10px] font-bold text-primary uppercase tracking-widest'>
                   AMOUNT
                 </th>
-                {(actionType !== "none" || editable) && (
+                {(actionType !== "none" || editable || showExcludeButton) && (
                   <th className='mono px-6 py-3 text-center text-[10px] font-bold text-primary uppercase tracking-widest'>
                     ACTION
                   </th>
@@ -496,156 +547,185 @@ export default function TransactionTable ({
               </tr>
             </thead>
             <tbody className='divide-y divide-border/30'>
-              {displayedTransactions.map((transaction) => (
-                <tr
-                  key={transaction.id}
-                  className='hover:bg-primary/5 transition-all duration-200 group'
-                >
-                  <td className='px-6 py-4 whitespace-nowrap mono text-xs text-muted-foreground'>
-                    {new Date(transaction.date).toLocaleDateString()}
-                  </td>
-                  <td className='px-6 py-4 whitespace-nowrap'>
-                    {getTransactionTypeBadge(
-                      transaction.transactionType as
+              {displayedTransactions.map((transaction) => {
+                const isExcluded = excludedTransactionIds?.has(transaction.id) || false;
+                return (
+                  <tr
+                    key={transaction.id}
+                    className={`hover:bg-primary/5 transition-all duration-200 group ${
+                      isExcluded ? "transaction-row-excluded" : ""
+                    }`}
+                  >
+                    {multiSelectMode && (
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <input
+                          type='checkbox'
+                          className='w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary'
+                          checked={selectedIds.has(transaction.id)}
+                          onChange={(e) => handleSelectOne(transaction.id, e.target.checked)}
+                        />
+                      </td>
+                    )}
+                    <td className='px-6 py-4 whitespace-nowrap mono text-xs text-muted-foreground'>
+                      {new Date(transaction.date).toLocaleDateString()}
+                    </td>
+                    <td className='px-6 py-4 whitespace-nowrap'>
+                      {getTransactionTypeBadge(
+                        transaction.transactionType as
                         | "Debit"
                         | "TransferOut"
                         | "Credit"
                         | "TransferIn"
-                    )}
-                  </td>
-                  <td className='px-6 py-4'>
-                    <div className='text-sm text-foreground group-hover:text-primary transition-colors'>
-                      {transaction.description}
-                    </div>
-                  </td>
-                  {showAccountsColumn && (
-                    <td className='px-6 py-4 whitespace-nowrap'>
-                      {transaction.transactionType === "Debit" &&
+                      )}
+                    </td>
+                    <td className='px-6 py-4'>
+                      <div className='text-sm text-foreground group-hover:text-primary transition-colors transaction-description'>
+                        {transaction.description}
+                      </div>
+                    </td>
+                    {showAccountsColumn && (
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        {transaction.transactionType === "Debit" &&
                         transaction.sourceAccount && (
-                        <div className='flex items-center space-x-2'>
-                          <div
-                            className='w-3 h-3 rounded-full'
-                            style={{
-                              backgroundColor:
-                                  transaction.sourceAccount.color || "gray",
-                            }}
-                          />
-                          <span className='text-sm text-muted-foreground'>
-                            {transaction.sourceAccount.name}
-                          </span>
-                        </div>
-                      )}
-                      {transaction.transactionType === "Credit" &&
-                        transaction.targetAccount && (
-                        <div className='flex items-center space-x-2'>
-                          <div
-                            className='w-3 h-3 rounded-full'
-                            style={{
-                              backgroundColor:
-                                  transaction.targetAccount.color || "gray",
-                            }}
-                          />
-                          <span className='text-sm text-muted-foreground'>
-                            {transaction.targetAccount.name}
-                          </span>
-                        </div>
-                      )}
-                      {(transaction.transactionType === "TransferOut" ||
-                        transaction.transactionType === "TransferIn") &&
-                        transaction.sourceAccount &&
-                        transaction.targetAccount && (
-                        <div className='flex items-center space-x-1 text-sm'>
-                          <div className='flex items-center space-x-1'>
+                          <div className='flex items-center space-x-2'>
                             <div
                               className='w-3 h-3 rounded-full'
                               style={{
                                 backgroundColor:
-                                    transaction.sourceAccount.color || "gray",
+                                  transaction.sourceAccount.color || "gray",
                               }}
                             />
-                            <span className='text-muted-foreground'>
+                            <span className='text-sm text-muted-foreground'>
                               {transaction.sourceAccount.name}
                             </span>
                           </div>
-                          <span className='text-muted-foreground'>→</span>
-                          <div className='flex items-center space-x-1'>
+                        )}
+                        {transaction.transactionType === "Credit" &&
+                        transaction.targetAccount && (
+                          <div className='flex items-center space-x-2'>
                             <div
                               className='w-3 h-3 rounded-full'
                               style={{
                                 backgroundColor:
-                                    transaction.targetAccount.color || "gray",
+                                  transaction.targetAccount.color || "gray",
                               }}
                             />
-                            <span className='text-muted-foreground'>
+                            <span className='text-sm text-muted-foreground'>
                               {transaction.targetAccount.name}
                             </span>
                           </div>
-                        </div>
-                      )}
-                    </td>
-                  )}
-                  {showCategoryColumn && (
-                    <td className='px-6 py-4 whitespace-nowrap'>
-                      <span className='text-sm text-muted-foreground'>
-                        {transaction.category?.name || "Uncategorized"}
+                        )}
+                        {(transaction.transactionType === "TransferOut" ||
+                        transaction.transactionType === "TransferIn") &&
+                        transaction.sourceAccount &&
+                        transaction.targetAccount && (
+                          <div className='flex items-center space-x-1 text-sm'>
+                            <div className='flex items-center space-x-1'>
+                              <div
+                                className='w-3 h-3 rounded-full'
+                                style={{
+                                  backgroundColor:
+                                    transaction.sourceAccount.color || "gray",
+                                }}
+                              />
+                              <span className='text-muted-foreground'>
+                                {transaction.sourceAccount.name}
+                              </span>
+                            </div>
+                            <span className='text-muted-foreground'>→</span>
+                            <div className='flex items-center space-x-1'>
+                              <div
+                                className='w-3 h-3 rounded-full'
+                                style={{
+                                  backgroundColor:
+                                    transaction.targetAccount.color || "gray",
+                                }}
+                              />
+                              <span className='text-muted-foreground'>
+                                {transaction.targetAccount.name}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    )}
+                    {showCategoryColumn && (
+                      <td className='px-6 py-4 whitespace-nowrap'>
+                        <span className='text-sm text-muted-foreground'>
+                          {transaction.category?.name || "Uncategorized"}
+                        </span>
+                      </td>
+                    )}
+                    {showLinkColumn && (
+                      <td className='px-6 py-4 whitespace-nowrap text-center'>
+                        {transaction.link && (
+                          <span
+                            className='text-primary cursor-help'
+                            title='Linked transaction'
+                          >
+                            🔗
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    <td className='px-6 py-4 whitespace-nowrap text-right'>
+                      <span
+                        className={`mono text-sm font-bold transaction-amount ${
+                          transaction.transactionType === "Credit" ||
+                        transaction.transactionType === "TransferIn"
+                            ? "text-transaction-credit-text"
+                            : "text-transaction-debit-text"
+                        }`}
+                      >
+                        {formatCurrency(
+                          transaction.amount,
+                          (transaction.transactionType === "Credit" ||
+                        transaction.transactionType === "TransferIn"
+                            ? transaction.targetAccount?.currency
+                            : transaction.sourceAccount?.currency ||
+                            "USD") as Currency
+                        )}
                       </span>
                     </td>
-                  )}
-                  {showLinkColumn && (
-                    <td className='px-6 py-4 whitespace-nowrap text-center'>
-                      {transaction.link && (
-                        <span
-                          className='text-primary cursor-help'
-                          title='Linked transaction'
+                    {actionType === "select" && onSelectTransaction && (
+                      <td className='px-6 py-4 text-center'>
+                        <button
+                          onClick={() => onSelectTransaction(transaction as LinkedTransaction)}
+                          className='mono text-xs px-3 py-1 bg-primary text-primary-foreground rounded border border-primary hover:bg-primary/90 transition-all font-bold tracking-wider'
                         >
-                          🔗
-                        </span>
-                      )}
-                    </td>
-                  )}
-                  <td className='px-6 py-4 whitespace-nowrap text-right'>
-                    <span
-                      className={`mono text-sm font-bold ${
-                        transaction.transactionType === "Credit" ||
-                        transaction.transactionType === "TransferIn"
-                          ? "text-transaction-credit-text"
-                          : "text-transaction-debit-text"
-                      }`}
-                    >
-                      {formatCurrency(
-                        transaction.convertedAmount.amount,
-                        transaction.convertedAmount.displayCurrency
-                      )}
-                    </span>
-                  </td>
-                  {actionType === "select" && onSelectTransaction && (
-                    <td className='px-6 py-4 text-center'>
-                      <button
-                        onClick={() => onSelectTransaction(transaction as LinkedTransaction)}
-                        className='mono text-xs px-3 py-1 bg-primary text-primary-foreground rounded border border-primary hover:bg-primary/90 transition-all font-bold tracking-wider'
-                      >
-                        SELECT
-                      </button>
-                    </td>
-                  )}
-                  {editable && (
-                    <td className='px-6 py-4 text-center text-sm'>
-                      <button
-                        onClick={() => onEditRequested?.(transaction)}
-                        className='mono text-xs px-2 py-1 text-primary hover:bg-primary/10 rounded border border-primary/30 hover:border-primary transition-all mr-2'
-                      >
-                        EDIT
-                      </button>
-                      <button
-                        onClick={() => handleDelete(transaction)}
-                        className='mono text-xs px-2 py-1 text-destructive hover:bg-destructive/10 rounded border border-destructive/30 hover:border-destructive transition-all'
-                      >
-                        DELETE
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
+                          SELECT
+                        </button>
+                      </td>
+                    )}
+                    {showExcludeButton && onToggleExclude && (
+                      <td className='px-6 py-2 text-center text-sm'>
+                        <button
+                          onClick={() => onToggleExclude(transaction.id)}
+                          className='exclude-toggle-btn'
+                        >
+                          {isExcluded ? "INCLUDE" : "EXCLUDE"}
+                        </button>
+                      </td>
+                    )}
+                    {editable && (
+                      <td className='px-6 py-4 text-center text-sm'>
+                        <button
+                          onClick={() => onEditRequested?.(transaction)}
+                          className='mono text-xs px-2 py-1 text-primary hover:bg-primary/10 rounded border border-primary/30 hover:border-primary transition-all mr-2'
+                        >
+                          EDIT
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction)}
+                          className='mono text-xs px-2 py-1 text-destructive hover:bg-destructive/10 rounded border border-destructive/30 hover:border-destructive transition-all'
+                        >
+                          DELETE
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
