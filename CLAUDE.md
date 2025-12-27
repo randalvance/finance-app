@@ -17,7 +17,7 @@ npm install
 docker-compose up -d
 
 # Initialize database schema with Drizzle
-npm run db:push
+npm run db:migrate
 ```
 
 ### Running the Application
@@ -40,10 +40,7 @@ npm run lint
 # Generate migration from schema changes
 npm run db:generate
 
-# Push schema changes to database (for development)
-npm run db:push
-
-# Run migrations (for production)
+# Run migrations (ALWAYS use this for schema updates)
 npm run db:migrate
 
 # Seed database with default data
@@ -61,6 +58,8 @@ docker-compose logs -f postgres
 # Stop database
 docker-compose down
 ```
+
+**IMPORTANT:** Always use `npm run db:migrate` when updating the database schema. Never use `npm run db:push` as it bypasses migrations and can cause inconsistencies.
 
 ### Clerk Webhook Setup (Development)
 For Clerk webhooks to work in development, you need to expose localhost using a tunneling service:
@@ -95,12 +94,12 @@ ngrok http --domain=your-static-domain.ngrok-free.dev 3000
 
 ### Database Layer (Drizzle ORM + PostgreSQL)
 - **Schema**: `src/db/schema.ts` defines four main tables using Drizzle ORM:
-  - `users` - User accounts managed by Clerk authentication
-  - `accounts` - Financial accounts with colors and descriptions
-  - `transactions` - Individual financial transactions with source/target accounts and type
-  - `categories` - Predefined categories with color coding and default transaction types
+   - `users` - User accounts managed by Clerk authentication
+   - `accounts` - Financial accounts with colors and descriptions
+   - `transactions` - Individual financial transactions with source/target accounts and type
+   - `categories` - Predefined categories with color coding and default transaction types
 - **Connection**: Drizzle instance in `src/lib/db.ts` using postgres-js driver
-- **Migrations**: Managed via Drizzle Kit in the `drizzle/` directory
+- **Migrations**: Managed via Drizzle Kit in the `drizzle/` directory - **ALWAYS use `npm run db:migrate`** to apply schema changes
 - **Custom Types**: Uses custom `numericDecimal` type to return amounts as numbers instead of strings
 - **Field Naming**: Schema uses camelCase (e.g., `accountId`, `createdAt`) which Drizzle maps to snake_case in the database
 
@@ -154,22 +153,22 @@ Copy `.env.example` to `.env.local` and configure:
 The application supports three types of financial transactions:
 
 1. **Debit (Money Out)**
-   - Represents spending or money leaving an account
-   - **Required**: `sourceAccountId` (where money comes from)
-   - **Optional**: `targetAccountId`
-   - Examples: Groceries, gas, bills, purchases
+    - Represents spending or money leaving an account
+    - **Required**: `sourceAccountId` (where money comes from)
+    - **Optional**: `targetAccountId`
+    - Examples: Groceries, gas, bills, purchases
 
 2. **Credit (Money In)**
-   - Represents income or money entering an account
-   - **Required**: `targetAccountId` (where money goes to)
-   - **Optional**: `sourceAccountId`
-   - Examples: Salary, freelance income, refunds
+    - Represents income or money entering an account
+    - **Required**: `targetAccountId` (where money goes to)
+    - **Optional**: `sourceAccountId`
+    - Examples: Salary, freelance income, refunds
 
 3. **Transfer (Between Accounts)**
-   - Represents money moving between your accounts
-   - **Required**: Both `sourceAccountId` and `targetAccountId`
-   - **Validation**: Source and target must be different accounts
-   - Examples: Moving money to savings, transferring between checking accounts
+    - Represents money moving between your accounts
+    - **Required**: Both `sourceAccountId` and `targetAccountId`
+    - **Validation**: Source and target must be different accounts
+    - Examples: Moving money to savings, transferring between checking accounts
 
 ### Transaction Validation Rules
 
@@ -193,9 +192,9 @@ Categories have a `defaultTransactionType` field that:
 - Pre-selects the expected transaction type when creating transactions
 - Can be overridden by the user during transaction entry
 - Examples:
-  - "Food & Dining" → defaults to Debit
-  - "Salary" → defaults to Credit
-  - "Savings Transfer" → defaults to Transfer
+   - "Food & Dining" → defaults to Debit
+   - "Salary" → defaults to Credit
+   - "Savings Transfer" → defaults to Transfer
 
 ### Account Balance Calculation
 
@@ -244,14 +243,25 @@ npm run build
 - Ensure all async operations are properly awaited
 - Fix TypeScript errors before running build
 
+### Database Schema Updates
+
+**When modifying the database schema:**
+
+1. Edit `src/db/schema.ts` with your changes
+2. Generate migration: `npm run db:generate`
+3. Apply migration: `npm run db:migrate`
+
+**NEVER use `npm run db:push`** - it bypasses the migration system and can cause schema inconsistencies. Always use the proper migration workflow with `db:generate` and `db:migrate`.
+
 ## Important Notes
 
 - Drizzle ORM manages all database connections automatically (no manual connection management needed)
 - All transaction queries can be joined with accounts using Drizzle's query builder
 - Default accounts, categories, and sample transactions can be seeded using `npm run db:seed`
 - The app uses Turbopack for faster development builds
-- Schema changes require running `npm run db:generate` to create migrations
-- Use `npm run db:push` for quick schema updates during development
+- **Schema changes must use migrations** - run `npm run db:generate` then `npm run db:migrate`
+- **Never use `npm run db:push`** - always use the migration workflow
 - Decimal amounts are automatically converted to numbers via custom `numericDecimal` type
 - Field names in code use camelCase but map to snake_case in the database
 - Transaction type validation occurs at three levels: TypeScript types, service layer, and database constraints
+
