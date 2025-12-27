@@ -14,6 +14,8 @@ import { Account, TransactionWithAccounts, Category, Transaction } from "@/types
 interface AccountWithStats extends Account {
   transactionCount: number;
   totalAmount: number;
+  originalCurrency: Currency;
+  displayCurrency: Currency;
 }
 
 export default function Home () {
@@ -93,7 +95,7 @@ export default function Home () {
   const nonZeroAccounts = accounts.filter(a => a.totalAmount !== 0);
 
   const totalNetBalance = (() => {
-    const currencies = [...new Set(nonZeroAccounts.map(a => a.currency))];
+    const currencies = [...new Set(nonZeroAccounts.map(a => a.displayCurrency))];
     if (currencies.length === 1) {
       const total = nonZeroAccounts.reduce((sum, a) => sum + a.totalAmount, 0);
       return { value: formatCurrency(total, currencies[0] as Currency), multi: false };
@@ -121,7 +123,7 @@ export default function Home () {
                   </CardTitle>
                   {totalNetBalance.multi && (
                     <div className='mono text-xs text-muted-foreground mt-1'>
-                      {nonZeroAccounts.length} ACCOUNTS / {[...new Set(nonZeroAccounts.map(a => a.currency))].length} CURRENCIES
+                      {nonZeroAccounts.length} ACCOUNTS / {[...new Set(nonZeroAccounts.map(a => a.originalCurrency))].length} CURRENCIES
                     </div>
                   )}
                 </div>
@@ -170,7 +172,7 @@ export default function Home () {
                     </div>
                     <div className='mono text-xs font-bold text-right ml-2'>
                       <span className={account.totalAmount >= 0 ? "text-transaction-credit-text" : "text-transaction-debit-text"}>
-                        {formatCurrency(account.totalAmount, account.currency as Currency)}
+                        {formatCurrency(account.totalAmount, account.displayCurrency)}
                       </span>
                     </div>
                   </div>

@@ -4,9 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import useSWR from "swr";
 import { useAuth } from "@clerk/nextjs";
 import { formatCurrency } from "@/lib/currency";
-import type { Currency } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
-import { LinkedTransaction, Transaction, TransactionWithLink } from "@/types/transaction";
+import { LinkedTransaction, Transaction, TransactionWithLink, TransactionWithConvertedAmount } from "@/types/transaction";
 
 type ActionType = "select" | "view" | "edit" | "none";
 
@@ -178,7 +177,7 @@ export default function TransactionTable ({
     error: transactionsError,
     isLoading: transactionsLoading,
     mutate: mutateTransactions,
-  } = useSWR<TransactionWithLink[]>(transactionsApiUrl, fetcher, {
+  } = useSWR<TransactionWithConvertedAmount[]>(transactionsApiUrl, fetcher, {
     revalidateOnFocus: false,
   });
 
@@ -614,12 +613,8 @@ export default function TransactionTable ({
                       }`}
                     >
                       {formatCurrency(
-                        transaction.amount,
-                        (transaction.transactionType === "Credit" ||
-                        transaction.transactionType === "TransferIn"
-                          ? transaction.targetAccount?.currency
-                          : transaction.sourceAccount?.currency ||
-                            "USD") as Currency
+                        transaction.convertedAmount.amount,
+                        transaction.convertedAmount.displayCurrency
                       )}
                     </span>
                   </td>

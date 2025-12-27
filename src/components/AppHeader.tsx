@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import CurrencySelector from "@/components/CurrencySelector";
 
 interface AppHeaderProps {
   onNewTransaction?: () => void;
@@ -61,6 +62,8 @@ export default function AppHeader ({ onNewTransaction }: AppHeaderProps) {
             >
               ADMIN
             </Link>
+            <div className='border-l border-border/50 pl-2' />
+            <CurrencySelector />
             <UserButton
               appearance={{
                 elements: {

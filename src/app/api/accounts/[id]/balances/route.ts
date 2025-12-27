@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { BalanceHistoryService } from "@/services/BalanceHistoryService";
 import { AccountService } from "@/services/accountService";
 import { requireAuth } from "@/lib/auth";
+import { UserService } from "@/services/UserService";
+import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET (
   request: NextRequest,
@@ -9,6 +11,17 @@ export async function GET (
 ) {
   try {
     const userId = await requireAuth();
+    const user = await currentUser();
+    if (!user?.id) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    // Get user's display currency
+    const dbUser = await UserService.getUserByClerkId(user.id);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 });
+    }
+
     const { id } = await params;
     const accountId = parseInt(id);
 
@@ -28,7 +41,11 @@ export async function GET (
       );
     }
 
-    const balances = await BalanceHistoryService.getAllBalances(accountId, userId);
+    const balances = await BalanceHistoryService.getAllBalancesConverted(
+      accountId,
+      userId,
+      dbUser.displayCurrency as import("@/db/schema").Currency
+    );
     return NextResponse.json(balances);
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {

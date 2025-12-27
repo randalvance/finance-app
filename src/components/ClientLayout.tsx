@@ -2,6 +2,7 @@
 
 import { useState, createContext, useContext, ReactNode } from "react";
 import AppHeader from "./AppHeader";
+import { DisplayCurrencyProvider } from "@/contexts/DisplayCurrencyContext";
 
 interface LayoutContextType {
   openNewTransaction: () => void;
@@ -33,9 +34,11 @@ export default function ClientLayout ({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LayoutContext.Provider value={contextValue}>
-      <AppHeader onNewTransaction={newTransactionHandler ? openNewTransaction : undefined} />
-      {children}
-    </LayoutContext.Provider>
+    <DisplayCurrencyProvider>
+      <LayoutContext.Provider value={contextValue}>
+        <AppHeader onNewTransaction={newTransactionHandler ? openNewTransaction : undefined} />
+        {children}
+      </LayoutContext.Provider>
+    </DisplayCurrencyProvider>
   );
 }
